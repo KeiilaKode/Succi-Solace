@@ -1,5 +1,7 @@
 # Succi Player Class
 import pygame
+import config
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, animations, animation_speeds, scale_corrections, jump_fx, cast_fx):
@@ -11,16 +13,13 @@ class Player(pygame.sprite.Sprite):
         self.y = y
         self.vx = 0.0
         self.vy = 0.0
-        self.speed_walk = 180.0
-        self.speed_run = 320.0
-        self.jump_impulse = -800.0
-        self.gravity = 1500.0
+
         self.on_ground = True
         self.facing_right = True
 
-        # Health System (Starts at 1 hit = death, upgrades to 3 later)
-        self.health = 1
-        self.max_health = 1
+        # Health System
+        self.health = config.PLAYER_STARTING_HEALTH
+        self.max_health = config.PLAYER_STARTING_HEALTH
         self.invulnerable_timer = 0
 
         # State Management
@@ -32,7 +31,10 @@ class Player(pygame.sprite.Sprite):
         self.attacking = False
         self.recovering_duck = False
         self.duck_pressed = False
-        self.current_spell_type = "normal"
+
+        # Dual-Wield Spell Inventory Hooks
+        self.spell_left_click = "normal"
+        self.spell_right_click = None
 
         # Assets & Animations
         self.animations = animations
@@ -41,35 +43,36 @@ class Player(pygame.sprite.Sprite):
         self.jump_fx = jump_fx
         self.cast_fx = cast_fx
 
-        # Collision Mask setup based on starting frame
-        self.image = self.animations[self.current_anim][0]
-        self.mask = pygame.mask.from_surface(self.image)
-        self.rect = self.image.get_rect()
+        # Collision Mask setup
+        self.current_image = self.animations[self.current_anim][0]
+        self.mask = pygame.mask.from_surface(self.current_image)
+        self.rect = self.current_image.get_rect()
 
     def handle_input(self, keys):
         moving = False
         run_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
-        duck_pressed = keys[pygame.K_DOWN] or keys[pygame.K_s]  # Now supports 'S' key
+        duck_pressed = keys[pygame.K_DOWN] or keys[pygame.K_s]
 
         self.recovering_duck = (self.current_anim == "duck" and not duck_pressed and self.playing)
         self.attacking = (self.current_anim in ["attack", "run_attack"] and self.playing)
 
-        # Horizontal Movement Intent (Now supports A and D)
+        # Horizontal Movement Intent
         if self.current_anim == "attack" or self.recovering_duck or (duck_pressed and self.on_ground):
             self.vx = 0
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.facing_right = False
             moving = True
-            self.vx = - (self.speed_run if run_pressed else self.speed_walk)
+            self.vx = - (config.PLAYER_SPEED_RUN if run_pressed else config.PLAYER_SPEED_WALK)
         elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             self.facing_right = True
             moving = True
-            self.vx = (self.speed_run if run_pressed else self.speed_walk)
+            self.vx = (config.PLAYER_SPEED_RUN if run_pressed else config.PLAYER_SPEED_WALK)
         else:
             self.vx = 0
 
         # Jump Intent
-        if keys[pygame.K_SPACE] and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
+        if keys[
+            pygame.K_SPACE] and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
             if moving and "run_jump" in self.animations:
                 self.current_anim = "run_jump"
             else:
@@ -77,7 +80,7 @@ class Player(pygame.sprite.Sprite):
             self.current_frame = 0
             self.animation_timer = 0
             self.playing = True
-            self.vy = self.jump_impulse
+            self.vy = config.PLAYER_JUMP_IMPULSE
             self.on_ground = False
             if self.jump_fx:
                 self.jump_fx.play()
@@ -103,7 +106,7 @@ class Player(pygame.sprite.Sprite):
         self.x += self.vx * dt
 
         if not self.on_ground:
-            self.vy += self.gravity * dt
+            self.vy += config.PLAYER_GRAVITY * dt
             self.y += self.vy * dt
 
             for platform in platform_group:
@@ -160,7 +163,7 @@ class Player(pygame.sprite.Sprite):
 
     def advance_frame(self, dt_ms, loops_dict):
         anim_frames = self.animations[self.current_anim]
-        delay = self.anim_speeds.get(self.current_anim, 120)
+        delay = self.anim_speeds.get(self.current_anim, config.DEFAULT_ANIM_DELAY)
         loop = loops_dict.get(self.current_anim, True)
         self.animation_timer += dt_ms
 
@@ -193,7 +196,7 @@ class Player(pygame.sprite.Sprite):
 
     def take_damage(self):
         """Returns True if the player dies, False if they survive."""
-        if pygame.time.get_ticks() - self.invulnerable_timer < 1000:
+        if pygame.time.get_ticks() - self.invulnerable_timer < config.PLAYER_INVULNERABLE_DURATION:
             return False  # Still invincible from last hit
 
         self.health -= 1
@@ -203,51 +206,50 @@ class Player(pygame.sprite.Sprite):
             return True
         return False
 
+    def prepare_frame(self):
+        """Calculates scaling, flipping, and collision masks before drawing."""
+        frame_surf = self.animations[self.current_anim][self.current_frame]
+        display_w, display_h = frame_surf.get_size()
+
+        correction = self.scale_corrections.get(self.current_anim, 1.0)
+        final_scale = config.PLAYER_BASE_SCALE * correction
+
+        self.current_image = pygame.transform.smoothscale(
+            frame_surf, (int(display_w * final_scale), int(display_h * final_scale))
+        )
+
+        if not self.facing_right:
+            self.current_image = pygame.transform.flip(self.current_image, True, False)
+
+        fw, fh = self.current_image.get_size()
+
+        y_offset = config.PLAYER_ATTACK_Y_OFFSET if self.current_anim == "attack" else 0
+        x_offset = 0
+        if self.current_anim == "attack":
+            x_offset = config.PLAYER_ATTACK_X_SHIFT if self.facing_right else -config.PLAYER_ATTACK_X_SHIFT
+
+        world_x = int(self.x - fw // 2) + x_offset
+        world_y = int(self.y - fh) + y_offset
+
+        self.rect = self.current_image.get_rect(topleft=(world_x, world_y))
+        self.mask = pygame.mask.from_surface(self.current_image)
+
     def update(self, keys, dt, dt_ms, platform_group, loops_dict):
         moving, run_pressed, duck_pressed = self.handle_input(keys)
         self.duck_pressed = duck_pressed
         self.update_physics(dt, platform_group)
         self.update_animation_state(moving, run_pressed, duck_pressed)
         self.advance_frame(dt_ms, loops_dict)
+        self.prepare_frame()
 
     def draw(self, screen, camera_x):
-        frame_surf = self.animations[self.current_anim][self.current_frame]
-        display_w, display_h = frame_surf.get_size()
-
-        base_scale_factor = 0.25
-        correction = self.scale_corrections.get(self.current_anim, 1.0)
-        final_scale = base_scale_factor * correction
-
-        frame_to_draw = pygame.transform.smoothscale(frame_surf,
-                                                     (int(display_w * final_scale), int(display_h * final_scale)))
-
-        if not self.facing_right:
-            frame_to_draw = pygame.transform.flip(frame_to_draw, True, False)
-
-        fw, fh = frame_to_draw.get_size()
-        screen_x = self.x - camera_x
-        blit_x = int(screen_x - fw // 2)
-
-        y_offset = 0
-        x_offset = 0
-        if self.current_anim == "attack":
-            y_offset = 230
-            shift_amount = 200
-            if self.facing_right:
-                x_offset = shift_amount
-            else:
-                x_offset = -shift_amount
-
-        blit_x += x_offset
-        blit_y = int(self.y - fh) + y_offset
-
-        self.mask = pygame.mask.from_surface(frame_to_draw)
-        self.rect = frame_to_draw.get_rect(topleft=(blit_x, blit_y))
-
         # Flicker effect if invulnerable
-        if pygame.time.get_ticks() - self.invulnerable_timer < 1000:
+        if pygame.time.get_ticks() - self.invulnerable_timer < config.PLAYER_INVULNERABLE_DURATION:
             if (pygame.time.get_ticks() // 100) % 2 == 0:
-                return blit_x, blit_y  # Skip rendering to blink
+                return self.rect.x - camera_x, self.rect.y  # Skip rendering to blink
 
-        screen.blit(frame_to_draw, (blit_x, blit_y))
-        return blit_x, blit_y
+        screen_x = self.rect.x - camera_x
+        screen_y = self.rect.y
+
+        screen.blit(self.current_image, (screen_x, screen_y))
+        return screen_x, screen_y
