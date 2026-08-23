@@ -284,42 +284,43 @@ class Merchant_UI:
     def __init__(self, screen_width, screen_height, sold_out_ref):
         try:
             self.sold_out = sold_out_ref  # Keeps the persistent reference
-            raw_bg = pygame.image.load("backgrounds/M_inventory_empty.png").convert()
+            raw_bg = pygame.image.load("mats/ui/M_inventory_empty.png").convert()
             self.bg = pygame.transform.smoothscale(raw_bg, (screen_width, screen_height))
 
             # --- ORIGINAL POTIONS ---
-            self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/health_p.png").convert_alpha(),
+            self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(),
                                                          (110, 150))
-            self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/mana_p.png").convert_alpha(), (110, 150))
-            self.purple_p = pygame.transform.smoothscale(pygame.image.load("mats/purple_p.png").convert_alpha(),
+            self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mana_p.png").convert_alpha(), (110, 150))
+            self.purple_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/purple_p.png").convert_alpha(),
                                                          (110, 150))
-            self.rainbow_p = pygame.transform.smoothscale(pygame.image.load("mats/secret_potion.png").convert_alpha(),
+            self.rainbow_p = pygame.transform.smoothscale(pygame.image.load(
+                "mats/ui/secret_potion.png").convert_alpha(),
                                                           (110, 150))
 
-            wings_raw = pygame.image.load("mats/wings_p_ss.png").convert_alpha()
+            wings_raw = pygame.image.load("mats/ui/wings_p_ss.png").convert_alpha()
             ww, wh = wings_raw.get_size()
             self.wings_p = pygame.transform.smoothscale(wings_raw.subsurface((0, int(wh * 0.15), ww, int(wh * 0.70))),
                                                         (110, 150))
 
             # --- NEW POTIONS ---
-            self.teal_p = pygame.transform.smoothscale(pygame.image.load("mats/teal potion.png").convert_alpha(),
+            self.teal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/teal potion.png").convert_alpha(),
                                                        (110, 150))
-            self.emerald_p = pygame.transform.smoothscale(pygame.image.load("mats/emerald_hup.png").convert_alpha(),
+            self.emerald_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/emerald_hup.png").convert_alpha(),
                                                           (110, 150))
-            self.pink_p = pygame.transform.smoothscale(pygame.image.load("mats/pink potion.png").convert_alpha(),
+            self.pink_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/pink potion.png").convert_alpha(),
                                                        (110, 150))
             self.mysterious_p = pygame.transform.smoothscale(
-                pygame.image.load("mats/mysterious potion.png").convert_alpha(), (110, 150))
-            self.silver_p = pygame.transform.smoothscale(pygame.image.load("mats/silver potion.png").convert_alpha(),
+                pygame.image.load("mats/ui/mysterious potion.png").convert_alpha(), (110, 150))
+            self.silver_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/silver potion.png").convert_alpha(),
                                                          (110, 150))
-            self.royal_p = pygame.transform.smoothscale(pygame.image.load("mats/royal potion.png").convert_alpha(),
+            self.royal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/royal potion.png").convert_alpha(),
                                                         (110, 150))
-            self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/gold potion.png").convert_alpha(),
+            self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/gold potion.png").convert_alpha(),
                                                        (110, 150))
 
             # --- LOAD & SCALE ARROWS ---
-            raw_left = pygame.image.load("mats/left.png").convert_alpha()
-            raw_right = pygame.image.load("mats/right.png").convert_alpha()
+            raw_left = pygame.image.load("mats/ui/left.png").convert_alpha()
+            raw_right = pygame.image.load("mats/ui/right.png").convert_alpha()
 
             # Base size: larger and correctly proportioned
             arrow_w, arrow_h = 245, 120  # 220, 95

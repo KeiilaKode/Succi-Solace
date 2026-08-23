@@ -24,7 +24,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Succi Solace")
 
 try:
-    game_icon = pygame.image.load("mats/pink design.png").convert_alpha()
+    game_icon = pygame.image.load("mats/ui/pink design.png").convert_alpha()
     pygame.display.set_icon(game_icon)
 except pygame.error:
     pass
@@ -34,29 +34,29 @@ FPS = 60
 
 try:
 
-    pygame.mixer.music.load("mats/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
+    pygame.mixer.music.load("mats/audio/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
     pygame.mixer.music.set_volume(0.2)
     pygame.mixer.music.play(-1, 0.0)  # Start playing immediately on the main menu
 
-    jump_fx = pygame.mixer.Sound("mats/Swoosh.mp3")
+    jump_fx = pygame.mixer.Sound("mats/audio/Swoosh.mp3")
     jump_fx.set_volume(0.3)
-    death_fx = pygame.mixer.Sound("mats/Pause.mp3")
+    death_fx = pygame.mixer.Sound("mats/audio/Pause.mp3")
     death_fx.set_volume(0.6)
-    cast_fx = pygame.mixer.Sound("mats/cast.mp3")
+    cast_fx = pygame.mixer.Sound("mats/audio/cast.mp3")
     cast_fx.set_volume(0.4)
-    explode_fx = pygame.mixer.Sound("mats/explode.mp3")
+    explode_fx = pygame.mixer.Sound("mats/audio/explode.mp3")
     explode_fx.set_volume(0.2)
 
-    merchant_voice_fx = pygame.mixer.Sound("mats/merchant entrance.mp3")
+    merchant_voice_fx = pygame.mixer.Sound("mats/audio/merchant entrance.mp3")
     merchant_voice_fx.set_volume(0.6)
 
-    laugh_fx = pygame.mixer.Sound("mats/laugh_bb.mp3")
+    laugh_fx = pygame.mixer.Sound("mats/audio/laugh_bb.mp3")
     laugh_fx.set_volume(0.6)
 
-    departure_fx = pygame.mixer.Sound("mats/merchant_departure.mp3")
+    departure_fx = pygame.mixer.Sound("mats/audio/merchant_departure.mp3")
     departure_fx.set_volume(0.6)
 
-    merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/merchant greet lvl 2.mp3")
+    merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/audio/merchant greet lvl 2.mp3")
     merchant_greet_lvl_2_fx.set_volume(0.6)
 
 except pygame.error as e:
@@ -85,14 +85,14 @@ def get_sprites_from_sheet(filename, approx_width=810, target_h=1080):
 
 
 animations = {
-    "idle": get_sprites_from_sheet("spritsheets/S_IDLE_NB.png"),
-    "walk": get_sprites_from_sheet("spritsheets/S_WALK_NB.png"),
-    "run": get_sprites_from_sheet("spritsheets/S_RUN_NB.png"),
-    "jump": get_sprites_from_sheet("spritsheets/S_JUMP_NB.png"),
-    "run_jump": get_sprites_from_sheet("spritsheets/S_RUN_JUMP_NB.png"),
-    "duck": get_sprites_from_sheet("spritsheets/S_DUCK_NB.png"),
-    "attack": get_sprites_from_sheet("spritsheets/S_ATTACK_NB.png"),
-    "run_attack": get_sprites_from_sheet("spritsheets/S_RUNSHOT_NB.png")
+    "idle": get_sprites_from_sheet("spritsheets/succi's sheets/S_IDLE_NB.png"),
+    "walk": get_sprites_from_sheet("spritsheets/succi's sheets/S_WALK_NB.png"),
+    "run": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUN_NB.png"),
+    "jump": get_sprites_from_sheet("spritsheets/succi's sheets/S_JUMP_NB.png"),
+    "run_jump": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUN_JUMP_NB.png"),
+    "duck": get_sprites_from_sheet("spritsheets/succi's sheets/S_DUCK_NB.png"),
+    "attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_ATTACK_NB.png"),
+    "run_attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUNSHOT_NB.png")
 }
 animation_speeds = {"idle": 175, "walk": 130, "run": 75, "jump": 80, "run_jump": 50, "duck": 50, "attack": 90,
                     "run_attack": 75}
@@ -101,25 +101,25 @@ animation_loops = {"idle": True, "walk": True, "run": True, "jump": False, "run_
 animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.0, "run_jump": 1.08, "duck": 1.0,
                                "attack": 2.8, "run_attack": 1.08}
 
-fireball_img = pygame.image.load("spritsheets/fireball.png").convert_alpha()
-explode_img = pygame.image.load("spritsheets/explode_NB.png").convert_alpha()
+fireball_img = pygame.image.load("spritsheets/spell sheets/fireball.png").convert_alpha()
+explode_img = pygame.image.load("spritsheets/spell sheets/explode_NB.png").convert_alpha()
 
-purple_fireball_img = pygame.image.load("spritsheets/purple_spell.png").convert_alpha()
-purple_explode_img = pygame.image.load("spritsheets/purple_ball_explode.png").convert_alpha()
+purple_fireball_img = pygame.image.load("spritsheets/spell sheets/purple_spell.png").convert_alpha()
+purple_explode_img = pygame.image.load("spritsheets/spell sheets/purple_ball_explode.png").convert_alpha()
 
-end_image = pygame.transform.smoothscale(pygame.image.load("backgrounds/death_screen.png").convert_alpha(),
+end_image = pygame.transform.smoothscale(pygame.image.load("mats/ui/death_screen.png").convert_alpha(),
                                          (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # --- Pause Menu Tombstone ---
 try:
-    pause_bg_raw = pygame.image.load("backgrounds/pause1.png").convert_alpha()
+    pause_bg_raw = pygame.image.load("mats/ui/pause1.png").convert_alpha()
     pause_bg = pygame.transform.smoothscale(pause_bg_raw, (1200, 1150))
 except pygame.error:
     pause_bg = None
 
 # --- Death Screen Overlay ---
 try:
-    death_overlay_raw = pygame.image.load("backgrounds/death overlay.png").convert_alpha()
+    death_overlay_raw = pygame.image.load("mats/ui/death overlay.png").convert_alpha()
     death_overlay = pygame.transform.smoothscale(death_overlay_raw, (1100, 1150))
 except pygame.error:
     death_overlay = None
@@ -149,11 +149,11 @@ def draw_health_bar(health, max_health):
 class MainMenu:
     def __init__(self, w, h):
         try:
-            self.bg = pygame.transform.smoothscale(pygame.image.load("backgrounds/start_bg.png").convert(), (w, h))
+            self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/start_bg.png").convert(), (w, h))
 
-            raw_play = pygame.image.load("mats/play.png").convert_alpha()
-            raw_controls = pygame.image.load("mats/controls.png").convert_alpha()
-            raw_load = pygame.image.load("mats/load.png").convert_alpha()
+            raw_play = pygame.image.load("mats/ui/play.png").convert_alpha()
+            raw_controls = pygame.image.load("mats/ui/controls.png").convert_alpha()
+            raw_load = pygame.image.load("mats/ui/load.png").convert_alpha()
 
             # Base Sizes
             self.play_b = pygame.transform.smoothscale(raw_play, (260, 140))
@@ -322,7 +322,7 @@ while run:
                 projectile_group.empty()
 
                 # Level 4 Music
-                pygame.mixer.music.load("mats/Polonaise in F sharp minor, Op. 44.mp3")
+                pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
                 pygame.mixer.music.set_volume(0.2)
                 pygame.mixer.music.play(-1, 0.0)
 
@@ -359,7 +359,7 @@ while run:
             paused = False
 
             # Switch to the Level 1 music when entering the game
-            pygame.mixer.music.load("mats/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+            pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
             pygame.mixer.music.play(-1, 0.0)
 
     elif not game_over and not paused:
@@ -513,13 +513,13 @@ while run:
                             merchant_ui = None
 
                             if current_state == "LEVEL_4":
-                                pygame.mixer.music.load("mats/Polonaise in F sharp minor, Op. 44.mp3")
+                                pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
                             elif current_state == "LEVEL_3":
-                                pygame.mixer.music.load("mats/Ballade no. 1 in G minor, Op. 23.mp3")
+                                pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
                             elif current_state == "LEVEL_2":
-                                pygame.mixer.music.load("mats/Toccata and Fugue in Dm, BWV 565.mp3")
+                                pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
                             else:
-                                pygame.mixer.music.load("mats/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+                                pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
 
                             pygame.mixer.music.set_volume(0.2)
                             pygame.mixer.music.play(-1, 0.0)
@@ -590,11 +590,11 @@ while run:
 
                         if is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritsheets/merchant_lvl2_sheet.png",
+                                                    "spritsheets/merchants sheets/merchant_lvl2_sheet.png",
                                                     columns=10, rows=7, target_duration=12200)
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritsheets/merchant_lvl1_sheet.png",
+                                                    "spritsheets/merchants sheets/merchant_lvl1_sheet.png",
                                                     columns=10, rows=6)
 
                         merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)
@@ -741,7 +741,7 @@ while run:
                     current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
                 else:
                     if current_state != "LEVEL_1":
-                        pygame.mixer.music.load("mats/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+                        pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
                         pygame.mixer.music.set_volume(0.2)
                         pygame.mixer.music.play(-1, 0.0)
 

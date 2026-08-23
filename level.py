@@ -128,14 +128,14 @@ class Level_01:
 
     def load_assets(self):
         base_bg_filenames = [
-            "backgrounds/cross_bg.png", "backgrounds/cross_bg_flip.png",
-            "backgrounds/cross_bg_3.png", "backgrounds/cross_bg_door_flip.PNG",
-            "backgrounds/cross_bg_3_flip.PNG", "backgrounds/cross_bg_2.png",
-            "backgrounds/cross_bg_4.png", "backgrounds/cross_bg_4_flip.PNG"
+            "backgrounds/lvl_1_bgs/cross_bg.png", "backgrounds/lvl_1_bgs/cross_bg_flip.png",
+            "backgrounds/lvl_1_bgs/cross_bg_3.png", "backgrounds/lvl_1_bgs/cross_bg_door_flip.PNG",
+            "backgrounds/lvl_1_bgs/cross_bg_3_flip.PNG", "backgrounds/lvl_1_bgs/cross_bg_2.png",
+            "backgrounds/lvl_1_bgs/cross_bg_4.png", "backgrounds/lvl_1_bgs/cross_bg_4_flip.PNG"
         ]
 
         full_bg_filenames = base_bg_filenames * 2
-        full_bg_filenames.append("backgrounds/lvl_1_merchant_bg.png")
+        full_bg_filenames.append("backgrounds/lvl_1_bgs/lvl_1_merchant_bg.png")
 
         first_raw = pygame.image.load(base_bg_filenames[0]).convert()
         first_trimmed = trim_black_side_borders(first_raw)
@@ -145,7 +145,7 @@ class Level_01:
         self.bg_list = [pygame.transform.smoothscale(trim_black_side_borders(pygame.image.load(f).convert()),
                                                      (self.bg_w, self.screen_height)) for f in full_bg_filenames]
 
-        floor_img = pygame.image.load("mats/floor2.PNG").convert()
+        floor_img = pygame.image.load("mats/platforms/level 1 plats/floor2.PNG").convert()
         floor_img.set_colorkey((0, 0, 0))
         self.target_floor_h = 200
         floor_scale_ratio = self.target_floor_h / floor_img.get_height()
@@ -153,14 +153,16 @@ class Level_01:
         self.floor_img = pygame.transform.smoothscale(floor_img, (self.floor_w, self.target_floor_h))
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
-        self.platform_image = pygame.image.load("mats/plat31c.png").convert_alpha()
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/flyer_SS_NB.png").convert_alpha()
+        self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
-        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritsheets/enemies/D_WALK_SSNB.png", 7, 0.35)
-        self.demon_attack_r, self.demon_attack_l = load_enemy_frames("spritsheets/enemies/D_attack_SSNB.png", 12, 0.35)
-        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritsheets/enemies/skelly_walk_NB.png", 8, 0.7)
-        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritsheets/enemies/skelly_idle_NB.png", 10, 0.7)
-        self.skel_attack_r, self.skel_attack_l = load_enemy_frames("spritsheets/enemies/skelly_attack_NB.png", 10, 0.7)
+        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/D_WALK_SSNB.png", 7, 0.35)
+        self.demon_attack_r, self.demon_attack_l = load_enemy_frames(
+            "spritsheets/enemies/lvl_1_enemies/D_attack_SSNB.png", 12, 0.35)
+        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/skelly_walk_NB.png", 8, 0.7)
+        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/skelly_idle_NB.png", 10, 0.7)
+        self.skel_attack_r, self.skel_attack_l = load_enemy_frames(
+            "spritsheets/enemies/lvl_1_enemies/skelly_attack_NB.png", 10, 0.7)
 
     def reset(self):
         self.platform_group.empty()
@@ -263,13 +265,13 @@ class Merchant_Room:
         self.y_ground = 730.0
 
         try:
-            raw_bg = pygame.image.load("backgrounds/lvl_1_merchant_bg.png").convert()
+            raw_bg = pygame.image.load("backgrounds/lvl_1_bgs/lvl_1_merchant_bg.png").convert()
             trimmed_bg = trim_black_side_borders(raw_bg)
             scale_ratio = self.screen_height / trimmed_bg.get_height()
             self.bg_w = int(trimmed_bg.get_width() * scale_ratio)
             self.bg_image = pygame.transform.smoothscale(trimmed_bg, (self.bg_w, self.screen_height))
 
-            floor_img = pygame.image.load("mats/floor2.PNG").convert()
+            floor_img = pygame.image.load("mats/platforms/level 1 plats/floor2.PNG").convert()
             floor_img.set_colorkey((0, 0, 0))
             self.target_floor_h = 200
             floor_scale_ratio = self.target_floor_h / floor_img.get_height()
@@ -317,7 +319,7 @@ class Level_02(Level_01):
                                                      (self.bg_w, self.screen_height)) for f in full_bg_filenames]
         self.max_backgrounds = len(full_bg_filenames)
 
-        floor_img = pygame.image.load("mats/platforms/lvl2_floor.png").convert_alpha()
+        floor_img = pygame.image.load("mats/platforms/level 2 plats/lvl2_floor.png").convert_alpha()
 
         self.target_floor_h = 200
         floor_scale_ratio = self.target_floor_h / floor_img.get_height()
@@ -325,17 +327,17 @@ class Level_02(Level_01):
         self.floor_img = pygame.transform.smoothscale(floor_img, (self.floor_w, self.target_floor_h))
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
-        self.platform_image = pygame.image.load("mats/plat31c.png").convert_alpha()
+        self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
 
         try:
-            plat2_raw = pygame.image.load("mats/platforms/lvl2_p2.png").convert_alpha()
-            plat3_raw = pygame.image.load("mats/platforms/lvl2_p3.PNG").convert_alpha()
+            plat2_raw = pygame.image.load("mats/platforms/level 2 plats/lvl2_p2.png").convert_alpha()
+            plat3_raw = pygame.image.load("mats/platforms/level 2 plats/lvl2_p3.PNG").convert_alpha()
             self.platform_images = [trim_transparent_borders(plat2_raw), trim_transparent_borders(plat3_raw)]
         except pygame.error as e:
             print(f"Error loading Level 2 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         enemy_scale = 0.55
         self.hd_walk_r, self.hd_walk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/helldog_walk_ss.png", 8,
@@ -440,20 +442,20 @@ class Level_03(Level_01):
                                                      (self.bg_w, self.screen_height)) for f in full_bg_filenames]
         self.max_backgrounds = len(full_bg_filenames)
 
-        floor_img = pygame.image.load("mats/platforms/lvl3_floor.png").convert_alpha()
+        floor_img = pygame.image.load("mats/platforms/level 3 plats/lvl3_floor.png").convert_alpha()
         self.target_floor_h = 200
         floor_scale_ratio = self.target_floor_h / floor_img.get_height()
         self.floor_w = int(floor_img.get_width() * floor_scale_ratio) - 1
         self.floor_img = pygame.transform.smoothscale(floor_img, (self.floor_w, self.target_floor_h))
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
-        self.platform_image = pygame.image.load("mats/plat31c.png").convert_alpha()
+        self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
 
         # Load custom Level 3 platforms
         try:
-            p1_raw = pygame.image.load("mats/platforms/lvl_3_plat1.png").convert_alpha()
-            p2_raw = pygame.image.load("mats/platforms/lvl_3_plat2.png").convert_alpha()
-            p3_raw = pygame.image.load("mats/platforms/lvl_3_plat3.png").convert_alpha()
+            p1_raw = pygame.image.load("mats/platforms/level 3 plats/lvl_3_plat1.png").convert_alpha()
+            p2_raw = pygame.image.load("mats/platforms/level 3 plats/lvl_3_plat2.png").convert_alpha()
+            p3_raw = pygame.image.load("mats/platforms/level 3 plats/lvl_3_plat3.png").convert_alpha()
 
             self.platform_images = [
                 trim_transparent_borders(p1_raw),
@@ -464,7 +466,7 @@ class Level_03(Level_01):
             print(f"Error loading Level 3 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         # Load Azule's frames
         enemy_scale = 0.55
@@ -626,7 +628,7 @@ class Level_04(Level_01):
         self.max_backgrounds = len(full_bg_filenames)
 
         # Load Custom Level 4 Floor
-        raw_floor = pygame.image.load("mats/platforms/lvl4_floor.png").convert_alpha()
+        raw_floor = pygame.image.load("mats/platforms/level 4 plats/lvl4_floor.png").convert_alpha()
         trimmed_floor = trim_transparent_borders(raw_floor)
 
         self.target_floor_h = 200
@@ -635,13 +637,13 @@ class Level_04(Level_01):
         self.floor_img = pygame.transform.smoothscale(trimmed_floor, (self.floor_w, self.target_floor_h))
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
-        self.platform_image = pygame.image.load("mats/plat31c.png").convert_alpha()
+        self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
 
         # Load custom Level 4 platforms (excluding skull plat 2)
         self.platform_images = []
         try:
             for i in [4, 5, 6]:
-                plat_raw = pygame.image.load(f"mats/platforms/lvl_4_plat{i}.png").convert_alpha()
+                plat_raw = pygame.image.load(f"mats/platforms/level 4 plats/lvl_4_plat{i}.png").convert_alpha()
                 self.platform_images.append(trim_transparent_borders(plat_raw))
         except pygame.error as e:
             print(f"Error loading Level 4 platforms: {e}")
@@ -649,7 +651,7 @@ class Level_04(Level_01):
                 self.platform_images = [self.platform_image]
 
         # Load universal flyers
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         # --- CUSTOM SCALES FOR EACH ENEMY ---
         elaine_scale = 0.60
