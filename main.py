@@ -83,15 +83,15 @@ def get_sprites_from_sheet(filename, approx_width=810, target_h=1080):
 
 
 animations = {
-    "idle": get_sprites_from_sheet("spritsheets/succi's sheets/S_IDLE_NB.png"),
-    "walk": get_sprites_from_sheet("spritsheets/succi's sheets/S_WALK_NB.png"),
-    "run": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUN_NB.png"),
-    "jump": get_sprites_from_sheet("spritsheets/succi's sheets/S_JUMP_NB.png"),
-    "run_jump": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUN_JUMP_NB.png"),
-    "duck": get_sprites_from_sheet("spritsheets/succi's sheets/S_DUCK_NB.png"),
-    "attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_ATTACK_NB.png"),
-    "run_attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUNSHOT_NB.png"),
-    "kick": get_sprites_from_sheet("spritsheets/succi's sheets/S_KICK_NB.png")
+    "idle": get_sprites_from_sheet("spritesheets/succi's sheets/S_IDLE_NB.png"),
+    "walk": get_sprites_from_sheet("spritesheets/succi's sheets/S_WALK_NB.png"),
+    "run": get_sprites_from_sheet("spritesheets/succi's sheets/S_RUN_NB.png"),
+    "jump": get_sprites_from_sheet("spritesheets/succi's sheets/S_JUMP_NB.png"),
+    "run_jump": get_sprites_from_sheet("spritesheets/succi's sheets/S_RUN_JUMP_NB.png"),
+    "duck": get_sprites_from_sheet("spritesheets/succi's sheets/S_DUCK_NB.png"),
+    "attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_ATTACK_NB.png"),
+    "run_attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_RUNSHOT_NB.png"),
+    "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png")
 }
 
 animation_speeds = {"idle": 175, "walk": 130, "run": 75, "jump": 80, "run_jump": 50, "duck": 50, "attack": 90,
@@ -101,10 +101,10 @@ animation_loops = {"idle": True, "walk": True, "run": True, "jump": False, "run_
 animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.0, "run_jump": 1.08, "duck": 1.0,
                                "attack": 2.8, "run_attack": 1.08, "kick": 2.6}
 
-fireball_img = pygame.image.load("spritsheets/spell sheets/fireball.png").convert_alpha()
-explode_img = pygame.image.load("spritsheets/spell sheets/explode_NB.png").convert_alpha()
-purple_fireball_img = pygame.image.load("spritsheets/spell sheets/purple_spell.png").convert_alpha()
-purple_explode_img = pygame.image.load("spritsheets/spell sheets/purple_ball_explode.png").convert_alpha()
+fireball_img = pygame.image.load("spritesheets/spell sheets/fireball.png").convert_alpha()
+explode_img = pygame.image.load("spritesheets/spell sheets/explode_NB.png").convert_alpha()
+purple_fireball_img = pygame.image.load("spritesheets/spell sheets/purple_spell.png").convert_alpha()
+purple_explode_img = pygame.image.load("spritesheets/spell sheets/purple_ball_explode.png").convert_alpha()
 
 # ==========================================
 # GAME STATE & UI SETUP
@@ -464,11 +464,11 @@ while run:
 
                         if is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritsheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
+                                                    "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
                                                     rows=7, target_duration=12200)
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritsheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
+                                                    "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
                                                     rows=6)
 
                         merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)

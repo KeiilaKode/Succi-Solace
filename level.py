@@ -154,15 +154,15 @@ class Level_01:
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
         self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
-        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/D_WALK_SSNB.png", 7, 0.35)
+        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/D_WALK_SSNB.png", 7, 0.35)
         self.demon_attack_r, self.demon_attack_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_1_enemies/D_attack_SSNB.png", 12, 0.35)
-        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/skelly_walk_NB.png", 8, 0.7)
-        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritsheets/enemies/lvl_1_enemies/skelly_idle_NB.png", 10, 0.7)
+            "spritesheets/enemies/lvl_1_enemies/D_attack_SSNB.png", 12, 0.35)
+        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_walk_NB.png", 8, 0.7)
+        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_idle_NB.png", 10, 0.7)
         self.skel_attack_r, self.skel_attack_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_1_enemies/skelly_attack_NB.png", 10, 0.7)
+            "spritesheets/enemies/lvl_1_enemies/skelly_attack_NB.png", 10, 0.7)
 
     def reset(self):
         self.platform_group.empty()
@@ -337,22 +337,22 @@ class Level_02(Level_01):
             print(f"Error loading Level 2 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         enemy_scale = 0.55
-        self.hd_walk_r, self.hd_walk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/helldog_walk_ss.png", 8,
+        self.hd_walk_r, self.hd_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/helldog_walk_ss.png", 8,
                                                            enemy_scale)
-        self.hd_atk_r, self.hd_atk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/helldog_attack_ss.png", 11,
+        self.hd_atk_r, self.hd_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/helldog_attack_ss.png", 11,
                                                          enemy_scale)
 
-        self.mau_walk_r, self.mau_walk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/mau_walk_ss.png", 10,
+        self.mau_walk_r, self.mau_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/mau_walk_ss.png", 10,
                                                              enemy_scale)
-        self.mau_atk_r, self.mau_atk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/mau_attack_ss.png", 12,
+        self.mau_atk_r, self.mau_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/mau_attack_ss.png", 12,
                                                            enemy_scale)
 
-        self.pk_walk_r, self.pk_walk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/pkgrim_walk_ss.png", 8,
+        self.pk_walk_r, self.pk_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/pkgrim_walk_ss.png", 8,
                                                            enemy_scale)
-        self.pk_atk_r, self.pk_atk_l = load_enemy_frames("spritsheets/enemies/lvl_2_enemies/pkgrim_attack_ss.png", 10,
+        self.pk_atk_r, self.pk_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/pkgrim_attack_ss.png", 10,
                                                          enemy_scale)
 
     def reset(self):
@@ -466,36 +466,36 @@ class Level_03(Level_01):
             print(f"Error loading Level 3 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         # Load Azule's frames
         enemy_scale = 0.55
-        self.azule_walk_r, self.azule_walk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/azule_walk_ss.png",
+        self.azule_walk_r, self.azule_walk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/azule_walk_ss.png",
                                                                  8, enemy_scale)
-        self.azule_atk_r, self.azule_atk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/azule_attack_ss.png",
+        self.azule_atk_r, self.azule_atk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/azule_attack_ss.png",
                                                                12, enemy_scale)
 
         # Load Titus's frames
         titus_scale = 0.60
-        self.titus_walk_r, self.titus_walk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/titus_walk_ss.png",
+        self.titus_walk_r, self.titus_walk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/titus_walk_ss.png",
                                                                  8, titus_scale)
-        self.titus_atk_r, self.titus_atk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/titus_attack_ss.png",
+        self.titus_atk_r, self.titus_atk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/titus_attack_ss.png",
                                                                16, titus_scale)
 
         # Load Lionel's frames
         lionel_scale = 0.55
         self.lionel_walk_r, self.lionel_walk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_3_enemies/lionel_walk_ss.png", 8, lionel_scale)
+            "spritesheets/enemies/lvl_3_enemies/lionel_walk_ss.png", 8, lionel_scale)
         self.lionel_atk_r, self.lionel_atk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_3_enemies/lionel_attack_ss.png", 9, lionel_scale)
+            "spritesheets/enemies/lvl_3_enemies/lionel_attack_ss.png", 9, lionel_scale)
 
         # Load Demented's frames
         demented_scale = 0.55
-        self.dem_walk_r, self.dem_walk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/demented_walk_ss.png",
+        self.dem_walk_r, self.dem_walk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_walk_ss.png",
                                                              8, demented_scale)
-        self.dem_idle_r, self.dem_idle_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/demented_idle_ss.png",
+        self.dem_idle_r, self.dem_idle_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_idle_ss.png",
                                                              9, demented_scale)
-        self.dem_atk_r, self.dem_atk_l = load_enemy_frames("spritsheets/enemies/lvl_3_enemies/demented_attack_ss.png",
+        self.dem_atk_r, self.dem_atk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_attack_ss.png",
                                                            10, demented_scale)
 
     def reset(self):
@@ -651,7 +651,7 @@ class Level_04(Level_01):
                 self.platform_images = [self.platform_image]
 
         # Load universal flyers
-        self.bird_sheet_img = pygame.image.load("spritsheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         # --- CUSTOM SCALES FOR EACH ENEMY ---
         elaine_scale = 0.60
@@ -662,30 +662,30 @@ class Level_04(Level_01):
         z2_scale = 0.60
 
         self.elaine_walk_r, self.elaine_walk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_4_enemies/elaine_walk_ss.png", 8, elaine_scale)
+            "spritesheets/enemies/lvl_4_enemies/elaine_walk_ss.png", 8, elaine_scale)
         self.elaine_atk_r, self.elaine_atk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_4_enemies/elaine_attack_ss.png", 10, elaine_scale)
+            "spritesheets/enemies/lvl_4_enemies/elaine_attack_ss.png", 10, elaine_scale)
         self.gk_walk_r, self.gk_walk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_4_enemies/groundskeeper_walk_ss.png", 8, gk_scale)
+            "spritesheets/enemies/lvl_4_enemies/groundskeeper_walk_ss.png", 8, gk_scale)
         self.gk_idle_r, self.gk_idle_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_4_enemies/groundskeeper_idle_ss.png", 6, gk_scale)
+            "spritesheets/enemies/lvl_4_enemies/groundskeeper_idle_ss.png", 6, gk_scale)
         self.gk_atk_r, self.gk_atk_l = load_enemy_frames(
-            "spritsheets/enemies/lvl_4_enemies/groundskeeper_attack_ss.png", 8, gk_scale)
-        self.rhh_walk_r, self.rhh_walk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/royalhh_walk_ss.png",
+            "spritesheets/enemies/lvl_4_enemies/groundskeeper_attack_ss.png", 8, gk_scale)
+        self.rhh_walk_r, self.rhh_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/royalhh_walk_ss.png",
                                                              12, rhh_scale)
-        self.rhh_atk_r, self.rhh_atk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/royalhh_attack_ss.png",
+        self.rhh_atk_r, self.rhh_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/royalhh_attack_ss.png",
                                                            10, rhh_scale)
-        self.rz_walk_r, self.rz_walk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/royalzombie_walk_ss.png",
+        self.rz_walk_r, self.rz_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/royalzombie_walk_ss.png",
                                                            8, rz_scale)
-        self.rz_atk_r, self.rz_atk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/royalzombie_attack_ss.png",
+        self.rz_atk_r, self.rz_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/royalzombie_attack_ss.png",
                                                          11, rz_scale)
-        self.z1_walk_r, self.z1_walk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/zombie1_walk_ss.png", 8,
+        self.z1_walk_r, self.z1_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie1_walk_ss.png", 8,
                                                            z1_scale)
-        self.z1_atk_r, self.z1_atk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/zombie1_attack_ss.png", 12,
+        self.z1_atk_r, self.z1_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie1_attack_ss.png", 12,
                                                          z1_scale)
-        self.z2_walk_r, self.z2_walk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/zombie2_walk_ss.png", 8,
+        self.z2_walk_r, self.z2_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_walk_ss.png", 8,
                                                            z2_scale)
-        self.z2_atk_r, self.z2_atk_l = load_enemy_frames("spritsheets/enemies/lvl_4_enemies/zombie2_attack_ss.png", 13,
+        self.z2_atk_r, self.z2_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_attack_ss.png", 13,
                                                          z2_scale)
 
     def reset(self):
