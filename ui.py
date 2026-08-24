@@ -128,7 +128,7 @@ class PauseMenu:
         draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, 95)
 
         # --- LEFT TOMBSTONE: INVENTORY ---
-        draw_text(screen, "INVENTORY", self.font_med, PINK, self.left_cx - 75, self.h // 2 - 20)
+        draw_text(screen, "INVENTORY", self.font_med, PINK, self.left_cx - 75, self.h // 2 - 10)
 
         for i, rect in enumerate(self.grid_rects):
             pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
@@ -144,18 +144,19 @@ class PauseMenu:
                     pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
         # --- RIGHT TOMBSTONE: CONTROLS ---
-        draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 - 20)
+        draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 - 10)
 
         ctrl_y = self.h // 2 + 40
         ctrl_x = self.right_cx - 130
 
         draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
-        draw_text(screen, "Shift      : Run", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 35)
-        draw_text(screen, "Space      : Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 70)
-        draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 105)
-        draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 140)
-        draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 175)
-        draw_text(screen, "P / ESC    : Pause", self.font_small, PINK, ctrl_x, ctrl_y + 210)
+        draw_text(screen, "Shift      : Run", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 30)
+        draw_text(screen, "Space      : Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 60)
+        draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 90)
+        draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 120)
+        draw_text(screen, "3 / MMB    : Melee Kick", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 150)
+        draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
+        draw_text(screen, "P / ESC    : Pause", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
 
         # --- POP-UP EQUIP MENU ---
         if self.popup_active:
@@ -311,11 +312,13 @@ class MainMenu:
                 ("Space : Jump", (100, 200, 255)),
                 ("Left Mouse : Cast Red Fireball", (100, 200, 255)),
                 ("Right Mouse : Cast Purple Magic", (100, 200, 255)),
+                ("3 / MMB : Melee Kick", (100, 200, 255)),  # <--- Added right here
                 ("E Key : Enter / Exit Merchant", (100, 200, 255)),
                 ("P / ESC : Pause", PINK),
                 ("", BLACK),
                 ("(Click anywhere to return)", LIGHT_GRAY)
             ]
+
             for i, (line, color) in enumerate(lines):
                 text = self.font_text.render(line, True, color)
                 screen.blit(text,
