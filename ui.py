@@ -17,6 +17,20 @@ class HUD:
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
         self.font_tiny = pygame.font.SysFont("Lucida Sans", 14)
 
+        # --- LOAD UI ICONS (Forced to 45x45 to fit perfectly in the HUD boxes) ---
+        try:
+            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
+                                                          (45, 45))
+            self.icon_purple = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (45, 45))
+            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(),
+                                                          (45, 45))
+            self.icon_rainbow = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (45, 45))
+        except pygame.error as e:
+            print(f"Error loading HUD icons: {e}")
+            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
+
     def draw(self, screen, screen_width, health, max_health, rem, left_spell, right_spell):
         # --- REM Panel ---
         pygame.draw.rect(screen, BLACK, (0, 0, screen_width, 30))
@@ -36,20 +50,29 @@ class HUD:
         pygame.draw.rect(screen, LIGHT_GRAY, (screen_width - 170, 10, 60, 60), 2, border_radius=5)
         draw_text(screen, "L-Click", self.font_tiny, LIGHT_GRAY, screen_width - 165, 75)
 
-        if left_spell == "normal":
-            pygame.draw.circle(screen, PINK, (screen_width - 140, 40), 18)  # Pink Orb
-        elif left_spell == "purple":
-            pygame.draw.circle(screen, (180, 50, 255), (screen_width - 140, 40), 18)  # Purple Orb
+        # Blit Left Spell Icon
+        if left_spell == "normal" and self.icon_pink:
+            screen.blit(self.icon_pink, self.icon_pink.get_rect(center=(screen_width - 140, 40)))
+        elif left_spell == "purple" and self.icon_purple:
+            screen.blit(self.icon_purple, self.icon_purple.get_rect(center=(screen_width - 140, 40)))
+        elif left_spell == "blue" and self.icon_blue:
+            screen.blit(self.icon_blue, self.icon_blue.get_rect(center=(screen_width - 140, 40)))
+        elif left_spell == "rainbow" and self.icon_rainbow:
+            screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=(screen_width - 140, 40)))
 
         # Right Click Box
         pygame.draw.rect(screen, LIGHT_GRAY, (screen_width - 80, 10, 60, 60), 2, border_radius=5)
         draw_text(screen, "R-Click", self.font_tiny, LIGHT_GRAY, screen_width - 75, 75)
 
-        # Only draw a right-click orb if a spell is actually equipped
-        if right_spell == "normal":
-            pygame.draw.circle(screen, PINK, (screen_width - 50, 40), 18)
-        elif right_spell == "purple":
-            pygame.draw.circle(screen, (180, 50, 255), (screen_width - 50, 40), 18)
+        # Blit Right Spell Icon
+        if right_spell == "normal" and self.icon_pink:
+            screen.blit(self.icon_pink, self.icon_pink.get_rect(center=(screen_width - 50, 40)))
+        elif right_spell == "purple" and self.icon_purple:
+            screen.blit(self.icon_purple, self.icon_purple.get_rect(center=(screen_width - 50, 40)))
+        elif right_spell == "blue" and self.icon_blue:
+            screen.blit(self.icon_blue, self.icon_blue.get_rect(center=(screen_width - 50, 40)))
+        elif right_spell == "rainbow" and self.icon_rainbow:
+            screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=(screen_width - 50, 40)))
 
 
 class PauseMenu:
@@ -66,6 +89,19 @@ class PauseMenu:
             self.bg = pygame.transform.smoothscale(pause_bg_raw, (1050, 1100))
         except pygame.error:
             self.bg = None
+
+        # --- LOAD UI ICONS (Forced to 55x55 to fit the Inventory boxes) ---
+        try:
+            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
+                                                          (55, 55))
+            self.icon_purple = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
+            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(),
+                                                          (55, 55))
+            self.icon_rainbow = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (55, 55))
+        except pygame.error:
+            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
         # Pushed the centers further out so they don't overlap in the middle
         self.left_cx = self.w // 2 - 350
@@ -135,10 +171,16 @@ class PauseMenu:
 
             if i < len(owned_spells):
                 spell = owned_spells[i]
-                if spell == "normal":
-                    pygame.draw.circle(screen, PINK, rect.center, 22)
-                elif spell == "purple":
-                    pygame.draw.circle(screen, (180, 50, 255), rect.center, 22)
+
+                # BLIT THE REAL ICONS INSTEAD OF DRAWING CIRCLES
+                if spell == "normal" and self.icon_pink:
+                    screen.blit(self.icon_pink, self.icon_pink.get_rect(center=rect.center))
+                elif spell == "purple" and self.icon_purple:
+                    screen.blit(self.icon_purple, self.icon_purple.get_rect(center=rect.center))
+                elif spell == "blue" and self.icon_blue:
+                    screen.blit(self.icon_blue, self.icon_blue.get_rect(center=rect.center))
+                elif spell == "rainbow" and self.icon_rainbow:
+                    screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
 
                 if rect.collidepoint(mouse_pos) and not self.popup_active:
                     pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
@@ -312,7 +354,7 @@ class MainMenu:
                 ("Space : Jump", (100, 200, 255)),
                 ("Left Mouse : Cast Red Fireball", (100, 200, 255)),
                 ("Right Mouse : Cast Purple Magic", (100, 200, 255)),
-                ("3 / MMB : Melee Kick", (100, 200, 255)),  # <--- Added right here
+                ("3 / MMB : Melee Kick", (100, 200, 255)),
                 ("E Key : Enter / Exit Merchant", (100, 200, 255)),
                 ("P / ESC : Pause", PINK),
                 ("", BLACK),
@@ -403,11 +445,11 @@ class Merchant_UI:
             {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion",
              "desc": ["Unlocks the ability to Fly."], "cost": 200, "color": (255, 200, 50)},
             {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion",
-             "desc": ["Unlocks Purple Fireball."], "cost": 75, "color": (180, 50, 255)},
-            {"id": "Mana Potion", "img": self.mana_p, "title": "Mana Potion", "desc": ["Magic mysteries await..."],
-             "cost": 75, "color": (50, 50, 255)},
+             "desc": ["Unlocks Purple Fireball."], "cost": 50, "color": (180, 50, 255)},
+            {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Magic mysteries await..."],
+             "cost": 50, "color": (50, 50, 255)},
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion",
-             "desc": ["Unlocks ultimate secrets."], "cost": 150, "color": (255, 100, 255)},
+             "desc": ["Unlocks ultimate secrets."], "cost": 50, "color": (255, 100, 255)},
             {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons a loyal companion."],
              "cost": 300, "color": (255, 180, 50)},
             {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 final Max Health."],

@@ -106,6 +106,12 @@ explode_img = pygame.image.load("spritesheets/spell sheets/explode_NB.png").conv
 purple_fireball_img = pygame.image.load("spritesheets/spell sheets/purple_spell.png").convert_alpha()
 purple_explode_img = pygame.image.load("spritesheets/spell sheets/purple_ball_explode.png").convert_alpha()
 
+# --- FIXED TYPOS IN PATHS (spritesheets instead of spritsheets) ---
+blueball_img = pygame.image.load("spritesheets/spell sheets/blueball_ss.png").convert_alpha()
+blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode_ss.png").convert_alpha()
+rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
+rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
+
 # ==========================================
 # GAME STATE & UI SETUP
 # ==========================================
@@ -120,12 +126,13 @@ is_level_2_merchant = False
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
     "Mysterious Potion": False, "Silver Potion": False, "Wings Potion": False, "Purple Potion": False,
-    "Mana Potion": False, "Rainbow Potion": False, "Royal Potion": False, "Gold Potion": False
+    "Blue Potion": False, "Rainbow Potion": False, "Royal Potion": False, "Gold Potion": False
 }
 
 player_has_purple_magic = False
 player_has_rainbow_dance = False
 player_has_melee = False
+player_has_blue_magic = False
 
 # Initialize UI Components
 hud = HUD()
@@ -181,7 +188,7 @@ while run:
                 pygame.mixer.music.set_volume(0.2)
                 pygame.mixer.music.play(-1, 0.0)
 
-            # --- KEYBOARD KICK HOOK ADDED HERE ---
+            # --- KEYBOARD KICK HOOK ---
             elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
                 if player_has_melee and not paused and not game_over:
                     succi.trigger_kick()
@@ -201,11 +208,11 @@ while run:
                     succi.current_spell_type = succi.spell_left_click
 
                 elif event.button == 3:  # Right Click
-                    if player_has_purple_magic:
+                    # FIXED: Now works as long as ANY spell is equipped to right-click!
+                    if succi.spell_right_click is not None:
                         succi.trigger_attack(is_running, is_moving)
                         succi.current_spell_type = succi.spell_right_click
 
-                # --- MIDDLE MOUSE BUTTON KICK HOOK ADDED HERE ---
                 elif event.button == 2:  # Middle Click (Scroll Wheel)
                     if player_has_melee:
                         succi.trigger_kick()
@@ -237,15 +244,29 @@ while run:
             if (succi.attacking and
                     succi.current_frame == (8 if succi.current_anim == "attack" else 4) and
                     not succi.fireball_spawned):
-                spawn_x = succi.x + (90 if succi.facing_right else -90)
 
-                is_purple = getattr(succi, 'current_spell_type', 'normal') == "purple"
-                active_fireball = purple_fireball_img if is_purple else fireball_img
-                active_explode = purple_explode_img if is_purple else explode_img
+                spawn_x = succi.x + (90 if succi.facing_right else -90)
+                spell_type = getattr(succi, 'current_spell_type', 'normal')
+
+                # Set Image, Scales, and Explosion Offset based on equipped spell
+                if spell_type == "purple":
+                    # (ball_img, explode_img, fly_scale, exp_scale, exp_offset)
+                    active_fireball, active_explode, f_scale, e_scale, e_offset = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0
+                elif spell_type == "blue":
+                    # Pushing just the blue explosion forward by 35 pixels
+                    active_fireball, active_explode, f_scale, e_scale, e_offset = blueball_img, blue_explode_img, 0.7, 0.2, 65
+                elif spell_type == "rainbow":
+                    # Rainbow stays at 0 offset since you said it looked fine!
+                    active_fireball, active_explode, f_scale, e_scale, e_offset = rainball_img, rainbow_explode_img, 0.7, 0.2, 0
+                else:
+                    # Normal Pink Fireball
+                    active_fireball, active_explode, f_scale, e_scale, e_offset = fireball_img, explode_img, 0.28, 0.28, 0
 
                 projectile_group.add(
+                    # Make sure to pass the new e_offset in here!
                     Projectile(spawn_x, succi.y - 180, 1 if succi.facing_right else -1, active_fireball, active_explode,
-                               0.28))
+                               f_scale, e_scale, e_offset)
+                )
                 succi.fireball_spawned = True
                 try:
                     cast_fx.play()
@@ -324,17 +345,23 @@ while run:
                         elif bought_item == "Silver Potion":
                             rem -= 50
                             player_has_melee = True
-                        elif bought_item == "Mana Potion":
-                            rem -= 75
+                        elif bought_item == "Blue Potion":
+                            rem -= 50
+                            player_has_blue_magic = True
+                            if succi.spell_right_click is None:
+                                succi.spell_right_click = "blue"
                         elif bought_item == "Wings Potion":
                             rem -= 150
                         elif bought_item == "Purple Potion":
-                            rem -= 75
+                            rem -= 50
                             player_has_purple_magic = True
-                            succi.spell_right_click = "purple"
+                            if succi.spell_right_click is None:
+                                succi.spell_right_click = "purple"
                         elif bought_item == "Rainbow Potion":
-                            rem -= 100
+                            rem -= 50
                             player_has_rainbow_dance = True
+                            if succi.spell_right_click is None:
+                                succi.spell_right_click = "rainbow"
 
                         if keys[pygame.K_e]:
                             exiting_merchant = True
@@ -494,7 +521,10 @@ while run:
                 owned_spells = ["normal"]
                 if player_has_purple_magic:
                     owned_spells.append("purple")
-                # (You can add rainbow, blue, or pet toggles to this list later!)
+                if player_has_blue_magic:
+                    owned_spells.append("blue")
+                if player_has_rainbow_dance:
+                    owned_spells.append("rainbow")
 
                 # 2. Update the menu to check for clicks
                 action = pause_menu.update(mouse_pos, mouse_click, owned_spells)
@@ -524,6 +554,10 @@ while run:
                 game_over, paused, camera_x, rem = False, False, 0.0, 0
                 old_max_health = succi.max_health if hasattr(succi, 'max_health') else 1
 
+                # --- NEW FIX: Save Succi's spells before deleting her! ---
+                old_left_spell = getattr(succi, 'spell_left_click', 'normal')
+                old_right_spell = getattr(succi, 'spell_right_click', None)
+
                 if restart_action == 4:
                     current_state, current_level = "LEVEL_4", Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
                 elif restart_action == 3:
@@ -537,12 +571,21 @@ while run:
                         pygame.mixer.music.play(-1, 0.0)
                     current_state, current_level, old_max_health = "LEVEL_1", Level_01(SCREEN_WIDTH, SCREEN_HEIGHT), 1
 
+                    # --- NEW FIX: Wipe spells if doing a hard restart to Level 1 ---
+                    old_left_spell = "normal"
+                    old_right_spell = None
+
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
                 succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections,
                                jump_fx, cast_fx)
                 succi.max_health = old_max_health
                 succi.health = old_max_health
+
+                # --- NEW FIX: Re-equip the spells you had before you died! ---
+                succi.spell_left_click = old_left_spell
+                succi.spell_right_click = old_right_spell
+
                 projectile_group.empty()
 
                 if not pygame.mixer.music.get_busy():

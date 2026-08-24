@@ -289,19 +289,25 @@ class Enemy(pygame.sprite.Sprite):
 
 
 class Projectile(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, fireball_img, explode_img, scale=0.45):
+    # --- ADDED exp_offset=0 HERE ---
+    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0):
         super().__init__()
         self.direction, self.speed, self.state = direction, 800.0, "fly"
         self.frame_index, self.update_time = 0, pygame.time.get_ticks()
 
+        # Save the offset to use later
+        self.exp_offset = exp_offset
+
         fw, fh = fireball_img.get_width() // 6, fireball_img.get_height()
         self.fly_frames = [pygame.transform.flip(
             pygame.transform.smoothscale(fireball_img.subsurface((i * fw, 0, fw, fh)),
-                                         (int(fw * scale), int(fh * scale))), direction == -1, False) for i in range(6)]
+                                         (int(fw * fly_scale), int(fh * fly_scale))), direction == -1, False) for i in
+            range(6)]
+
         ew, eh = explode_img.get_width() // 8, explode_img.get_height()
         self.exp_frames = [pygame.transform.flip(
             pygame.transform.smoothscale(explode_img.subsurface((i * ew, 0, ew, eh)),
-                                         (int(ew * scale), int(fh * scale) if False else int(eh * scale))),
+                                         (int(ew * exp_scale), int(eh * exp_scale))),
             direction == -1, False) for i in range(8)]
 
         self.image = self.fly_frames[0]
@@ -311,12 +317,19 @@ class Projectile(pygame.sprite.Sprite):
     def update(self, dt, camera_x, screen_width):
         if pygame.time.get_ticks() - self.update_time > (50 if self.state == "fly" else 40):
             self.update_time, self.frame_index = pygame.time.get_ticks(), self.frame_index + 1
+
+            old_center = self.rect.center
+
             if self.state == "fly":
                 self.frame_index %= len(self.fly_frames)
                 self.image = self.fly_frames[self.frame_index]
             else:
-                if self.frame_index >= len(self.exp_frames): self.kill(); return
+                if self.frame_index >= len(self.exp_frames):
+                    self.kill()
+                    return
                 self.image = self.exp_frames[self.frame_index]
+
+            self.rect = self.image.get_rect(center=old_center)
 
         if self.state == "fly":
             self.rect.x += self.direction * self.speed * dt
@@ -330,6 +343,9 @@ class Projectile(pygame.sprite.Sprite):
     def explode(self):
         if self.state != "explode":
             self.state, self.frame_index, self.update_time = "explode", 0, pygame.time.get_ticks()
+
+            # --- USE THE CUSTOM OFFSET HERE ---
+            self.rect.x += self.direction * self.exp_offset
 
 
 class Platform(pygame.sprite.Sprite):
