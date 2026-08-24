@@ -90,14 +90,16 @@ animations = {
     "run_jump": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUN_JUMP_NB.png"),
     "duck": get_sprites_from_sheet("spritsheets/succi's sheets/S_DUCK_NB.png"),
     "attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_ATTACK_NB.png"),
-    "run_attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUNSHOT_NB.png")
+    "run_attack": get_sprites_from_sheet("spritsheets/succi's sheets/S_RUNSHOT_NB.png"),
+    "kick": get_sprites_from_sheet("spritsheets/succi's sheets/S_KICK_NB.png")
 }
+
 animation_speeds = {"idle": 175, "walk": 130, "run": 75, "jump": 80, "run_jump": 50, "duck": 50, "attack": 90,
-                    "run_attack": 75}
+                    "run_attack": 75, "kick": 60}
 animation_loops = {"idle": True, "walk": True, "run": True, "jump": False, "run_jump": False, "duck": False,
-                   "attack": False, "run_attack": False}
+                   "attack": False, "run_attack": False, "kick": False}
 animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.0, "run_jump": 1.08, "duck": 1.0,
-                               "attack": 2.8, "run_attack": 1.08}
+                               "attack": 2.8, "run_attack": 1.08, "kick": 2.6}
 
 fireball_img = pygame.image.load("spritsheets/spell sheets/fireball.png").convert_alpha()
 explode_img = pygame.image.load("spritsheets/spell sheets/explode_NB.png").convert_alpha()
@@ -123,6 +125,7 @@ global_merchant_sold_out = {
 
 player_has_purple_magic = False
 player_has_rainbow_dance = False
+player_has_melee = False
 
 # Initialize UI Components
 hud = HUD()
@@ -178,12 +181,17 @@ while run:
                 pygame.mixer.music.set_volume(0.2)
                 pygame.mixer.music.play(-1, 0.0)
 
+            # --- KEYBOARD KICK HOOK ADDED HERE ---
+            elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
+                if player_has_melee and not paused and not game_over:
+                    succi.trigger_kick()
+
         # Handle Mouse Down Events
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_click = True
 
-                # --- MOUSE CLICK COMBAT CONTROLS ---
+            # --- MOUSE CLICK COMBAT CONTROLS ---
             if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
                 is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or keys[pygame.K_d]
                 is_running = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
@@ -193,9 +201,14 @@ while run:
                     succi.current_spell_type = succi.spell_left_click
 
                 elif event.button == 3:  # Right Click
-                    if player_has_purple_magic:  # We will tie this check into the inventory system later
+                    if player_has_purple_magic:
                         succi.trigger_attack(is_running, is_moving)
                         succi.current_spell_type = succi.spell_right_click
+
+                # --- MIDDLE MOUSE BUTTON KICK HOOK ADDED HERE ---
+                elif event.button == 2:  # Middle Click (Scroll Wheel)
+                    if player_has_melee:
+                        succi.trigger_kick()
 
     if current_state == "MAIN_MENU":
         action = main_menu.update(mouse_pos, mouse_click)
@@ -308,6 +321,9 @@ while run:
                             rem -= 50
                             succi.max_health = 3
                             succi.health = 3
+                        elif bought_item == "Silver Potion":
+                            rem -= 50
+                            player_has_melee = True
                         elif bought_item == "Mana Potion":
                             rem -= 75
                         elif bought_item == "Wings Potion":
@@ -402,12 +418,41 @@ while run:
                         if -200 < tx < SCREEN_WIDTH + 200:
                             ty = target.rect.top if hasattr(target, 'state') else target.rect.y
                             if target.mask.overlap(succi.mask, (succi_blit_x - tx, succi_blit_y - ty)):
-                                if succi.take_damage():
-                                    game_over = True
-                                    try:
-                                        death_fx.play()
-                                    except NameError:
-                                        pass
+
+                                # --- NEW MELEE COMBAT LOGIC ---
+                                is_kicking = succi.current_anim == "kick" and 2 <= succi.current_frame <= 6
+
+                                # Check if the enemy is physically in front of Succi
+                                is_in_front = (succi.facing_right and target.rect.centerx > succi.x - 20) or \
+                                              (not succi.facing_right and target.rect.centerx < succi.x + 20)
+
+                                if is_kicking and is_in_front:
+                                    # Only apply damage if we haven't hit this specific enemy during this kick
+                                    if target not in succi.enemies_hit:
+                                        succi.enemies_hit.append(target)
+
+                                        if hasattr(target, 'take_damage'):
+                                            if target.take_damage():
+                                                rem += target.rem_value
+                                                target.kill()
+                                        else:
+                                            rem += target.rem_value
+                                            target.kill()
+
+                                        try:
+                                            explode_fx.play()
+                                        except NameError:
+                                            pass
+
+                                # --- NORMAL DAMAGE LOGIC ---
+                                # Triggers if she isn't kicking, OR if she is kicking but the enemy is behind her!
+                                else:
+                                    if succi.take_damage():
+                                        game_over = True
+                                        try:
+                                            death_fx.play()
+                                        except NameError:
+                                            pass
 
                 # --- Localized Merchant Door Check ---
                 if abs(succi.x - current_level.door_world_x) < 150:
@@ -440,7 +485,8 @@ while run:
                         draw_text(screen, "Good Luck...", font_big, Color("turquoise1"), 1000, 25)
 
             # Delegate HUD rendering to ui.py
-            hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click, succi.spell_right_click)
+            hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
+                     succi.spell_right_click)
 
             # PAUSE MENU
             if paused:
