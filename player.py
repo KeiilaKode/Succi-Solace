@@ -56,9 +56,9 @@ class Player(pygame.sprite.Sprite):
         duck_pressed = keys[pygame.K_DOWN] or keys[pygame.K_s]
 
         self.recovering_duck = (self.current_anim == "duck" and not duck_pressed and self.playing)
-        self.attacking = (self.current_anim in ["attack", "run_attack", "kick"] and self.playing)
+        self.attacking = (self.current_anim in ["attack", "run_attack", "kick", "jump_kick"] and self.playing)
 
-        # Horizontal Movement Intent (ADDED "kick" so she doesn't slide while melee attacking)
+        # Horizontal Movement Intent
         if self.current_anim in ["attack", "kick"] or self.recovering_duck or (duck_pressed and self.on_ground):
             self.vx = 0
         elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -73,7 +73,8 @@ class Player(pygame.sprite.Sprite):
             self.vx = 0
 
         # Jump Intent
-        if keys[pygame.K_SPACE] and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
+        if keys[
+            pygame.K_SPACE] and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
             if moving and "run_jump" in self.animations:
                 self.current_anim = "run_jump"
             else:
@@ -106,8 +107,12 @@ class Player(pygame.sprite.Sprite):
     def trigger_kick(self):
         """Triggered externally by middle mouse or '3' key"""
         if not getattr(self, 'duck_pressed', False) and not self.recovering_duck:
-            if not self.attacking and self.on_ground:
-                self.current_anim = "kick"
+            if not self.attacking:
+                if self.on_ground:
+                    self.current_anim = "kick"
+                else:
+                    self.current_anim = "jump_kick"
+
                 self.current_frame = 0
                 self.animation_timer = 0
                 self.playing = True
@@ -115,7 +120,6 @@ class Player(pygame.sprite.Sprite):
                 # Set to True so main.py doesn't accidentally shoot a fireball during the kick!
                 self.fireball_spawned = True
                 self.enemies_hit.clear()
-
 
     def update_physics(self, dt, platform_group):
         self.x += self.vx * dt
@@ -194,6 +198,11 @@ class Player(pygame.sprite.Sprite):
             if self.current_frame >= 9:
                 self.current_frame = 9
                 self.animation_timer = 0
+        # --- NEW: Hold the jump kick pose in the air ---
+        if self.current_anim == "jump_kick" and not self.on_ground:
+            if self.current_frame >= 5:  # Assuming frame 5 is the final held kick pose
+                self.current_frame = 5
+                self.animation_timer = 0
 
         if loop:
             if self.animation_timer >= delay:
@@ -246,7 +255,7 @@ class Player(pygame.sprite.Sprite):
             y_offset = config.PLAYER_ATTACK_Y_OFFSET
             x_offset = config.PLAYER_ATTACK_X_SHIFT if self.facing_right else -config.PLAYER_ATTACK_X_SHIFT
 
-        elif self.current_anim == "kick":
+        elif self.current_anim in ["kick", "jump_kick"]:
             # TWEAK THIS: A higher number pushes her DOWN.
             y_offset = 210
 

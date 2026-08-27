@@ -91,15 +91,16 @@ animations = {
     "duck": get_sprites_from_sheet("spritesheets/succi's sheets/S_DUCK_NB.png"),
     "attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_ATTACK_NB.png"),
     "run_attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_RUNSHOT_NB.png"),
-    "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png")
+    "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png"),
+    "jump_kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYINGKICK_NB.png")
 }
 
 animation_speeds = {"idle": 175, "walk": 130, "run": 75, "jump": 80, "run_jump": 50, "duck": 50, "attack": 90,
-                    "run_attack": 75, "kick": 60}
+                    "run_attack": 75, "kick": 60, "jump_kick": 55}
 animation_loops = {"idle": True, "walk": True, "run": True, "jump": False, "run_jump": False, "duck": False,
-                   "attack": False, "run_attack": False, "kick": False}
-animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.0, "run_jump": 1.08, "duck": 1.0,
-                               "attack": 2.8, "run_attack": 1.08, "kick": 2.6}
+                   "attack": False, "run_attack": False, "kick": False, "jump_kick": False}
+animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.1, "run_jump": 1.1, "duck": 1.0,
+                               "attack": 2.8, "run_attack": 1.08, "kick": 2.6, "jump_kick": 2.4}
 
 fireball_img = pygame.image.load("spritesheets/spell sheets/fireball.png").convert_alpha()
 explode_img = pygame.image.load("spritesheets/spell sheets/explode_NB.png").convert_alpha()
@@ -495,7 +496,10 @@ while run:
                             if target.mask.overlap(succi.mask, (succi_blit_x - tx, succi_blit_y - ty)):
 
                                 # --- MELEE COMBAT LOGIC ---
-                                is_kicking = succi.current_anim == "kick" and 2 <= succi.current_frame <= 6
+                                is_ground_kicking = succi.current_anim == "kick" and 2 <= succi.current_frame <= 6
+                                is_air_kicking = succi.current_anim == "jump_kick" and 3 <= succi.current_frame <= 5
+                                is_kicking = is_ground_kicking or is_air_kicking
+
                                 is_in_front = (succi.facing_right and target.rect.centerx > succi.x - 20) or \
                                               (not succi.facing_right and target.rect.centerx < succi.x + 20)
 
