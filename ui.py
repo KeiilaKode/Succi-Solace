@@ -135,8 +135,10 @@ class PauseMenu:
                                                           (55, 55))
             self.icon_rainbow = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (55, 55))
+            self.icon_tinera = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/icon_tinera.png").convert_alpha(), (55, 55))
         except pygame.error:
-            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
+            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = self.icon_tinera = None
 
         # Pushed the centers further out so they don't overlap in the middle
         self.left_cx = self.w // 2 - 350
@@ -156,7 +158,7 @@ class PauseMenu:
         self.popup_rect_left = pygame.Rect(0, 0, 120, 35)
         self.popup_rect_right = pygame.Rect(0, 0, 120, 35)
 
-    def update(self, mouse_pos, mouse_click, owned_spells):
+    def update(self, mouse_pos, mouse_click, owned_spells, player_has_tinera):
         result = None
         if mouse_click:
             if self.popup_active:
@@ -169,6 +171,7 @@ class PauseMenu:
                 else:
                     self.popup_active = False
             else:
+                # Check spell slots
                 for i, spell in enumerate(owned_spells):
                     if i < len(self.grid_rects) and self.grid_rects[i].collidepoint(mouse_pos):
                         self.selected_spell = spell
@@ -176,10 +179,16 @@ class PauseMenu:
 
                         self.popup_rect_left.topleft = (mouse_pos[0] + 10, mouse_pos[1] - 20)
                         self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
-                        break
+                        return result
+
+                # Check Companion Slot (Slot index 4 - middle box)
+                if player_has_tinera and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
+                    result = {"action": "TOGGLE_TINERA"}
+                    return result
+
         return result
 
-    def draw(self, screen, owned_spells, mouse_pos):
+    def draw(self, screen, owned_spells, mouse_pos, player_has_tinera, tinera_active=True, tinera_icon_override=None):
         overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         screen.blit(overlay, (0, 0))
@@ -217,8 +226,20 @@ class PauseMenu:
                 elif spell == "rainbow" and self.icon_rainbow:
                     screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
 
-                if rect.collidepoint(mouse_pos) and not self.popup_active:
-                    pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
+            # Draw Tinera in Slot 4 if unlocked
+            elif i == 4 and player_has_tinera:
+                active_icon = tinera_icon_override if tinera_icon_override else self.icon_tinera
+                if active_icon:
+                    if not tinera_active:
+                        # Darken the icon if she is toggled off
+                        dim_icon = active_icon.copy()
+                        dim_icon.fill((100, 100, 100), special_flags=pygame.BLEND_RGB_MULT)
+                        screen.blit(dim_icon, dim_icon.get_rect(center=rect.center))
+                    else:
+                        screen.blit(active_icon, active_icon.get_rect(center=rect.center))
+
+            if rect.collidepoint(mouse_pos) and not self.popup_active:
+                pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
         # --- RIGHT TOMBSTONE: CONTROLS ---
         draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 - 10)
@@ -473,11 +494,12 @@ class Merchant_UI:
         self.left_arrow_rect = self.left_arrow_img.get_rect(midright=(self.buy_rect.left - 15, self.buy_rect.centery))
         self.right_arrow_rect = self.right_arrow_img.get_rect(midleft=(self.buy_rect.right + 15, self.buy_rect.centery))
 
+        # INVENTORY INFORMATION #
         self.inventory = [
-            {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks 3 Max Health."],
+            {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."],
              "cost": 50, "color": (50, 255, 50)},
             {"id": "Teal Potion", "img": self.teal_p, "title": "Minor Heal", "desc": ["Restores up to 3 Health."],
-             "cost": 50, "color": (50, 200, 255)},
+             "cost": 60, "color": (50, 200, 255)},
             {"id": "Emerald Potion", "img": self.emerald_p, "title": "Advanced Health", "desc": ["Adds +2 Max Health."],
              "cost": 150, "color": (100, 255, 100)},
             {"id": "Pink Potion", "img": self.pink_p, "title": "Major Heal", "desc": ["Restores up to 5 Health."],
@@ -487,16 +509,16 @@ class Merchant_UI:
             {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."],
              "cost": 50, "color": (220, 220, 220)},
             {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion",
-             "desc": ["Unlocks the ability to Fly."], "cost": 200, "color": (255, 200, 50)},
+             "desc": ["Unlocks her Wings."], "cost": 200, "color": (255, 200, 50)},
             {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion",
-             "desc": ["Unlocks Purple Fireball."], "cost": 50, "color": (180, 50, 255)},
-            {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Magic mysteries await..."],
+             "desc": ["Unlocks Void-ball."], "cost": 50, "color": (180, 50, 255)},
+            {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"],
              "cost": 50, "color": (50, 50, 255)},
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion",
-             "desc": ["Unlocks ultimate secrets."], "cost": 50, "color": (255, 100, 255)},
-            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons a loyal companion."],
+             "desc": ["Unlocks Rain-ball."], "cost": 50, "color": (255, 100, 255)},
+            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons companion..."],
              "cost": 50, "color": (255, 180, 50)},
-            {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 final Max Health."],
+            {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."],
              "cost": 250, "color": (255, 220, 50)}
         ]
 
@@ -569,6 +591,7 @@ class Merchant_UI:
 
         if self.current_page < self.max_pages - 1:
             if self.right_arrow_rect.collidepoint(mouse_pos):
+                # FIXED: Call get_rect() on the image first, then use its rect for the center assignment
                 hover_rect = self.right_arrow_hover.get_rect(center=self.right_arrow_rect.center)
                 screen.blit(self.right_arrow_hover, hover_rect)
             else:
@@ -580,12 +603,12 @@ class Merchant_UI:
         screen.blit(self.font_rem.render(str(rem), True, PINK), (280, 570))
 
         if self.selected_item_data and not self.sold_out.get(self.selected_item_data["id"], False):
-            text_x = 270
+            text_x = 240
             screen.blit(
                 self.font_title.render(self.selected_item_data["title"], True, self.selected_item_data["color"]),
-                (text_x, 155))
+                (text_x, 180))
 
-            y_offset = 205
+            y_offset = 230
             for line in self.selected_item_data["desc"]:
                 screen.blit(self.font_desc.render(line, True, (190, 200, 200)), (text_x, y_offset))
                 y_offset += 25
@@ -596,4 +619,4 @@ class Merchant_UI:
         # --- DRAW THE NEW EXIT HUD ---
         if self.exit_hud_img:
             # TUNE THESE: 950 puts it right between Percy's sign and the Spell HUD. 25 matches the top of the Spell HUD.
-            screen.blit(self.exit_hud_img, (940, 25))
+            screen.blit(self.exit_hud_img, (935, 25))

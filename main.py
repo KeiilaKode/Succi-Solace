@@ -32,6 +32,7 @@ try:
 except pygame.error:
     pass
 
+
 clock = pygame.time.Clock()
 FPS = 60
 
@@ -112,6 +113,14 @@ blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode
 rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
 rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
 
+# Companion Icon #
+try:
+    raw_tinera_icon = pygame.image.load("mats/ui/icon_tinera.png").convert_alpha()
+    # Scaled down to match your 55x55 spell inventory icons
+    tinera_icon = pygame.transform.smoothscale(raw_tinera_icon, (55, 55))
+except pygame.error:
+    tinera_icon = None
+
 # --- LOAD COMPANION FRAMES ---
 try:
     raw_tinera_frames = get_sprites_from_sheet("spritesheets/pet sheets/Tinera_ss.png")
@@ -143,6 +152,7 @@ player_has_rainbow_dance = False
 player_has_melee = False
 player_has_blue_magic = False
 player_has_tinera = False
+tinera_active = True
 
 # Initialize UI Components
 hud = HUD()
@@ -402,6 +412,7 @@ while run:
                         elif bought_item == "Royal Potion":
                             rem -= 50
                             player_has_tinera = True
+                            tinera_active = True
 
                         if keys[pygame.K_e]:
                             exiting_merchant = True
@@ -457,7 +468,7 @@ while run:
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
                 # --- FIXED: COMPANION COORDINATE LOGIC ---
-                if player_has_tinera and tinera_companion:
+                if player_has_tinera and tinera_active and tinera_companion:
                     # Calculate stable screen coordinates using physical world X and Y
                     stable_screen_x = succi.x - camera_x
                     stable_screen_y = succi.y
@@ -568,15 +579,18 @@ while run:
                 if player_has_rainbow_dance:
                     owned_spells.append("rainbow")
 
-                action = pause_menu.update(mouse_pos, mouse_click, owned_spells)
+                action = pause_menu.update(mouse_pos, mouse_click, owned_spells, player_has_tinera)
 
-                if action and action["action"] == "EQUIP":
-                    if action["slot"] == "left":
-                        succi.spell_left_click = action["spell"]
-                    elif action["slot"] == "right":
-                        succi.spell_right_click = action["spell"]
+                if action:
+                    if action["action"] == "EQUIP":
+                        if action["slot"] == "left":
+                            succi.spell_left_click = action["spell"]
+                        elif action["slot"] == "right":
+                            succi.spell_right_click = action["spell"]
+                    elif action["action"] == "TOGGLE_TINERA":
+                        tinera_active = not tinera_active  # Toggle only her visibility, not ownership!
 
-                pause_menu.draw(screen, owned_spells, mouse_pos)
+                pause_menu.draw(screen, owned_spells, mouse_pos, player_has_tinera, tinera_active, tinera_icon)
 
         else:
             death_screen.draw(screen, current_state, checkpoint)
@@ -595,6 +609,7 @@ while run:
                 old_left_spell = getattr(succi, 'spell_left_click', 'normal')
                 old_right_spell = getattr(succi, 'spell_right_click', None)
                 old_has_tinera = player_has_tinera
+                old_tinera_active = tinera_active
 
                 if restart_action == 4:
                     current_state, current_level = "LEVEL_4", Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -613,6 +628,7 @@ while run:
                     old_left_spell = "normal"
                     old_right_spell = None
                     old_has_tinera = False
+                    old_tinera_active = False
 
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
@@ -624,6 +640,7 @@ while run:
                 succi.spell_left_click = old_left_spell
                 succi.spell_right_click = old_right_spell
                 player_has_tinera = old_has_tinera
+                tinera_active = old_tinera_active
 
                 projectile_group.empty()
 
