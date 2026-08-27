@@ -6,10 +6,10 @@ import config
 
 # OOP Imports
 from player import Player
-from entities import Projectile, Merchant
+from entities import Projectile, Merchant, Companion
 from level import Level_01, Level_02, Level_03, Level_04, Merchant_Room
 
-# NEW: Import all our isolated UI components
+# Isolated UI components
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text
 
 if getattr(sys, 'frozen', False):
@@ -62,7 +62,7 @@ except pygame.error as e:
     print(f"Audio Load Warning: {e}")
 
 # ==========================================
-# PLAYER ASSET LOADING
+# PLAYER & COMPANION ASSET LOADING
 # ==========================================
 font_small = pygame.font.SysFont("Lucida Sans", 20)
 font_big = pygame.font.SysFont("Lucida Sans", 48)
@@ -106,11 +106,19 @@ explode_img = pygame.image.load("spritesheets/spell sheets/explode_NB.png").conv
 purple_fireball_img = pygame.image.load("spritesheets/spell sheets/purple_spell.png").convert_alpha()
 purple_explode_img = pygame.image.load("spritesheets/spell sheets/purple_ball_explode.png").convert_alpha()
 
-# --- FIXED TYPOS IN PATHS (spritesheets instead of spritsheets) ---
 blueball_img = pygame.image.load("spritesheets/spell sheets/blueball_ss.png").convert_alpha()
 blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode_ss.png").convert_alpha()
 rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
 rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
+
+# --- LOAD COMPANION FRAMES ---
+try:
+    raw_tinera_frames = get_sprites_from_sheet("spritesheets/pet sheets/Tinera_ss.png")
+    # Scaled down to companion size
+    tinera_frames = [pygame.transform.smoothscale(f, (int(810 * 0.15), int(1080 * 0.15))) for f in raw_tinera_frames]
+except pygame.error as e:
+    print(f"Error loading Tinera companion: {e}")
+    tinera_frames = []
 
 # ==========================================
 # GAME STATE & UI SETUP
@@ -133,6 +141,7 @@ player_has_purple_magic = False
 player_has_rainbow_dance = False
 player_has_melee = False
 player_has_blue_magic = False
+player_has_tinera = False
 
 # Initialize UI Components
 hud = HUD()
@@ -149,6 +158,7 @@ exit_timer = 0
 
 succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections, jump_fx,
                cast_fx)
+tinera_companion = Companion(tinera_frames) if tinera_frames else None
 projectile_group = pygame.sprite.Group()
 
 # ==========================================
@@ -164,12 +174,14 @@ while run:
     mouse_pos = pygame.mouse.get_pos()
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: run = False
+        if event.type == pygame.QUIT:
+            run = False
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
                 if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
-                    if not game_over: paused = not paused
+                    if not game_over:
+                        paused = not paused
 
             elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
                 succi.x = current_level.door_world_x
@@ -208,7 +220,6 @@ while run:
                     succi.current_spell_type = succi.spell_left_click
 
                 elif event.button == 3:  # Right Click
-                    # FIXED: Now works as long as ANY spell is equipped to right-click!
                     if succi.spell_right_click is not None:
                         succi.trigger_attack(is_running, is_moving)
                         succi.current_spell_type = succi.spell_right_click
@@ -250,20 +261,15 @@ while run:
 
                 # Set Image, Scales, and Explosion Offset based on equipped spell
                 if spell_type == "purple":
-                    # (ball_img, explode_img, fly_scale, exp_scale, exp_offset)
                     active_fireball, active_explode, f_scale, e_scale, e_offset = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0
                 elif spell_type == "blue":
-                    # Pushing just the blue explosion forward by 35 pixels
                     active_fireball, active_explode, f_scale, e_scale, e_offset = blueball_img, blue_explode_img, 0.7, 0.2, 65
                 elif spell_type == "rainbow":
-                    # Rainbow stays at 0 offset since you said it looked fine!
                     active_fireball, active_explode, f_scale, e_scale, e_offset = rainball_img, rainbow_explode_img, 0.7, 0.2, 0
                 else:
-                    # Normal Pink Fireball
                     active_fireball, active_explode, f_scale, e_scale, e_offset = fireball_img, explode_img, 0.28, 0.28, 0
 
                 projectile_group.add(
-                    # Make sure to pass the new e_offset in here!
                     Projectile(spawn_x, succi.y - 180, 1 if succi.facing_right else -1, active_fireball, active_explode,
                                f_scale, e_scale, e_offset)
                 )
@@ -281,7 +287,8 @@ while run:
 
             if camera_x > current_level.level_end_x - SCREEN_WIDTH:
                 camera_x = current_level.level_end_x - SCREEN_WIDTH
-            if camera_x < 0: camera_x = 0
+            if camera_x < 0:
+                camera_x = 0
 
             current_level.update(dt, camera_x, succi.x, succi.y)
             projectile_group.update(dt, camera_x, SCREEN_WIDTH)
@@ -320,7 +327,8 @@ while run:
                                 except NameError:
                                     pass
                                 break
-                        if proj.state != "fly": break
+                        if proj.state != "fly":
+                            break
 
         elif current_state == "MERCHANT":
             if merchant_npc:
@@ -335,13 +343,13 @@ while run:
                             except NameError:
                                 pass
 
-                                # --- THE FIX: Only mark it sold out if it ISN'T a healing potion ---
+                            # Consumable heal potions do not sell out
                             if bought_item not in ["Teal Potion", "Pink Potion"]:
                                 merchant_ui.sold_out[bought_item] = True
 
                             merchant_ui.selected_item = None
 
-                        # --- UPDATED POTION LOGIC WIRING ---
+                        # --- POTION PURCHASES ---
                         if bought_item == "Health Potion":
                             rem -= 50
                             succi.max_health = 3
@@ -349,46 +357,50 @@ while run:
 
                         elif bought_item == "Teal Potion":
                             rem -= 50
-                            # Adds 3 health, but caps it so she can't go over her max
                             succi.health = min(succi.health + 3, succi.max_health)
 
                         elif bought_item == "Emerald Potion":
                             rem -= 150
-                            # Adds 2 to Max Health and automatically fills her current health to match
                             succi.max_health += 2
                             succi.health = succi.max_health
 
                         elif bought_item == "Pink Potion":
                             rem -= 100
-                            # Adds 5 health, capped at her current max
                             succi.health = min(succi.health + 5, succi.max_health)
 
                         elif bought_item == "Gold Potion":
                             rem -= 250
-                            # Adds the final +1 to Max Health and fills it up
                             succi.max_health += 1
                             succi.health = succi.max_health
 
                         elif bought_item == "Silver Potion":
                             rem -= 50
                             player_has_melee = True
+
                         elif bought_item == "Blue Potion":
                             rem -= 50
                             player_has_blue_magic = True
                             if succi.spell_right_click is None:
                                 succi.spell_right_click = "blue"
+
                         elif bought_item == "Wings Potion":
                             rem -= 150
+
                         elif bought_item == "Purple Potion":
                             rem -= 50
                             player_has_purple_magic = True
                             if succi.spell_right_click is None:
                                 succi.spell_right_click = "purple"
+
                         elif bought_item == "Rainbow Potion":
                             rem -= 50
                             player_has_rainbow_dance = True
                             if succi.spell_right_click is None:
                                 succi.spell_right_click = "rainbow"
+
+                        elif bought_item == "Royal Potion":
+                            rem -= 50
+                            player_has_tinera = True
 
                         if keys[pygame.K_e]:
                             exiting_merchant = True
@@ -443,6 +455,15 @@ while run:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
+                # --- FIXED: COMPANION COORDINATE LOGIC ---
+                if player_has_tinera and tinera_companion:
+                    # Calculate stable screen coordinates using physical world X and Y
+                    stable_screen_x = succi.x - camera_x
+                    stable_screen_y = succi.y
+
+                    tinera_companion.update(stable_screen_x, stable_screen_y, succi.facing_right)
+                    tinera_companion.draw(screen)
+
                 if abs(succi.x - current_level.door_world_x) < 150:
                     draw_text(screen, "Press 'E' to Enter", font_small, Color("turquoise1"), succi_blit_x + 20,
                               succi_blit_y - 80)
@@ -473,15 +494,12 @@ while run:
                             ty = target.rect.top if hasattr(target, 'state') else target.rect.y
                             if target.mask.overlap(succi.mask, (succi_blit_x - tx, succi_blit_y - ty)):
 
-                                # --- NEW MELEE COMBAT LOGIC ---
+                                # --- MELEE COMBAT LOGIC ---
                                 is_kicking = succi.current_anim == "kick" and 2 <= succi.current_frame <= 6
-
-                                # Check if the enemy is physically in front of Succi
                                 is_in_front = (succi.facing_right and target.rect.centerx > succi.x - 20) or \
                                               (not succi.facing_right and target.rect.centerx < succi.x + 20)
 
                                 if is_kicking and is_in_front:
-                                    # Only apply damage if we haven't hit this specific enemy during this kick
                                     if target not in succi.enemies_hit:
                                         succi.enemies_hit.append(target)
 
@@ -498,8 +516,6 @@ while run:
                                         except NameError:
                                             pass
 
-                                # --- NORMAL DAMAGE LOGIC ---
-                                # Triggers if she isn't kicking, OR if she is kicking but the enemy is behind her!
                                 else:
                                     if succi.take_damage():
                                         game_over = True
@@ -540,7 +556,6 @@ while run:
 
             # PAUSE MENU
             if paused:
-                # 1. Compile a list of everything Succi currently owns
                 owned_spells = ["normal"]
                 if player_has_purple_magic:
                     owned_spells.append("purple")
@@ -549,24 +564,19 @@ while run:
                 if player_has_rainbow_dance:
                     owned_spells.append("rainbow")
 
-                # 2. Update the menu to check for clicks
                 action = pause_menu.update(mouse_pos, mouse_click, owned_spells)
 
-                # 3. Apply the equipment changes to the player
                 if action and action["action"] == "EQUIP":
                     if action["slot"] == "left":
                         succi.spell_left_click = action["spell"]
                     elif action["slot"] == "right":
                         succi.spell_right_click = action["spell"]
 
-                # 4. Draw the actual menu to the screen
                 pause_menu.draw(screen, owned_spells, mouse_pos)
 
         else:
-            # Delegate Death Screen rendering to ui.py
             death_screen.draw(screen, current_state, checkpoint)
 
-            # Restart Logic handling
             restart_action = None
             if pygame.key.get_pressed()[pygame.K_SPACE]:
                 restart_action = checkpoint
@@ -577,9 +587,10 @@ while run:
                 game_over, paused, camera_x, rem = False, False, 0.0, 0
                 old_max_health = succi.max_health if hasattr(succi, 'max_health') else 1
 
-                # --- NEW FIX: Save Succi's spells before deleting her! ---
+                # Save current equipment & companion
                 old_left_spell = getattr(succi, 'spell_left_click', 'normal')
                 old_right_spell = getattr(succi, 'spell_right_click', None)
+                old_has_tinera = player_has_tinera
 
                 if restart_action == 4:
                     current_state, current_level = "LEVEL_4", Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -594,9 +605,10 @@ while run:
                         pygame.mixer.music.play(-1, 0.0)
                     current_state, current_level, old_max_health = "LEVEL_1", Level_01(SCREEN_WIDTH, SCREEN_HEIGHT), 1
 
-                    # --- NEW FIX: Wipe spells if doing a hard restart to Level 1 ---
+                    # Reset unlocks on Level 1 restart
                     old_left_spell = "normal"
                     old_right_spell = None
+                    old_has_tinera = False
 
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
@@ -605,9 +617,9 @@ while run:
                 succi.max_health = old_max_health
                 succi.health = old_max_health
 
-                # --- NEW FIX: Re-equip the spells you had before you died! ---
                 succi.spell_left_click = old_left_spell
                 succi.spell_right_click = old_right_spell
+                player_has_tinera = old_has_tinera
 
                 projectile_group.empty()
 

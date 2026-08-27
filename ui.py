@@ -495,7 +495,7 @@ class Merchant_UI:
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion",
              "desc": ["Unlocks ultimate secrets."], "cost": 50, "color": (255, 100, 255)},
             {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons a loyal companion."],
-             "cost": 300, "color": (255, 180, 50)},
+             "cost": 50, "color": (255, 180, 50)},
             {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 final Max Health."],
              "cost": 250, "color": (255, 220, 50)}
         ]

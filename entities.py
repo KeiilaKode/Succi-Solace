@@ -414,3 +414,40 @@ class Merchant(pygame.sprite.Sprite):
 
     def draw(self, screen):
         screen.blit(self.image, self.rect.topleft)
+
+
+class Companion(pygame.sprite.Sprite):
+    def __init__(self, frames, anim_speed=70):
+        super().__init__()
+        self.frames = frames
+        self.anim_speed = anim_speed
+        self.frame_index = 0
+        self.last_update = pygame.time.get_ticks()
+
+        # Set initial image and rect
+        self.image = self.frames[self.frame_index]
+        self.rect = self.image.get_rect()
+
+    def update(self, target_x, target_y, target_facing_right):
+        # 1. Handle Animation
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_update > self.anim_speed:
+            self.frame_index = (self.frame_index + 1) % len(self.frames)
+            self.last_update = current_time
+
+        self.image = self.frames[self.frame_index]
+
+        # 2. Handle Direction Flipping
+        if not target_facing_right:
+            self.image = pygame.transform.flip(self.image, True, False)
+
+        # 3. Handle Following Position
+        # target_y is now anchored to Succi's feet, so we use a larger negative number to push Tinera UP to shoulder height.
+        offset_x = -90 if target_facing_right else 90
+        offset_y = -265
+
+        self.rect.centerx = target_x + offset_x
+        self.rect.centery = target_y + offset_y
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect.topleft)
