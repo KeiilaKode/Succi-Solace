@@ -14,7 +14,14 @@ from level import Level_01, Level_02, Level_03, Level_04, Merchant_Room
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text
 
 # SAVE FILE CREATION #
-SAVE_DIR = "saves"
+
+if getattr(sys, 'frozen', False):
+    # When packaged as an .exe, save exactly where the .exe is located
+    SAVE_DIR = os.path.join(os.path.dirname(sys.executable), "saves")
+else:
+    # When running in PyCharm
+    SAVE_DIR = os.path.abspath("saves")
+
 os.makedirs(SAVE_DIR, exist_ok=True)
 
 
@@ -361,7 +368,7 @@ while run:
 
             elif action.get("action") == "DELETE":
                 try:
-                    os.remove(f"saves/save{action['slot']}.json")
+                    os.remove(f"{SAVE_DIR}/save{action['slot']}.json")
                     print(f"Deleted save slot {action['slot']}.")
                 except FileNotFoundError:
                     pass

@@ -1,6 +1,7 @@
 import pygame
 import os
 import json
+import sys
 import config
 
 # Standard UI Colors
@@ -163,14 +164,21 @@ class PauseMenu:
 
     def _load_save_data(self):
         self.save_slots = []
-        if not os.path.exists("saves"):
-            os.makedirs("saves", exist_ok=True)
+
+        # Get the absolute path for saves regardless of temporary folders
+        if getattr(sys, 'frozen', False):
+            save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
+        else:
+            save_dir = os.path.abspath("saves")
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
 
         y_offset = self.h // 2 - 150
         center_x = self.w // 2
 
         for i in range(1, 6):
-            file_path = f"saves/save{i}.json"
+            file_path = os.path.join(save_dir, f"save{i}.json")
             rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
 
             if os.path.exists(file_path):
@@ -445,16 +453,23 @@ class MainMenu:
 
     def _load_save_data(self):
         self.save_slots = []
-        if not os.path.exists("saves"):
-            os.makedirs("saves", exist_ok=True)
+
+        # Get the absolute path for saves regardless of temporary folders
+        if getattr(sys, 'frozen', False):
+            save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
+        else:
+            save_dir = os.path.abspath("saves")
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
 
         y_offset = self.bg.get_height() // 2 - 150
         center_x = self.bg.get_width() // 2
 
         for i in range(1, 6):
-            file_path = f"saves/save{i}.json"
+            file_path = os.path.join(save_dir, f"save{i}.json")
             rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
-            del_rect = pygame.Rect(center_x + 140, y_offset + 10, 50, 30)  # Positioning for the delete button
+            del_rect = pygame.Rect(center_x + 140, y_offset + 10, 50, 30)
 
             if os.path.exists(file_path):
                 try:
