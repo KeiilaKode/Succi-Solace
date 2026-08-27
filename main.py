@@ -506,10 +506,6 @@ while run:
                     merchant_npc.draw(screen)
                 elif merchant_npc and merchant_npc.state == "idle" and merchant_ui:
                     merchant_ui.draw(screen, mouse_pos, rem)
-                    if not exiting_merchant:
-                        draw_text(screen, "Press 'E' to Leave", font_big, Color("turquoise1"), 1000, 25)
-                    else:
-                        draw_text(screen, "Good Luck...", font_big, Color("turquoise1"), 1000, 25)
 
             # Delegate HUD rendering to ui.py
             hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,

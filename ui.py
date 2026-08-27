@@ -16,63 +16,98 @@ class HUD:
     def __init__(self):
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
         self.font_tiny = pygame.font.SysFont("Lucida Sans", 14)
+        self.font_rem = pygame.font.SysFont("Lucida Sans", 24, bold=True)
 
-        # --- LOAD UI ICONS (Forced to 45x45 to fit perfectly in the HUD boxes) ---
+        # --- LOAD UI ICONS ---
         try:
             self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
-                                                          (45, 45))
+                                                          (48, 48))
             self.icon_purple = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (45, 45))
+                pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (46, 46))
             self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(),
-                                                          (45, 45))
+                                                          (47, 47))
             self.icon_rainbow = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (45, 45))
+                pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (47, 47))
         except pygame.error as e:
             print(f"Error loading HUD icons: {e}")
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
+        # --- LOAD & SCALE NEW GOTHIC HUD ELEMENTS ---
+        try:
+            self.succi_hud_img = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/succi_hud.png").convert_alpha(), (450, 150))
+
+            # INCREASED: Scaled up to 280x58 so it's much more readable
+            self.rems_hud_img = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/rems_hud.png").convert_alpha(), (300, 60))
+
+            self.spells_hud_img = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/succi_spells_hud.png").convert_alpha(), (200, 138))
+
+            # INCREASED: Scaled up to 38x54 to actually fill the cell window
+            self.health_cell_img = pygame.transform.smoothscale(
+                pygame.image.load("mats/ui/health_cell.png").convert_alpha(), (36, 44))
+
+        except pygame.error as e:
+            print(f"Error loading new Gothic HUD frames: {e}")
+            self.succi_hud_img = self.rems_hud_img = self.spells_hud_img = self.health_cell_img = None
+
     def draw(self, screen, screen_width, health, max_health, rem, left_spell, right_spell):
-        # --- REM Panel ---
-        pygame.draw.rect(screen, BLACK, (0, 0, screen_width, 30))
-        pygame.draw.line(screen, PINK, (0, 30), (screen_width, 30), 3)
-        draw_text(screen, f"REM: {rem}", self.font_small, WHITE, 10, 5)
+        # --- DRAW SUCCI HEALTH HUD ---
+        if self.succi_hud_img:
+            hud_x, hud_y = 10, 10
+            screen.blit(self.succi_hud_img, (hud_x, hud_y))
 
-        # --- Health Bar ---
-        if max_health > 1:
-            pygame.draw.rect(screen, LIGHT_GRAY, (10, 35, 150, 20), 2)
-            if health > 0:
-                segment_w = 146 // max_health
+            # --- DRAW GREEN HEALTH CELLS ---
+            if self.health_cell_img:
+                # FIXED: Shifted left to slot 1, shifted up to fit, and widened the gap between cells
+                cell_start_x = hud_x + 151
+                cell_start_y = hud_y + 51
+                cell_spacing = 44
+
                 for i in range(health):
-                    pygame.draw.rect(screen, (50, 255, 50), (12 + i * segment_w, 37, segment_w - 2, 16))
+                    if i < max_health:
+                        current_cell_x = cell_start_x + (i * cell_spacing)
+                        screen.blit(self.health_cell_img, (current_cell_x, cell_start_y))
 
-        # --- Dual-Wield Spell Slots ---
-        # Left Click Box
-        pygame.draw.rect(screen, LIGHT_GRAY, (screen_width - 170, 10, 60, 60), 2, border_radius=5)
-        draw_text(screen, "L-Click", self.font_tiny, LIGHT_GRAY, screen_width - 165, 75)
+            # --- DRAW REMS HUD ---
+            if self.rems_hud_img:
+                # FIXED: Manually pushed to the right so it aligns under the health track
+                rem_x = hud_x + 130
+                rem_y = hud_y + 110
+                screen.blit(self.rems_hud_img, (rem_x, rem_y))
 
-        # Blit Left Spell Icon
-        if left_spell == "normal" and self.icon_pink:
-            screen.blit(self.icon_pink, self.icon_pink.get_rect(center=(screen_width - 140, 40)))
-        elif left_spell == "purple" and self.icon_purple:
-            screen.blit(self.icon_purple, self.icon_purple.get_rect(center=(screen_width - 140, 40)))
-        elif left_spell == "blue" and self.icon_blue:
-            screen.blit(self.icon_blue, self.icon_blue.get_rect(center=(screen_width - 140, 40)))
-        elif left_spell == "rainbow" and self.icon_rainbow:
-            screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=(screen_width - 140, 40)))
+                # FIXED: Centered the text inside the black void of the new larger REM frame
+                draw_text(screen, f"{rem}", self.font_rem, LIGHT_GRAY, rem_x + 95, rem_y + 10)
 
-        # Right Click Box
-        pygame.draw.rect(screen, LIGHT_GRAY, (screen_width - 80, 10, 60, 60), 2, border_radius=5)
-        draw_text(screen, "R-Click", self.font_tiny, LIGHT_GRAY, screen_width - 75, 75)
+        # --- DRAW SPELLS HUD ---
+        if self.spells_hud_img:
+            spells_x = screen_width - self.spells_hud_img.get_width() - 10
+            spells_y = 10
+            screen.blit(self.spells_hud_img, (spells_x, spells_y))
 
-        # Blit Right Spell Icon
-        if right_spell == "normal" and self.icon_pink:
-            screen.blit(self.icon_pink, self.icon_pink.get_rect(center=(screen_width - 50, 40)))
-        elif right_spell == "purple" and self.icon_purple:
-            screen.blit(self.icon_purple, self.icon_purple.get_rect(center=(screen_width - 50, 40)))
-        elif right_spell == "blue" and self.icon_blue:
-            screen.blit(self.icon_blue, self.icon_blue.get_rect(center=(screen_width - 50, 40)))
-        elif right_spell == "rainbow" and self.icon_rainbow:
-            screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=(screen_width - 50, 40)))
+            left_icon_center = (spells_x + 73, spells_y + 68)
+            right_icon_center = (spells_x + 123, spells_y + 68)
+
+            # Left Click Box
+            if left_spell == "normal" and self.icon_pink:
+                screen.blit(self.icon_pink, self.icon_pink.get_rect(center=left_icon_center))
+            elif left_spell == "purple" and self.icon_purple:
+                screen.blit(self.icon_purple, self.icon_purple.get_rect(center=left_icon_center))
+            elif left_spell == "blue" and self.icon_blue:
+                screen.blit(self.icon_blue, self.icon_blue.get_rect(center=left_icon_center))
+            elif left_spell == "rainbow" and self.icon_rainbow:
+                screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=left_icon_center))
+
+            # Right Click Box
+            if right_spell == "normal" and self.icon_pink:
+                screen.blit(self.icon_pink, self.icon_pink.get_rect(center=right_icon_center))
+            elif right_spell == "purple" and self.icon_purple:
+                screen.blit(self.icon_purple, self.icon_purple.get_rect(center=right_icon_center))
+            elif right_spell == "blue" and self.icon_blue:
+                screen.blit(self.icon_blue, self.icon_blue.get_rect(center=right_icon_center))
+            elif right_spell == "rainbow" and self.icon_rainbow:
+                screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=right_icon_center))
 
 
 class PauseMenu:
