@@ -409,6 +409,15 @@ class Merchant_UI:
             raw_bg = pygame.image.load("mats/ui/M_inventory_empty.png").convert()
             self.bg = pygame.transform.smoothscale(raw_bg, (screen_width, screen_height))
 
+            # --- NEW: LOAD EXIT HUD ---
+            try:
+                # Note: Make sure the file is a .png so the background is transparent!
+                self.exit_hud_img = pygame.transform.smoothscale(
+                    pygame.image.load("mats/ui/exit_hud.png").convert_alpha(), (330, 100))
+            except pygame.error as e:
+                print(f"Error loading exit HUD: {e}")
+                self.exit_hud_img = None
+
             self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(),
                                                          (110, 150))
             self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mana_p.png").convert_alpha(),
@@ -583,3 +592,8 @@ class Merchant_UI:
 
             screen.blit(self.font_title.render(f"COST: {self.selected_item_data['cost']} REM", True, PINK),
                         (text_x, y_offset + 10))
+
+        # --- DRAW THE NEW EXIT HUD ---
+        if self.exit_hud_img:
+            # TUNE THESE: 950 puts it right between Percy's sign and the Spell HUD. 25 matches the top of the Spell HUD.
+            screen.blit(self.exit_hud_img, (940, 25))

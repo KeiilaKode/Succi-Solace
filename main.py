@@ -335,13 +335,40 @@ while run:
                             except NameError:
                                 pass
 
-                            merchant_ui.sold_out[bought_item] = True
+                                # --- THE FIX: Only mark it sold out if it ISN'T a healing potion ---
+                            if bought_item not in ["Teal Potion", "Pink Potion"]:
+                                merchant_ui.sold_out[bought_item] = True
+
                             merchant_ui.selected_item = None
 
+                        # --- UPDATED POTION LOGIC WIRING ---
                         if bought_item == "Health Potion":
                             rem -= 50
                             succi.max_health = 3
                             succi.health = 3
+
+                        elif bought_item == "Teal Potion":
+                            rem -= 50
+                            # Adds 3 health, but caps it so she can't go over her max
+                            succi.health = min(succi.health + 3, succi.max_health)
+
+                        elif bought_item == "Emerald Potion":
+                            rem -= 150
+                            # Adds 2 to Max Health and automatically fills her current health to match
+                            succi.max_health += 2
+                            succi.health = succi.max_health
+
+                        elif bought_item == "Pink Potion":
+                            rem -= 100
+                            # Adds 5 health, capped at her current max
+                            succi.health = min(succi.health + 5, succi.max_health)
+
+                        elif bought_item == "Gold Potion":
+                            rem -= 250
+                            # Adds the final +1 to Max Health and fills it up
+                            succi.max_health += 1
+                            succi.health = succi.max_health
+
                         elif bought_item == "Silver Potion":
                             rem -= 50
                             player_has_melee = True
