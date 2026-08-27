@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+import json
 from pygame import mixer, Color
 import config
 
@@ -11,6 +12,80 @@ from level import Level_01, Level_02, Level_03, Level_04, Merchant_Room
 
 # Isolated UI components
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text
+
+# SAVE FILE CREATION #
+SAVE_DIR = "saves"
+os.makedirs(SAVE_DIR, exist_ok=True)
+
+
+def save_game(slot, save_name):
+    data = {
+        "save_name": save_name,
+        "level": current_state,
+        "checkpoint": checkpoint,
+        "rem": rem,
+        "health": succi.health,
+        "max_health": succi.max_health,
+
+        "player_has_melee": player_has_melee,
+        "player_has_purple_magic": player_has_purple_magic,
+        "player_has_blue_magic": player_has_blue_magic,
+        "player_has_rainbow_dance": player_has_rainbow_dance,
+        "player_has_tinera": player_has_tinera,
+        "tinera_active": tinera_active,
+
+        "spell_left": succi.spell_left_click,
+        "spell_right": succi.spell_right_click
+    }
+
+    with open(f"{SAVE_DIR}/save{slot}.json", "w") as f:
+        json.dump(data, f, indent=4)
+    print(f"Game saved successfully to slot {slot}!")
+
+
+def load_game(slot):
+    global current_state, checkpoint, rem
+    global player_has_melee, player_has_purple_magic, player_has_blue_magic
+    global player_has_rainbow_dance, player_has_tinera, tinera_active
+    global succi, current_level
+
+    try:
+        with open(f"{SAVE_DIR}/save{slot}.json", "r") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        print(f"No save file found in slot {slot}.")
+        return None
+
+    current_state = data["level"]
+    checkpoint = data["checkpoint"]
+    rem = data["rem"]
+
+    player_has_melee = data["player_has_melee"]
+    player_has_purple_magic = data["player_has_purple_magic"]
+    player_has_blue_magic = data["player_has_blue_magic"]
+    player_has_rainbow_dance = data["player_has_rainbow_dance"]
+    player_has_tinera = data["player_has_tinera"]
+    tinera_active = data["tinera_active"]
+
+    if current_state == "LEVEL_4":
+        current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
+    elif current_state == "LEVEL_3":
+        current_level = Level_03(SCREEN_WIDTH, SCREEN_HEIGHT)
+    elif current_state == "LEVEL_2":
+        current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
+    else:
+        current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    succi = Player(400.0, current_level.y_ground, animations, animation_speeds,
+                   animation_scale_corrections, jump_fx, cast_fx)
+
+    succi.health = data["health"]
+    succi.max_health = data["max_health"]
+    succi.spell_left_click = data["spell_left"]
+    succi.spell_right_click = data["spell_right"]
+
+    return data["save_name"]
+
 
 if getattr(sys, 'frozen', False):
     os.chdir(sys._MEIPASS)
@@ -31,7 +106,6 @@ try:
     pygame.display.set_icon(game_icon)
 except pygame.error:
     pass
-
 
 clock = pygame.time.Clock()
 FPS = 60
@@ -113,18 +187,14 @@ blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode
 rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
 rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
 
-# Companion Icon #
 try:
     raw_tinera_icon = pygame.image.load("mats/ui/icon_tinera.png").convert_alpha()
-    # Scaled down to match your 55x55 spell inventory icons
     tinera_icon = pygame.transform.smoothscale(raw_tinera_icon, (55, 55))
 except pygame.error:
     tinera_icon = None
 
-# --- LOAD COMPANION FRAMES ---
 try:
     raw_tinera_frames = get_sprites_from_sheet("spritesheets/pet sheets/Tinera_ss.png")
-    # Scaled down to companion size
     tinera_frames = [pygame.transform.smoothscale(f, (int(810 * 0.15), int(1080 * 0.15))) for f in raw_tinera_frames]
 except pygame.error as e:
     print(f"Error loading Tinera companion: {e}")
@@ -154,7 +224,6 @@ player_has_blue_magic = False
 player_has_tinera = False
 tinera_active = True
 
-# Initialize UI Components
 hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -189,53 +258,67 @@ while run:
             run = False
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
-                if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
-                    if not game_over:
-                        paused = not paused
+            # --- TYPING CUSTOM SAVE NAME LOGIC ---
+            if paused and pause_menu.save_state == "TYPE":
+                if event.key == pygame.K_RETURN:
+                    custom_name = pause_menu.save_input_text.strip() or f"Save_0{pause_menu.selected_save_slot}"
+                    save_game(pause_menu.selected_save_slot, custom_name)
+                    pause_menu.save_state = None
+                elif event.key == pygame.K_ESCAPE:
+                    pause_menu.save_state = None
+                elif event.key == pygame.K_BACKSPACE:
+                    pause_menu.save_input_text = pause_menu.save_input_text[:-1]
+                else:
+                    if len(pause_menu.save_input_text) < 20:
+                        pause_menu.save_input_text += event.unicode
+            else:
+                if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
+                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
+                        if not game_over:
+                            paused = not paused
+                            if not paused:
+                                pause_menu.save_state = None  # Reset state when unpausing
 
-            elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
-                succi.x = current_level.door_world_x
-                camera_x = current_level.level_end_x - SCREEN_WIDTH
-            elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
-                current_state = "LEVEL_4"
-                checkpoint = 4
-                current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
-                succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections,
-                               jump_fx, cast_fx)
-                succi.max_health = 3
-                succi.health = 3
-                camera_x = 0.0
-                projectile_group.empty()
-                pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
-                pygame.mixer.music.set_volume(0.2)
-                pygame.mixer.music.play(-1, 0.0)
+                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
+                    succi.x = current_level.door_world_x
+                    camera_x = current_level.level_end_x - SCREEN_WIDTH
+                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
+                    current_state = "LEVEL_4"
+                    checkpoint = 4
+                    current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    succi = Player(400.0, current_level.y_ground, animations, animation_speeds,
+                                   animation_scale_corrections,
+                                   jump_fx, cast_fx)
+                    succi.max_health = 3
+                    succi.health = 3
+                    camera_x = 0.0
+                    projectile_group.empty()
+                    pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
+                    pygame.mixer.music.set_volume(0.2)
+                    pygame.mixer.music.play(-1, 0.0)
 
-            # --- KEYBOARD KICK HOOK ---
-            elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
-                if player_has_melee and not paused and not game_over:
-                    succi.trigger_kick()
+                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
+                    if player_has_melee and not paused and not game_over:
+                        succi.trigger_kick()
 
-        # Handle Mouse Down Events
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_click = True
 
-            # --- MOUSE CLICK COMBAT CONTROLS ---
             if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
                 is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or keys[pygame.K_d]
                 is_running = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
-                if event.button == 1:  # Left Click
+                if event.button == 1:
                     succi.trigger_attack(is_running, is_moving)
                     succi.current_spell_type = succi.spell_left_click
 
-                elif event.button == 3:  # Right Click
+                elif event.button == 3:
                     if succi.spell_right_click is not None:
                         succi.trigger_attack(is_running, is_moving)
                         succi.current_spell_type = succi.spell_right_click
 
-                elif event.button == 2:  # Middle Click (Scroll Wheel)
+                elif event.button == 2:
                     if player_has_melee:
                         succi.trigger_kick()
 
@@ -255,8 +338,36 @@ while run:
             pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
             pygame.mixer.music.play(-1, 0.0)
 
-    elif not game_over and not paused:
+        elif type(action) is dict:
+            if action.get("action") == "LOAD":
+                loaded_name = load_game(action["slot"])
+                if loaded_name:
+                    camera_x = 0.0
+                    game_over = False
+                    paused = False
+                    projectile_group.empty()
 
+                    if current_state == "LEVEL_4":
+                        pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
+                    elif current_state == "LEVEL_3":
+                        pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
+                    elif current_state == "LEVEL_2":
+                        pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
+                    else:
+                        pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+
+                    pygame.mixer.music.set_volume(0.2)
+                    pygame.mixer.music.play(-1, 0.0)
+
+            elif action.get("action") == "DELETE":
+                try:
+                    os.remove(f"saves/save{action['slot']}.json")
+                    print(f"Deleted save slot {action['slot']}.")
+                except FileNotFoundError:
+                    pass
+                main_menu._load_save_data()  # Refresh UI slots
+
+    elif not game_over and not paused:
         if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4"]:
             succi.update(keys, dt, dt_ms, current_level.platform_group, animation_loops)
 
@@ -270,7 +381,6 @@ while run:
                 spawn_x = succi.x + (90 if succi.facing_right else -90)
                 spell_type = getattr(succi, 'current_spell_type', 'normal')
 
-                # Set Image, Scales, and Explosion Offset based on equipped spell
                 if spell_type == "purple":
                     active_fireball, active_explode, f_scale, e_scale, e_offset = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0
                 elif spell_type == "blue":
@@ -354,13 +464,11 @@ while run:
                             except NameError:
                                 pass
 
-                            # Consumable heal potions do not sell out
                             if bought_item not in ["Teal Potion", "Pink Potion"]:
                                 merchant_ui.sold_out[bought_item] = True
 
                             merchant_ui.selected_item = None
 
-                        # --- POTION PURCHASES ---
                         if bought_item == "Health Potion":
                             rem -= 50
                             succi.max_health = 3
@@ -467,12 +575,9 @@ while run:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
-                # --- FIXED: COMPANION COORDINATE LOGIC ---
                 if player_has_tinera and tinera_active and tinera_companion:
-                    # Calculate stable screen coordinates using physical world X and Y
                     stable_screen_x = succi.x - camera_x
                     stable_screen_y = succi.y
-
                     tinera_companion.update(stable_screen_x, stable_screen_y, succi.facing_right)
                     tinera_companion.draw(screen)
 
@@ -506,7 +611,6 @@ while run:
                             ty = target.rect.top if hasattr(target, 'state') else target.rect.y
                             if target.mask.overlap(succi.mask, (succi_blit_x - tx, succi_blit_y - ty)):
 
-                                # --- MELEE COMBAT LOGIC ---
                                 is_ground_kicking = succi.current_anim == "kick" and 2 <= succi.current_frame <= 6
                                 is_air_kicking = succi.current_anim == "jump_kick" and 3 <= succi.current_frame <= 5
                                 is_kicking = is_ground_kicking or is_air_kicking
@@ -539,7 +643,6 @@ while run:
                                         except NameError:
                                             pass
 
-                # --- Localized Merchant Door Check ---
                 if abs(succi.x - current_level.door_world_x) < 150:
                     if keys[pygame.K_e]:
                         last_completed_level = current_state
@@ -565,11 +668,9 @@ while run:
                 elif merchant_npc and merchant_npc.state == "idle" and merchant_ui:
                     merchant_ui.draw(screen, mouse_pos, rem)
 
-            # Delegate HUD rendering to ui.py
             hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
                      succi.spell_right_click)
 
-            # PAUSE MENU
             if paused:
                 owned_spells = ["normal"]
                 if player_has_purple_magic:
@@ -588,7 +689,7 @@ while run:
                         elif action["slot"] == "right":
                             succi.spell_right_click = action["spell"]
                     elif action["action"] == "TOGGLE_TINERA":
-                        tinera_active = not tinera_active  # Toggle only her visibility, not ownership!
+                        tinera_active = not tinera_active
 
                 pause_menu.draw(screen, owned_spells, mouse_pos, player_has_tinera, tinera_active, tinera_icon)
 
@@ -605,7 +706,6 @@ while run:
                 game_over, paused, camera_x, rem = False, False, 0.0, 0
                 old_max_health = succi.max_health if hasattr(succi, 'max_health') else 1
 
-                # Save current equipment & companion
                 old_left_spell = getattr(succi, 'spell_left_click', 'normal')
                 old_right_spell = getattr(succi, 'spell_right_click', None)
                 old_has_tinera = player_has_tinera
@@ -624,7 +724,6 @@ while run:
                         pygame.mixer.music.play(-1, 0.0)
                     current_state, current_level, old_max_health = "LEVEL_1", Level_01(SCREEN_WIDTH, SCREEN_HEIGHT), 1
 
-                    # Reset unlocks on Level 1 restart
                     old_left_spell = "normal"
                     old_right_spell = None
                     old_has_tinera = False
@@ -651,4 +750,4 @@ while run:
 
 mixer.quit()
 pygame.quit()
-sys.exit()
+sys.exit()A

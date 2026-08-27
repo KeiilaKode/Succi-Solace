@@ -1,4 +1,6 @@
 import pygame
+import os
+import json
 import config
 
 # Standard UI Colors
@@ -37,14 +39,12 @@ class HUD:
             self.succi_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/succi_hud.png").convert_alpha(), (450, 150))
 
-            # INCREASED: Scaled up to 280x58 so it's much more readable
             self.rems_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/rems_hud.png").convert_alpha(), (300, 60))
 
             self.spells_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/succi_spells_hud.png").convert_alpha(), (200, 138))
 
-            # INCREASED: Scaled up to 38x54 to actually fill the cell window
             self.health_cell_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/health_cell.png").convert_alpha(), (36, 44))
 
@@ -53,14 +53,11 @@ class HUD:
             self.succi_hud_img = self.rems_hud_img = self.spells_hud_img = self.health_cell_img = None
 
     def draw(self, screen, screen_width, health, max_health, rem, left_spell, right_spell):
-        # --- DRAW SUCCI HEALTH HUD ---
         if self.succi_hud_img:
             hud_x, hud_y = 10, 10
             screen.blit(self.succi_hud_img, (hud_x, hud_y))
 
-            # --- DRAW GREEN HEALTH CELLS ---
             if self.health_cell_img:
-                # FIXED: Shifted left to slot 1, shifted up to fit, and widened the gap between cells
                 cell_start_x = hud_x + 151
                 cell_start_y = hud_y + 51
                 cell_spacing = 44
@@ -70,17 +67,12 @@ class HUD:
                         current_cell_x = cell_start_x + (i * cell_spacing)
                         screen.blit(self.health_cell_img, (current_cell_x, cell_start_y))
 
-            # --- DRAW REMS HUD ---
             if self.rems_hud_img:
-                # FIXED: Manually pushed to the right so it aligns under the health track
                 rem_x = hud_x + 130
                 rem_y = hud_y + 110
                 screen.blit(self.rems_hud_img, (rem_x, rem_y))
-
-                # FIXED: Centered the text inside the black void of the new larger REM frame
                 draw_text(screen, f"{rem}", self.font_rem, LIGHT_GRAY, rem_x + 95, rem_y + 10)
 
-        # --- DRAW SPELLS HUD ---
         if self.spells_hud_img:
             spells_x = screen_width - self.spells_hud_img.get_width() - 10
             spells_y = 10
@@ -89,7 +81,6 @@ class HUD:
             left_icon_center = (spells_x + 73, spells_y + 68)
             right_icon_center = (spells_x + 123, spells_y + 68)
 
-            # Left Click Box
             if left_spell == "normal" and self.icon_pink:
                 screen.blit(self.icon_pink, self.icon_pink.get_rect(center=left_icon_center))
             elif left_spell == "purple" and self.icon_purple:
@@ -99,7 +90,6 @@ class HUD:
             elif left_spell == "rainbow" and self.icon_rainbow:
                 screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=left_icon_center))
 
-            # Right Click Box
             if right_spell == "normal" and self.icon_pink:
                 screen.blit(self.icon_pink, self.icon_pink.get_rect(center=right_icon_center))
             elif right_spell == "purple" and self.icon_purple:
@@ -119,13 +109,26 @@ class PauseMenu:
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
 
         try:
-            pause_bg_raw = pygame.image.load("mats/ui/pause1.png").convert_alpha()
-            # Scaled WAY up so the mirrors are massive (edges will hang off screen)
+            pause_bg_raw = pygame.image.load("mats/ui/pause 2.png").convert_alpha()
             self.bg = pygame.transform.smoothscale(pause_bg_raw, (1050, 1100))
         except pygame.error:
             self.bg = None
 
-        # --- LOAD UI ICONS (Forced to 55x55 to fit the Inventory boxes) ---
+        try:
+            raw_save = pygame.image.load("mats/ui/save_hud.png").convert_alpha()
+            self.save_b = pygame.transform.smoothscale(raw_save, (340, 240))
+            self.save_h = pygame.transform.smoothscale(raw_save, (374, 254))
+        except pygame.error:
+            self.save_b = self.save_h = None
+
+        self.left_cx = self.w // 2 - 350
+        self.right_cx = self.w // 2 + 350
+
+        if self.save_b:
+            self.save_rect = self.save_b.get_rect(center=(self.w // 2, 250))
+        else:
+            self.save_rect = pygame.Rect(self.w // 2 - 170, 210, 340, 60)
+
         try:
             self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
                                                           (55, 55))
@@ -140,27 +143,75 @@ class PauseMenu:
         except pygame.error:
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = self.icon_tinera = None
 
-        # Pushed the centers further out so they don't overlap in the middle
-        self.left_cx = self.w // 2 - 350
-        self.right_cx = self.w // 2 + 350
+        # Multi-Slot Save Variables
+        self.save_state = None  # None, "SELECT", "TYPE"
+        self.selected_save_slot = None
+        self.save_slots = []
+        self.save_input_text = ""
 
-        # Build a 3x3 Inventory Grid mathematically centered in the Left Mirror
         self.grid_rects = []
         start_x = self.left_cx - 115
-        start_y = self.h // 2 + 40
+        start_y = self.h // 2 + 60
         for row in range(3):
             for col in range(3):
                 self.grid_rects.append(pygame.Rect(start_x + col * 90, start_y + row * 90, 70, 70))
 
-        # Pop-up Menu Logic
         self.selected_spell = None
         self.popup_active = False
         self.popup_rect_left = pygame.Rect(0, 0, 120, 35)
         self.popup_rect_right = pygame.Rect(0, 0, 120, 35)
 
+    def _load_save_data(self):
+        self.save_slots = []
+        if not os.path.exists("saves"):
+            os.makedirs("saves", exist_ok=True)
+
+        y_offset = self.h // 2 - 150
+        center_x = self.w // 2
+
+        for i in range(1, 6):
+            file_path = f"saves/save{i}.json"
+            rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
+
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r") as f:
+                        data = json.load(f)
+                        name = data.get("save_name", f"Save {i}")
+                except Exception:
+                    name = f"Save {i} (Corrupted)"
+                self.save_slots.append({"rect": rect, "name": name, "slot": i, "empty": False})
+            else:
+                self.save_slots.append({"rect": rect, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
+            y_offset += 65
+
     def update(self, mouse_pos, mouse_click, owned_spells, player_has_tinera):
         result = None
         if mouse_click:
+            # If in the typing phase, block other clicks
+            if self.save_state == "TYPE":
+                return None
+
+            # If in the slot selection phase
+            if self.save_state == "SELECT":
+                clicked_inside = False
+                for slot in self.save_slots:
+                    if slot["rect"].collidepoint(mouse_pos):
+                        self.selected_save_slot = slot["slot"]
+                        self.save_input_text = f"Save_0{slot['slot']}" if slot["empty"] else slot["name"]
+                        self.save_state = "TYPE"
+                        clicked_inside = True
+                        break
+                if not clicked_inside:
+                    self.save_state = None
+                return None
+
+            # Base Pause Menu Clicks
+            if self.save_rect.collidepoint(mouse_pos):
+                self._load_save_data()
+                self.save_state = "SELECT"
+                return None
+
             if self.popup_active:
                 if self.popup_rect_left.collidepoint(mouse_pos):
                     result = {"action": "EQUIP", "slot": "left", "spell": self.selected_spell}
@@ -171,17 +222,14 @@ class PauseMenu:
                 else:
                     self.popup_active = False
             else:
-                # Check spell slots
                 for i, spell in enumerate(owned_spells):
                     if i < len(self.grid_rects) and self.grid_rects[i].collidepoint(mouse_pos):
                         self.selected_spell = spell
                         self.popup_active = True
-
                         self.popup_rect_left.topleft = (mouse_pos[0] + 10, mouse_pos[1] - 20)
                         self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
                         return result
 
-                # Check Companion Slot (Slot index 4 - middle box)
                 if player_has_tinera and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
                     result = {"action": "TOGGLE_TINERA"}
                     return result
@@ -194,29 +242,30 @@ class PauseMenu:
         screen.blit(overlay, (0, 0))
 
         if self.bg:
-            # Shifted Y down slightly so the mirror centers perfectly vertically
             left_rect = self.bg.get_rect(center=(self.left_cx, self.h // 2 + 50))
             screen.blit(self.bg, left_rect)
-
             right_rect = self.bg.get_rect(center=(self.right_cx, self.h // 2 + 50))
             screen.blit(self.bg, right_rect)
 
         center_x = self.w // 2
 
-        # --- GLOBAL HEADERS (Top Center) ---
         draw_text(screen, "GAME PAUSED", self.font_big, pygame.Color("turquoise1"), center_x - 165, 40)
         draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, 95)
 
-        # --- LEFT TOMBSTONE: INVENTORY ---
-        draw_text(screen, "INVENTORY", self.font_med, PINK, self.left_cx - 75, self.h // 2 - 10)
+        if self.save_b and self.save_h:
+            if self.save_rect.collidepoint(mouse_pos):
+                hover_rect = self.save_h.get_rect(center=self.save_rect.center)
+                screen.blit(self.save_h, hover_rect)
+            else:
+                screen.blit(self.save_b, self.save_rect)
+
+        draw_text(screen, "INVENTORY", self.font_med, PINK, self.left_cx - 75, self.h // 2 + 10)
 
         for i, rect in enumerate(self.grid_rects):
             pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
 
             if i < len(owned_spells):
                 spell = owned_spells[i]
-
-                # BLIT THE REAL ICONS INSTEAD OF DRAWING CIRCLES
                 if spell == "normal" and self.icon_pink:
                     screen.blit(self.icon_pink, self.icon_pink.get_rect(center=rect.center))
                 elif spell == "purple" and self.icon_purple:
@@ -226,12 +275,10 @@ class PauseMenu:
                 elif spell == "rainbow" and self.icon_rainbow:
                     screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
 
-            # Draw Tinera in Slot 4 if unlocked
             elif i == 4 and player_has_tinera:
                 active_icon = tinera_icon_override if tinera_icon_override else self.icon_tinera
                 if active_icon:
                     if not tinera_active:
-                        # Darken the icon if she is toggled off
                         dim_icon = active_icon.copy()
                         dim_icon.fill((100, 100, 100), special_flags=pygame.BLEND_RGB_MULT)
                         screen.blit(dim_icon, dim_icon.get_rect(center=rect.center))
@@ -241,10 +288,9 @@ class PauseMenu:
             if rect.collidepoint(mouse_pos) and not self.popup_active:
                 pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
-        # --- RIGHT TOMBSTONE: CONTROLS ---
-        draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 - 10)
+        draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 + 10)
 
-        ctrl_y = self.h // 2 + 40
+        ctrl_y = self.h // 2 + 60
         ctrl_x = self.right_cx - 130
 
         draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
@@ -256,7 +302,6 @@ class PauseMenu:
         draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
         draw_text(screen, "P / ESC    : Pause", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
 
-        # --- POP-UP EQUIP MENU ---
         if self.popup_active:
             pygame.draw.rect(screen, BLACK, self.popup_rect_left)
             col_l = PINK if self.popup_rect_left.collidepoint(mouse_pos) else WHITE
@@ -269,6 +314,43 @@ class PauseMenu:
             pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
             draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5,
                       self.popup_rect_right.y + 8)
+
+        # --- MULTI-SLOT SAVE SCREENS ---
+        if self.save_state == "SELECT":
+            dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            dark_overlay.fill((0, 0, 0, 220))
+            screen.blit(dark_overlay, (0, 0))
+
+            draw_text(screen, "SELECT A SAVE SLOT", self.font_big, PINK, center_x - 200, 100)
+
+            for slot in self.save_slots:
+                rect = slot["rect"]
+                col = PINK if rect.collidepoint(mouse_pos) else LIGHT_GRAY
+                pygame.draw.rect(screen, (20, 10, 30), rect, border_radius=8)
+                pygame.draw.rect(screen, col, rect, 3, border_radius=8)
+
+                text_surf = self.font_med.render(slot["name"], True, col)
+                screen.blit(text_surf, text_surf.get_rect(center=rect.center))
+
+            draw_text(screen, "Click anywhere outside to cancel", self.font_small, LIGHT_GRAY, center_x - 140,
+                      self.h - 80)
+
+        elif self.save_state == "TYPE":
+            dialog_rect = pygame.Rect(center_x - 250, self.h // 2 - 100, 500, 200)
+            pygame.draw.rect(screen, (20, 10, 30), dialog_rect, border_radius=12)
+            pygame.draw.rect(screen, PINK, dialog_rect, 3, border_radius=12)
+
+            draw_text(screen, f"SAVE NAME FOR SLOT {self.selected_save_slot}:", self.font_small, WHITE, center_x - 115,
+                      dialog_rect.y + 25)
+
+            input_box_rect = pygame.Rect(dialog_rect.x + 40, dialog_rect.y + 65, 420, 50)
+            pygame.draw.rect(screen, BLACK, input_box_rect, border_radius=6)
+            pygame.draw.rect(screen, LIGHT_GRAY, input_box_rect, 2, border_radius=6)
+
+            draw_text(screen, self.save_input_text + "|", self.font_med, PINK, input_box_rect.x + 15,
+                      input_box_rect.y + 8)
+            draw_text(screen, "Press ENTER to Save | ESC to Cancel", self.font_small, LIGHT_GRAY, dialog_rect.x + 75,
+                      dialog_rect.y + 135)
 
 
 class DeathScreen:
@@ -358,11 +440,52 @@ class MainMenu:
         self.sub_menu = None
         self.font_title = pygame.font.SysFont("Lucida Sans", 48)
         self.font_text = pygame.font.SysFont("Lucida Sans", 30)
+        self.font_small = pygame.font.SysFont("Lucida Sans", 16)
+        self.save_slots = []
+
+    def _load_save_data(self):
+        self.save_slots = []
+        if not os.path.exists("saves"):
+            os.makedirs("saves", exist_ok=True)
+
+        y_offset = self.bg.get_height() // 2 - 150
+        center_x = self.bg.get_width() // 2
+
+        for i in range(1, 6):
+            file_path = f"saves/save{i}.json"
+            rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
+            del_rect = pygame.Rect(center_x + 140, y_offset + 10, 50, 30)  # Positioning for the delete button
+
+            if os.path.exists(file_path):
+                try:
+                    with open(file_path, "r") as f:
+                        data = json.load(f)
+                        name = data.get("save_name", f"Save {i}")
+                except Exception:
+                    name = f"Save {i} (Corrupt)"
+                self.save_slots.append({"rect": rect, "del_rect": del_rect, "name": name, "slot": i, "empty": False})
+            else:
+                self.save_slots.append(
+                    {"rect": rect, "del_rect": None, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
+            y_offset += 65
 
     def update(self, mouse_pos, mouse_click):
         if mouse_click:
-            if self.sub_menu:
+            if self.sub_menu == "LOAD":
+                for slot in self.save_slots:
+                    if not slot["empty"] and slot["del_rect"] and slot["del_rect"].collidepoint(mouse_pos):
+                        return {"action": "DELETE", "slot": slot["slot"]}
+                    elif slot["rect"].collidepoint(mouse_pos) and not slot["empty"]:
+                        self.sub_menu = None
+                        return {"action": "LOAD", "slot": slot["slot"]}
+
+                # Close if clicked outside
+                if not any(slot["rect"].collidepoint(mouse_pos) for slot in self.save_slots):
+                    self.sub_menu = None
+                return None
+            elif self.sub_menu == "CONTROLS":
                 self.sub_menu = None
+                return None
             else:
                 if self.play_rect.collidepoint(mouse_pos):
                     return "PLAY"
@@ -370,6 +493,7 @@ class MainMenu:
                     self.sub_menu = "CONTROLS"
                 elif self.load_rect.collidepoint(mouse_pos):
                     self.sub_menu = "LOAD"
+                    self._load_save_data()
         return None
 
     def draw(self, screen, mouse_pos):
@@ -394,10 +518,28 @@ class MainMenu:
             overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 220))
             screen.blit(overlay, (0, 0))
-            text = self.font_title.render("Save Slots (JSON Logic Coming Soon!)", True, PINK)
-            screen.blit(text, text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 - 50)))
-            sub = self.font_text.render("Click anywhere to return", True, LIGHT_GRAY)
-            screen.blit(sub, sub.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 + 20)))
+
+            draw_text(screen, "LOAD GAME", self.font_title, PINK, screen.get_width() // 2 - 130, 80)
+
+            for slot in self.save_slots:
+                rect = slot["rect"]
+                col = PINK if rect.collidepoint(mouse_pos) else LIGHT_GRAY
+
+                pygame.draw.rect(screen, (20, 10, 30), rect, border_radius=8)
+                pygame.draw.rect(screen, col, rect, 3, border_radius=8)
+
+                text_surf = self.font_text.render(slot["name"], True, col)
+                screen.blit(text_surf, text_surf.get_rect(center=rect.center))
+
+                # Draw Delete [ DEL ] Button for Populated Slots
+                if not slot["empty"] and slot["del_rect"]:
+                    d_rect = slot["del_rect"]
+                    d_col = (255, 50, 50) if d_rect.collidepoint(mouse_pos) else (150, 50, 50)
+                    pygame.draw.rect(screen, d_col, d_rect, border_radius=4)
+                    draw_text(screen, "DEL", self.font_small, WHITE, d_rect.x + 5, d_rect.y + 4)
+
+            sub = self.font_text.render("Click outside slots to return", True, LIGHT_GRAY)
+            screen.blit(sub, sub.get_rect(center=(screen.get_width() // 2, screen.get_height() - 60)))
 
         elif self.sub_menu == "CONTROLS":
             overlay = pygame.Surface((screen.get_width(), screen.get_height()), pygame.SRCALPHA)
@@ -430,9 +572,7 @@ class Merchant_UI:
             raw_bg = pygame.image.load("mats/ui/M_inventory_empty.png").convert()
             self.bg = pygame.transform.smoothscale(raw_bg, (screen_width, screen_height))
 
-            # --- NEW: LOAD EXIT HUD ---
             try:
-                # Note: Make sure the file is a .png so the background is transparent!
                 self.exit_hud_img = pygame.transform.smoothscale(
                     pygame.image.load("mats/ui/exit_hud.png").convert_alpha(), (330, 100))
             except pygame.error as e:
@@ -470,15 +610,12 @@ class Merchant_UI:
 
             raw_left = pygame.image.load("mats/ui/left.png").convert_alpha()
             raw_right = pygame.image.load("mats/ui/right.png").convert_alpha()
-
             arrow_w, arrow_h = 245, 120
             self.left_arrow_img = pygame.transform.smoothscale(raw_left, (arrow_w, arrow_h))
             self.right_arrow_img = pygame.transform.smoothscale(raw_right, (arrow_w, arrow_h))
-
             hover_w, hover_h = int(arrow_w * 1.10), int(arrow_h * 1.10)
             self.left_arrow_hover = pygame.transform.smoothscale(raw_left, (hover_w, hover_h))
             self.right_arrow_hover = pygame.transform.smoothscale(raw_right, (hover_w, hover_h))
-
         except pygame.error as e:
             print(f"Error loading UI: {e}")
             import sys;
@@ -489,12 +626,10 @@ class Merchant_UI:
             pygame.Rect(680, 360, 130, 130), pygame.Rect(890, 360, 130, 130), pygame.Rect(1100, 360, 130, 130),
             pygame.Rect(680, 555, 130, 130), pygame.Rect(890, 555, 130, 130), pygame.Rect(1100, 555, 130, 130)
         ]
-
         self.buy_rect = pygame.Rect(270, 650, 210, 65)
         self.left_arrow_rect = self.left_arrow_img.get_rect(midright=(self.buy_rect.left - 15, self.buy_rect.centery))
         self.right_arrow_rect = self.right_arrow_img.get_rect(midleft=(self.buy_rect.right + 15, self.buy_rect.centery))
 
-        # INVENTORY INFORMATION #
         self.inventory = [
             {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."],
              "cost": 50, "color": (50, 255, 50)},
@@ -508,14 +643,14 @@ class Merchant_UI:
              "desc": ["Unlocks Double Jump."], "cost": 200, "color": (150, 50, 255)},
             {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."],
              "cost": 50, "color": (220, 220, 220)},
-            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion",
-             "desc": ["Unlocks her Wings."], "cost": 200, "color": (255, 200, 50)},
-            {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion",
-             "desc": ["Unlocks Void-ball."], "cost": 50, "color": (180, 50, 255)},
+            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],
+             "cost": 200, "color": (255, 200, 50)},
+            {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion", "desc": ["Unlocks Void-ball."],
+             "cost": 50, "color": (180, 50, 255)},
             {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"],
              "cost": 50, "color": (50, 50, 255)},
-            {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion",
-             "desc": ["Unlocks Rain-ball."], "cost": 50, "color": (255, 100, 255)},
+            {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."],
+             "cost": 50, "color": (255, 100, 255)},
             {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons companion..."],
              "cost": 50, "color": (255, 180, 50)},
             {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."],
@@ -536,13 +671,11 @@ class Merchant_UI:
     def update(self, mouse_pos, mouse_click, rem):
         bought_item = None
         current_time = pygame.time.get_ticks()
-
         start_idx = self.current_page * 9
         page_items = self.inventory[start_idx: start_idx + 9]
 
         if mouse_click and (current_time - self.last_click_time > 200):
             self.last_click_time = current_time
-
             if self.right_arrow_rect.collidepoint(mouse_pos) and self.current_page < self.max_pages - 1:
                 self.current_page += 1
                 self.selected_item_data = None
@@ -561,15 +694,12 @@ class Merchant_UI:
                             self.selected_item_data = item
                         clicked_on_item = True
                         break
-
                 if not clicked_on_item:
                     self.selected_item_data = None
-
         return bought_item
 
     def draw(self, screen, mouse_pos, rem):
         screen.blit(self.bg, (0, 0))
-
         start_idx = self.current_page * 9
         page_items = self.inventory[start_idx: start_idx + 9]
 
@@ -577,7 +707,6 @@ class Merchant_UI:
             if not self.sold_out.get(item["id"], False):
                 slot = self.grid_rects[i]
                 screen.blit(item["img"], (slot.x + 10, slot.y - 10))
-
                 if slot.collidepoint(mouse_pos) or (
                         self.selected_item_data and self.selected_item_data["id"] == item["id"]):
                     pygame.draw.rect(screen, WHITE, slot, 3)
@@ -591,7 +720,6 @@ class Merchant_UI:
 
         if self.current_page < self.max_pages - 1:
             if self.right_arrow_rect.collidepoint(mouse_pos):
-                # FIXED: Call get_rect() on the image first, then use its rect for the center assignment
                 hover_rect = self.right_arrow_hover.get_rect(center=self.right_arrow_rect.center)
                 screen.blit(self.right_arrow_hover, hover_rect)
             else:
@@ -607,16 +735,12 @@ class Merchant_UI:
             screen.blit(
                 self.font_title.render(self.selected_item_data["title"], True, self.selected_item_data["color"]),
                 (text_x, 180))
-
             y_offset = 230
             for line in self.selected_item_data["desc"]:
                 screen.blit(self.font_desc.render(line, True, (190, 200, 200)), (text_x, y_offset))
                 y_offset += 25
-
             screen.blit(self.font_title.render(f"COST: {self.selected_item_data['cost']} REM", True, PINK),
                         (text_x, y_offset + 10))
 
-        # --- DRAW THE NEW EXIT HUD ---
         if self.exit_hud_img:
-            # TUNE THESE: 950 puts it right between Percy's sign and the Spell HUD. 25 matches the top of the Spell HUD.
             screen.blit(self.exit_hud_img, (935, 25))
