@@ -750,4 +750,4 @@ while run:
 
 mixer.quit()
 pygame.quit()
-sys.exit()A
+sys.exit()
