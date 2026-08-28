@@ -1,3 +1,5 @@
+#-main-#
+
 import pygame
 import sys
 import os
@@ -139,6 +141,9 @@ try:
     departure_fx.set_volume(0.6)
     merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/audio/merchant greet lvl 2.mp3")
     merchant_greet_lvl_2_fx.set_volume(0.6)
+    # --- LEVEL 3 ---
+    merchant_greet_lvl_3_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl3.mp3")
+    merchant_greet_lvl_3_fx.set_volume(0.6)
 
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
@@ -217,6 +222,7 @@ game_over, paused = False, False
 camera_x = 0.0
 rem = 0
 is_level_2_merchant = False
+is_level_3_merchant = False
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -460,7 +466,13 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                active_merchant_audio = merchant_greet_lvl_2_fx if is_level_2_merchant else merchant_voice_fx
+                if is_level_3_merchant:
+                    active_merchant_audio = merchant_greet_lvl_3_fx
+                elif is_level_2_merchant:
+                    active_merchant_audio = merchant_greet_lvl_2_fx
+                else:
+                    active_merchant_audio = merchant_voice_fx
+
                 merchant_npc.update(dt_ms, active_merchant_audio)
                 if merchant_npc.state == "idle" and merchant_ui is not None:
                     if not exiting_merchant:
@@ -557,6 +569,8 @@ while run:
                             exiting_merchant = False
                             merchant_npc = None
                             merchant_ui = None
+                            is_level_2_merchant = False
+                            is_level_3_merchant = False
 
                             if current_state == "LEVEL_4":
                                 pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
@@ -653,14 +667,19 @@ while run:
                 if abs(succi.x - current_level.door_world_x) < 150:
                     if keys[pygame.K_e]:
                         last_completed_level = current_state
-                        is_level_2_merchant = (current_state in ["LEVEL_2", "LEVEL_3", "LEVEL_4"])
+                        is_level_2_merchant = (last_completed_level in ["LEVEL_2", "LEVEL_4"])
+                        is_level_3_merchant = (last_completed_level == "LEVEL_3")
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
-                        if is_level_2_merchant:
+                        if is_level_3_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_3.png", columns=10,
+                                                    rows=8, target_duration=9790) # or 9900
+                        elif is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
-                                                    rows=7, target_duration=12200)
+                                                    rows=7, target_duration=11650) # or 11900
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
