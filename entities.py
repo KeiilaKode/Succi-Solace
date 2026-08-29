@@ -1,3 +1,5 @@
+#-entities-#
+
 import pygame
 import random
 import sys
@@ -38,8 +40,8 @@ class BaseEnemy(pygame.sprite.Sprite):
         self.rect.bottom = y_pos + y_offset
         self.mask = pygame.mask.from_surface(self.image)
 
-    def take_damage(self):
-        self.health -= 1
+    def take_damage(self, amount=1):
+        self.health -= amount
         return self.health <= 0
 
     def update(self, camera_x, player_x=None, player_y=None):
@@ -145,12 +147,14 @@ class BaseIdleEnemy(BaseEnemy):
 # ==========================================
 # SPECIFIC ENEMIES (Refactored)
 # ==========================================
-
+# - - - LEVEL 1 ENEMIES - - - #
+# PLUS SKELETON
 class Demon(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=1, rem_value=5, speed=2.0, anim_speed=100, y_offset=85)
 
+# - - - LEVEL 2 ENEMIES - - - #
 
 class Helldog(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
@@ -169,6 +173,7 @@ class Pkgrim(BaseEnemy):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=2, rem_value=8, speed=2.5, anim_speed=90)
 
+# - - - LEVEL 3 ENEMIES - - - #
 
 class Azule(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
@@ -187,6 +192,7 @@ class Lionel(BaseEnemy):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=4, rem_value=15, speed=2.5, anim_speed=90)
 
+# - - - LEVEL 4 ENEMIES - - - #
 
 class Elaine(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
@@ -218,10 +224,30 @@ class Zombie2(BaseEnemy):
                          health=3, rem_value=12, speed=2.1, anim_speed=100)
 
 
+# --- LEVEL 5 ENEMIES --- #
+
+class Priestly(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=5, rem_value=20, speed=2.0, anim_speed=90)
+
+
+class Realmwalker(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=6, rem_value=22, speed=3.0, anim_speed=80)
+
+
+class Pursuer(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=6, rem_value=25, speed=2.5, anim_speed=90)
+
+
 # ==========================================
 # IDLE ENEMIES (Refactored)
 # ==========================================
-
+# LEVEL 1 ENEMY #
 class Skeleton(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                  attack_l):
@@ -229,7 +255,7 @@ class Skeleton(BaseIdleEnemy):
                          attack_l,
                          health=1, rem_value=5, speed=1.8, anim_speed=100, y_offset=240)
 
-
+# LEVEL 3 ENEMY #
 class Demented(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                  attack_l):
@@ -237,7 +263,7 @@ class Demented(BaseIdleEnemy):
                          attack_l,
                          health=3, rem_value=12, speed=1.8, anim_speed=100)
 
-
+# LEVEL 4 ENEMY #
 class Groundskeeper(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                  attack_l):
@@ -290,13 +316,14 @@ class Enemy(pygame.sprite.Sprite):
 
 class Projectile(pygame.sprite.Sprite):
     # --- ADDED exp_offset=0 HERE ---
-    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0):
+    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0, damage=1):
         super().__init__()
         self.direction, self.speed, self.state = direction, 800.0, "fly"
         self.frame_index, self.update_time = 0, pygame.time.get_ticks()
 
-        # Save the offset to use later
+        # Save the offset and damage to use later
         self.exp_offset = exp_offset
+        self.damage = damage
 
         fw, fh = fireball_img.get_width() // 6, fireball_img.get_height()
         self.fly_frames = [pygame.transform.flip(
