@@ -454,7 +454,7 @@ while run:
                              current_level.royalzombie_group, current_level.zombie1_group, current_level.zombie2_group])
                     elif current_state == "LEVEL_5":
                         enemy_targets.extend(
-                            [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group])
+                            [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
 
                     for group in enemy_targets:
                         for target in group:
@@ -645,7 +645,7 @@ while run:
                          current_level.royalzombie_group, current_level.zombie1_group, current_level.zombie2_group])
                 elif current_state == "LEVEL_5":
                     enemy_groups_to_check.extend(
-                        [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group])
+                        [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
 
                 for group in enemy_groups_to_check:
                     for target in group:

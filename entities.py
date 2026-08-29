@@ -1,5 +1,7 @@
 #-entities-#
 
+#-entities-#
+
 import pygame
 import random
 import sys
@@ -242,6 +244,18 @@ class Pursuer(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=6, rem_value=25, speed=2.5, anim_speed=90)
+
+
+class Braid(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=6, rem_value=24, speed=2.4, anim_speed=90)
+
+
+class Deadlight(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=6, rem_value=25, speed=2.6, anim_speed=90)
 
 
 # ==========================================

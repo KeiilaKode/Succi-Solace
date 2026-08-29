@@ -4,7 +4,7 @@
 import pygame
 import random
 import sys
-from entities import Enemy, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer
+from entities import Enemy, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight
 
 
 def trim_black_side_borders(surface, threshold=15):
@@ -771,6 +771,8 @@ class Level_05(Level_01):
         self.priestly_group = pygame.sprite.Group()
         self.realmwalker_group = pygame.sprite.Group()
         self.pursuer_group = pygame.sprite.Group()
+        self.braid_group = pygame.sprite.Group()
+        self.deadlight_group = pygame.sprite.Group()
 
     def load_assets(self):
         # 1. Setup the 16 background images
@@ -812,7 +814,8 @@ class Level_05(Level_01):
         self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
         # --- ENEMY SCALES & FRAMES ---
-        scale = 0.60
+        scale = 0.65
+        braid_scale = 0.70
         self.priestly_walk_r, self.priestly_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/priestly_walk_ss.png", 8, scale)
         self.priestly_atk_r, self.priestly_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/priestly_attack_ss.png", 11, scale)
 
@@ -822,11 +825,19 @@ class Level_05(Level_01):
         self.pursuer_walk_r, self.pursuer_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/pursuer_walk_ss.png", 8, scale)
         self.pursuer_atk_r, self.pursuer_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/pursuer_attack_ss.png", 12, scale)
 
+        self.braid_walk_r, self.braid_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_walk_ss.png", 8, braid_scale)
+        self.braid_atk_r, self.braid_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_attack_ss.png", 10, braid_scale)
+
+        self.deadlight_walk_r, self.deadlight_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_walk_ss.png", 8, scale)
+        self.deadlight_atk_r, self.deadlight_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_attack_ss.png", 10, scale)
+
     def reset(self):
         super().reset()
         self.priestly_group.empty()
         self.realmwalker_group.empty()
         self.pursuer_group.empty()
+        self.braid_group.empty()
+        self.deadlight_group.empty()
 
     def update(self, dt, camera_x, player_x, player_y):
         for platform in list(self.platform_group):
@@ -850,19 +861,23 @@ class Level_05(Level_01):
 
         current_bg_index = int(player_x // self.bg_w)
 
-        # Alternate Spawning between the 3 new Level 5 enemies
+        # Alternate Spawning between the 5 Level 5 enemies
         if current_bg_index > self.last_spawned_bg_index and current_bg_index < self.max_backgrounds - 1:
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            spawn_type = t_bg % 3
+            spawn_type = t_bg % 5
 
             if spawn_type == 0:
                 self.priestly_group.add(Priestly(p_start + 100, self.y_ground, p_start, p_end, self.priestly_walk_r, self.priestly_walk_l, self.priestly_atk_r, self.priestly_atk_l))
             elif spawn_type == 1:
                 self.realmwalker_group.add(Realmwalker(p_start + 100, self.y_ground, p_start, p_end, self.realmwalker_walk_r, self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
-            else:
+            elif spawn_type == 2:
                 self.pursuer_group.add(Pursuer(p_start + 100, self.y_ground, p_start, p_end, self.pursuer_walk_r, self.pursuer_walk_l, self.pursuer_atk_r, self.pursuer_atk_l))
+            elif spawn_type == 3:
+                self.braid_group.add(Braid(p_start + 100, self.y_ground, p_start, p_end, self.braid_walk_r, self.braid_walk_l, self.braid_atk_r, self.braid_atk_l))
+            else:
+                self.deadlight_group.add(Deadlight(p_start + 100, self.y_ground, p_start, p_end, self.deadlight_walk_r, self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -870,10 +885,12 @@ class Level_05(Level_01):
         self.priestly_group.update(camera_x, player_x, player_y)
         self.realmwalker_group.update(camera_x, player_x, player_y)
         self.pursuer_group.update(camera_x, player_x, player_y)
+        self.braid_group.update(camera_x, player_x, player_y)
+        self.deadlight_group.update(camera_x, player_x, player_y)
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for group in [self.priestly_group, self.realmwalker_group, self.pursuer_group]:
+        for group in [self.priestly_group, self.realmwalker_group, self.pursuer_group, self.braid_group, self.deadlight_group]:
             for enemy in group:
                 if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
                     screen.blit(enemy.image, (x, enemy.rect.top))
