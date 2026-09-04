@@ -49,7 +49,7 @@ class BaseEnemy(pygame.sprite.Sprite):
     def update(self, camera_x, player_x=None, player_y=None):
         # Aggro Logic
         if player_x and player_y and abs(player_y - self.rect.centery) < 350:
-            if abs(player_x - self.rect.centerx) < 320 and self.state != "attack":
+            if abs(player_x - self.rect.centerx) < 310 and self.state != "attack":
                 self.state, self.frame_index, self.update_time = "attack", 0, pygame.time.get_ticks()
                 self.direction = 1 if player_x > self.rect.centerx else -1
 

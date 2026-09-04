@@ -129,7 +129,6 @@ try:
     pygame.mixer.music.load("mats/audio/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
     pygame.mixer.music.set_volume(0.2)
     pygame.mixer.music.play(-1, 0.0)
-
     jump_fx = pygame.mixer.Sound("mats/audio/Swoosh.mp3")
     jump_fx.set_volume(0.3)
     death_fx = pygame.mixer.Sound("mats/audio/Pause.mp3")
@@ -138,18 +137,23 @@ try:
     cast_fx.set_volume(0.4)
     explode_fx = pygame.mixer.Sound("mats/audio/explode.mp3")
     explode_fx.set_volume(0.2)
-
+    # --- LEVEL 1 --- #
     merchant_voice_fx = pygame.mixer.Sound("mats/audio/merchant entrance.mp3")
     merchant_voice_fx.set_volume(0.6)
     laugh_fx = pygame.mixer.Sound("mats/audio/laugh_bb.mp3")
     laugh_fx.set_volume(0.6)
+    # --- ALL LEVELS --- #
     departure_fx = pygame.mixer.Sound("mats/audio/merchant_departure.mp3")
     departure_fx.set_volume(0.6)
+    # --- LEVEL 2 --- #
     merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/audio/merchant greet lvl 2.mp3")
     merchant_greet_lvl_2_fx.set_volume(0.6)
     # --- LEVEL 3 ---
     merchant_greet_lvl_3_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl3.mp3")
     merchant_greet_lvl_3_fx.set_volume(0.6)
+    # --- LEVEL 4 --- #
+    merchant_greet_lvl_4_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl4.mp3")
+    merchant_greet_lvl_4_fx.set_volume(0.6)
 
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
@@ -229,6 +233,7 @@ camera_x = 0.0
 rem = 0
 is_level_2_merchant = False
 is_level_3_merchant = False
+is_level_4_merchant = False  #new#
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -479,7 +484,9 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                if is_level_3_merchant:
+                if is_level_4_merchant:
+                    active_merchant_audio = merchant_greet_lvl_4_fx
+                elif is_level_3_merchant:
                     active_merchant_audio = merchant_greet_lvl_3_fx
                 elif is_level_2_merchant:
                     active_merchant_audio = merchant_greet_lvl_2_fx
@@ -587,6 +594,7 @@ while run:
                             merchant_ui = None
                             is_level_2_merchant = False
                             is_level_3_merchant = False
+                            is_level_4_merchant = False
 
                             if current_state == "LEVEL_5":
                                 pygame.mixer.music.load("mats/audio/Satie_Gnossienne_1.mp3")
@@ -624,6 +632,33 @@ while run:
                 if abs(succi.x - current_level.door_world_x) < 150:
                     draw_text(screen, "Press 'E' to Enter", font_small, Color("turquoise1"), succi_blit_x + 20,
                               succi_blit_y - 80)
+                    if keys[pygame.K_e]:
+                        last_completed_level = current_state
+                        is_level_2_merchant = (last_completed_level == "LEVEL_2")
+                        is_level_3_merchant = (last_completed_level == "LEVEL_3")
+                        is_level_4_merchant = (last_completed_level in ["LEVEL_4", "LEVEL_5"])
+                        current_state = "MERCHANT"
+                        pygame.mixer.music.stop()
+
+                        if is_level_4_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_4.png", columns=10,
+                                                    rows=8, target_duration=9590)
+                        elif is_level_3_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_3.png", columns=10,
+                                                    rows=8, target_duration=9590) # or 9900
+                        elif is_level_2_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
+                                                    rows=7, target_duration=11650) # or 11900
+                        else:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
+                                                    rows=6)
+
+                        merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)
+                        succi.x = 400.0
 
                 for proj in projectile_group:
                     if -200 < (px := proj.rect.x - camera_x) < SCREEN_WIDTH + 200:
@@ -685,30 +720,6 @@ while run:
                                             death_fx.play()
                                         except NameError:
                                             pass
-
-                if abs(succi.x - current_level.door_world_x) < 150:
-                    if keys[pygame.K_e]:
-                        last_completed_level = current_state
-                        is_level_2_merchant = (last_completed_level in ["LEVEL_2", "LEVEL_4"])
-                        is_level_3_merchant = (last_completed_level in ["LEVEL_3", "LEVEL_5"])
-                        current_state = "MERCHANT"
-                        pygame.mixer.music.stop()
-
-                        if is_level_3_merchant:
-                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritesheets/merchants sheets/merchant_lvl_3.png", columns=10,
-                                                    rows=8, target_duration=9590) # or 9900
-                        elif is_level_2_merchant:
-                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
-                                                    rows=7, target_duration=11650) # or 11900
-                        else:
-                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
-                                                    "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
-                                                    rows=6)
-
-                        merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)
-                        succi.x = 400.0
 
             elif current_state == "MERCHANT":
                 if merchant_npc and merchant_npc.state == "intro":
