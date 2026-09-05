@@ -148,11 +148,17 @@ class BaseIdleEnemy(BaseEnemy):
 # SPECIFIC ENEMIES (Refactored)
 # ==========================================
 # - - - LEVEL 1 ENEMIES - - - #
-# PLUS SKELETON
+
 class Demon(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=1, rem_value=5, speed=2.0, anim_speed=100, y_offset=85)
+
+class Hellguard(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=2, rem_value=8, speed=1.8, anim_speed=90, y_offset=210)
+
 
 # - - - LEVEL 2 ENEMIES - - - #
 

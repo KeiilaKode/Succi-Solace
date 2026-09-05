@@ -1,10 +1,12 @@
-#-level-#
+# -level-#
 
 # --- level.py ---#
 import pygame
 import random
 import sys
-from entities import Enemy, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria
+from entities import Enemy, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, \
+    Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
+    Hellguard
 
 
 def trim_black_side_borders(surface, threshold=15):
@@ -112,6 +114,7 @@ class Level_01:
         self.enemy_group = pygame.sprite.Group()
         self.demon_group = pygame.sprite.Group()
         self.skeleton_group = pygame.sprite.Group()
+        self.hellguard_group = pygame.sprite.Group()
 
         self.last_spawned_bg_index = -1
         self.load_assets()
@@ -159,19 +162,29 @@ class Level_01:
         self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
         self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/flyer_SS_NB.png").convert_alpha()
 
-        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/D_WALK_SSNB.png", 7, 0.35)
+        self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/D_WALK_SSNB.png",
+                                                                 7, 0.35)
         self.demon_attack_r, self.demon_attack_l = load_enemy_frames(
             "spritesheets/enemies/lvl_1_enemies/D_attack_SSNB.png", 12, 0.35)
-        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_walk_NB.png", 8, 0.7)
-        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_idle_NB.png", 10, 0.7)
+
+        self.skel_walk_r, self.skel_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_walk_NB.png",
+                                                               8, 0.7)
+        self.skel_idle_r, self.skel_idle_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/skelly_idle_NB.png",
+                                                               10, 0.7)
         self.skel_attack_r, self.skel_attack_l = load_enemy_frames(
             "spritesheets/enemies/lvl_1_enemies/skelly_attack_NB.png", 10, 0.7)
+
+        self.hg_walk_r, self.hg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/hellguard_walk_ss.png",
+                                                           8, 0.7)
+        self.hg_attack_r, self.hg_attack_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_1_enemies/hellguard_attack_ss.png", 12, 0.7)
 
     def reset(self):
         self.platform_group.empty()
         self.enemy_group.empty()
         self.demon_group.empty()
         self.skeleton_group.empty()
+        self.hellguard_group.empty()
         self.last_spawned_bg_index = -1
 
         self.platform_group.add(
@@ -218,21 +231,27 @@ class Level_01:
                 # Pick a random spot within this chunk of the background
                 spawn_x = random.randint(e_start + 50, e_end - 50)
 
-                # Randomly spawn a Demon (33% chance) or Skeleton (66% chance)
-                if random.randint(1, 3) == 1:
+                # Randomly spawn a Demon, Skeleton, or Hellguard
+                spawn_choice = random.randint(1, 3)
+                if spawn_choice == 1:
                     self.demon_group.add(
                         Demon(spawn_x, self.y_ground, e_start, e_end, self.demon_walk_r, self.demon_walk_l,
                               self.demon_attack_r, self.demon_attack_l))
-                else:
+                elif spawn_choice == 2:
                     self.skeleton_group.add(
                         Skeleton(spawn_x, self.y_ground, e_start, e_end, self.skel_walk_r, self.skel_walk_l,
                                  self.skel_idle_r, self.skel_idle_l, self.skel_attack_r, self.skel_attack_l))
+                else:
+                    self.hellguard_group.add(
+                        Hellguard(spawn_x, self.y_ground, e_start, e_end, self.hg_walk_r, self.hg_walk_l,
+                                  self.hg_attack_r, self.hg_attack_l))
 
             self.last_spawned_bg_index = current_bg_index
 
         self.enemy_group.update(camera_x, self.screen_width)
         self.demon_group.update(camera_x, player_x, player_y)
         self.skeleton_group.update(camera_x, player_x, player_y)
+        self.hellguard_group.update(camera_x, player_x, player_y)
 
     def draw(self, screen, camera_x):
         s_bg = int(camera_x // self.bg_w)
@@ -259,6 +278,9 @@ class Level_01:
         for skel in self.skeleton_group:
             if -200 < (sx := skel.rect.x - camera_x) < self.screen_width + 200: screen.blit(skel.image,
                                                                                             (sx, skel.rect.top))
+        for hg in self.hellguard_group:
+            if -200 < (hx := hg.rect.x - camera_x) < self.screen_width + 200: screen.blit(hg.image,
+                                                                                          (hx, hg.rect.top))
 
 
 class Merchant_Room:
@@ -730,17 +752,29 @@ class Level_04(Level_01):
             spawn_type = t_bg % 6
 
             if spawn_type == 0:
-                self.elaine_group.add(Elaine(p_start + 100, self.y_ground, p_start, p_end, self.elaine_walk_r, self.elaine_walk_l, self.elaine_atk_r, self.elaine_atk_l))
+                self.elaine_group.add(
+                    Elaine(p_start + 100, self.y_ground, p_start, p_end, self.elaine_walk_r, self.elaine_walk_l,
+                           self.elaine_atk_r, self.elaine_atk_l))
             elif spawn_type == 1:
-                self.groundskeeper_group.add(Groundskeeper(p_start + 100, self.y_ground, p_start, p_end, self.gk_walk_r, self.gk_walk_l, self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l))
+                self.groundskeeper_group.add(
+                    Groundskeeper(p_start + 100, self.y_ground, p_start, p_end, self.gk_walk_r, self.gk_walk_l,
+                                  self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l))
             elif spawn_type == 2:
-                self.royalhh_group.add(RoyalHH(p_start + 100, self.y_ground, p_start, p_end, self.rhh_walk_r, self.rhh_walk_l, self.rhh_atk_r, self.rhh_atk_l))
+                self.royalhh_group.add(
+                    RoyalHH(p_start + 100, self.y_ground, p_start, p_end, self.rhh_walk_r, self.rhh_walk_l,
+                            self.rhh_atk_r, self.rhh_atk_l))
             elif spawn_type == 3:
-                self.royalzombie_group.add(RoyalZombie(p_start + 100, self.y_ground, p_start, p_end, self.rz_walk_r, self.rz_walk_l, self.rz_atk_r, self.rz_atk_l))
+                self.royalzombie_group.add(
+                    RoyalZombie(p_start + 100, self.y_ground, p_start, p_end, self.rz_walk_r, self.rz_walk_l,
+                                self.rz_atk_r, self.rz_atk_l))
             elif spawn_type == 4:
-                self.zombie1_group.add(Zombie1(p_start + 100, self.y_ground, p_start, p_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r, self.z1_atk_l))
+                self.zombie1_group.add(
+                    Zombie1(p_start + 100, self.y_ground, p_start, p_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r,
+                            self.z1_atk_l))
             else:
-                self.zombie2_group.add(Zombie2(p_start + 100, self.y_ground, p_start, p_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r, self.z2_atk_l))
+                self.zombie2_group.add(
+                    Zombie2(p_start + 100, self.y_ground, p_start, p_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r,
+                            self.z2_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -754,7 +788,8 @@ class Level_04(Level_01):
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for group in [self.elaine_group, self.groundskeeper_group, self.royalhh_group, self.royalzombie_group, self.zombie1_group, self.zombie2_group]:
+        for group in [self.elaine_group, self.groundskeeper_group, self.royalhh_group, self.royalzombie_group,
+                      self.zombie1_group, self.zombie2_group]:
             for enemy in group:
                 if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
                     screen.blit(enemy.image, (x, enemy.rect.top))
@@ -816,20 +851,30 @@ class Level_05(Level_01):
         # --- ENEMY SCALES & FRAMES ---
         scale = 0.65
         braid_scale = 0.70
-        self.priestly_walk_r, self.priestly_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/priestly_walk_ss.png", 8, scale)
-        self.priestly_atk_r, self.priestly_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/priestly_attack_ss.png", 11, scale)
+        self.priestly_walk_r, self.priestly_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/priestly_walk_ss.png", 8, scale)
+        self.priestly_atk_r, self.priestly_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/priestly_attack_ss.png", 11, scale)
 
-        self.realmwalker_walk_r, self.realmwalker_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/realmwalker_walk_ss.png", 8, scale)
-        self.realmwalker_atk_r, self.realmwalker_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/realmwalker_attack_ss.png", 10, scale)
+        self.realmwalker_walk_r, self.realmwalker_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/realmwalker_walk_ss.png", 8, scale)
+        self.realmwalker_atk_r, self.realmwalker_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/realmwalker_attack_ss.png", 10, scale)
 
-        self.pursuer_walk_r, self.pursuer_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/pursuer_walk_ss.png", 8, scale)
-        self.pursuer_atk_r, self.pursuer_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/pursuer_attack_ss.png", 12, scale)
+        self.pursuer_walk_r, self.pursuer_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/pursuer_walk_ss.png", 8, scale)
+        self.pursuer_atk_r, self.pursuer_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/pursuer_attack_ss.png", 12, scale)
 
-        self.braid_walk_r, self.braid_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_walk_ss.png", 8, braid_scale)
-        self.braid_atk_r, self.braid_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_attack_ss.png", 10, braid_scale)
+        self.braid_walk_r, self.braid_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_walk_ss.png",
+                                                                 8, braid_scale)
+        self.braid_atk_r, self.braid_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/braid_attack_ss.png",
+                                                               10, braid_scale)
 
-        self.deadlight_walk_r, self.deadlight_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_walk_ss.png", 8, scale)
-        self.deadlight_atk_r, self.deadlight_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_attack_ss.png", 10, scale)
+        self.deadlight_walk_r, self.deadlight_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/deadlight_walk_ss.png", 8, scale)
+        self.deadlight_atk_r, self.deadlight_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_5_enemies/deadlight_attack_ss.png", 10, scale)
 
     def reset(self):
         super().reset()
@@ -869,15 +914,24 @@ class Level_05(Level_01):
             spawn_type = t_bg % 5
 
             if spawn_type == 0:
-                self.priestly_group.add(Priestly(p_start + 100, self.y_ground, p_start, p_end, self.priestly_walk_r, self.priestly_walk_l, self.priestly_atk_r, self.priestly_atk_l))
+                self.priestly_group.add(
+                    Priestly(p_start + 100, self.y_ground, p_start, p_end, self.priestly_walk_r, self.priestly_walk_l,
+                             self.priestly_atk_r, self.priestly_atk_l))
             elif spawn_type == 1:
-                self.realmwalker_group.add(Realmwalker(p_start + 100, self.y_ground, p_start, p_end, self.realmwalker_walk_r, self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
+                self.realmwalker_group.add(
+                    Realmwalker(p_start + 100, self.y_ground, p_start, p_end, self.realmwalker_walk_r,
+                                self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
             elif spawn_type == 2:
-                self.pursuer_group.add(Pursuer(p_start + 100, self.y_ground, p_start, p_end, self.pursuer_walk_r, self.pursuer_walk_l, self.pursuer_atk_r, self.pursuer_atk_l))
+                self.pursuer_group.add(
+                    Pursuer(p_start + 100, self.y_ground, p_start, p_end, self.pursuer_walk_r, self.pursuer_walk_l,
+                            self.pursuer_atk_r, self.pursuer_atk_l))
             elif spawn_type == 3:
-                self.braid_group.add(Braid(p_start + 100, self.y_ground, p_start, p_end, self.braid_walk_r, self.braid_walk_l, self.braid_atk_r, self.braid_atk_l))
+                self.braid_group.add(
+                    Braid(p_start + 100, self.y_ground, p_start, p_end, self.braid_walk_r, self.braid_walk_l,
+                          self.braid_atk_r, self.braid_atk_l))
             else:
-                self.deadlight_group.add(Deadlight(p_start + 100, self.y_ground, p_start, p_end, self.deadlight_walk_r, self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
+                self.deadlight_group.add(Deadlight(p_start + 100, self.y_ground, p_start, p_end, self.deadlight_walk_r,
+                                                   self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -890,10 +944,12 @@ class Level_05(Level_01):
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for group in [self.priestly_group, self.realmwalker_group, self.pursuer_group, self.braid_group, self.deadlight_group]:
+        for group in [self.priestly_group, self.realmwalker_group, self.pursuer_group, self.braid_group,
+                      self.deadlight_group]:
             for enemy in group:
                 if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
                     screen.blit(enemy.image, (x, enemy.rect.top))
+
 
 # --- NEW LEVEL 6 CLASS ---
 class Level_06(Level_01):
@@ -945,8 +1001,10 @@ class Level_06(Level_01):
 
         # --- ENEMY SCALES & FRAMES ---
         vic_scale = 0.60
-        self.vic_walk_r, self.vic_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/victoria_walk_ss.png", 8, vic_scale)
-        self.vic_atk_r, self.vic_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/victoria_attack_ss.png", 12, vic_scale)
+        self.vic_walk_r, self.vic_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/victoria_walk_ss.png",
+                                                             8, vic_scale)
+        self.vic_atk_r, self.vic_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/victoria_attack_ss.png",
+                                                           12, vic_scale)
 
     def reset(self):
         super().reset()
@@ -978,7 +1036,9 @@ class Level_06(Level_01):
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            self.victoria_group.add(Victoria(p_start + 100, self.y_ground, p_start, p_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r, self.vic_atk_l))
+            self.victoria_group.add(
+                Victoria(p_start + 100, self.y_ground, p_start, p_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
+                         self.vic_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 

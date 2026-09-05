@@ -448,7 +448,7 @@ while run:
                 if proj.state == "fly":
                     enemy_targets = [current_level.enemy_group]
                     if current_state == "LEVEL_1":
-                        enemy_targets.extend([current_level.demon_group, current_level.skeleton_group])
+                        enemy_targets.extend([current_level.demon_group, current_level.skeleton_group, current_level.hellguard_group])
                     elif current_state == "LEVEL_2":
                         enemy_targets.extend(
                             [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group])
@@ -681,7 +681,7 @@ while run:
 
                 enemy_groups_to_check = [current_level.enemy_group]
                 if current_state == "LEVEL_1":
-                    enemy_groups_to_check.extend([current_level.demon_group, current_level.skeleton_group])
+                    enemy_groups_to_check.extend([current_level.demon_group, current_level.skeleton_group, current_level.hellguard_group])
                 elif current_state == "LEVEL_2":
                     enemy_groups_to_check.extend(
                         [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group])
