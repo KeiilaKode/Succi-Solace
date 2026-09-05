@@ -431,10 +431,10 @@ while run:
                     pass
 
             screen_x = succi.x - camera_x
-            if screen_x > SCREEN_WIDTH * 0.75:
-                camera_x += (screen_x - SCREEN_WIDTH * 0.75)
-            elif screen_x < SCREEN_WIDTH * 0.25:
-                camera_x -= (SCREEN_WIDTH * 0.25 - screen_x)
+            if screen_x > SCREEN_WIDTH * 0.65:
+                camera_x += (screen_x - SCREEN_WIDTH * 0.65)
+            elif screen_x < SCREEN_WIDTH * 0.35:
+                camera_x -= (SCREEN_WIDTH * 0.35 - screen_x)
 
             if camera_x > current_level.level_end_x - SCREEN_WIDTH:
                 camera_x = current_level.level_end_x - SCREEN_WIDTH

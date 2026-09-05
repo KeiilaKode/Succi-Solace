@@ -209,7 +209,7 @@ class Elaine(BaseEnemy):
 class RoyalHH(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=4, rem_value=15, speed=3.8, anim_speed=80)
+                         health=4, rem_value=15, speed=2.8, anim_speed=65)
 
 
 class RoyalZombie(BaseEnemy):

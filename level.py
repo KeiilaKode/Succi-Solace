@@ -1,3 +1,5 @@
+#-level-#
+
 # -level-#
 
 # --- level.py ---#
@@ -229,7 +231,7 @@ class Level_01:
                 e_end = e_start + segment_width
 
                 # Pick a random spot within this chunk of the background
-                spawn_x = random.randint(e_start + 50, e_end - 50)
+                spawn_x = random.randint(e_start + 110, e_end - 110)  # I ADJUSTED IT TO 110, IF THIS WONT WORK FOR THE LATER LEVELS THEN CORRECT ME #
 
                 # Randomly spawn a Demon, Skeleton, or Hellguard
                 spawn_choice = random.randint(1, 3)
@@ -411,18 +413,27 @@ class Level_02(Level_01):
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            if t_bg % 3 == 0:
-                self.helldog_group.add(
-                    Helldog(p_start + 100, self.y_ground, p_start, p_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r,
-                            self.hd_atk_l))
-            elif t_bg % 3 == 1:
-                self.pkgrim_group.add(
-                    Pkgrim(p_start + 100, self.y_ground, p_start, p_end, self.pk_walk_r, self.pk_walk_l, self.pk_atk_r,
-                           self.pk_atk_l))
-            else:
-                self.mau_group.add(
-                    Mau(p_start + 100, self.y_ground, p_start, p_end, self.mau_walk_r, self.mau_walk_l, self.mau_atk_r,
-                        self.mau_atk_l))
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
+
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                spawn_choice = random.randint(1, 3)
+                if spawn_choice == 1:
+                    self.helldog_group.add(
+                        Helldog(spawn_x, self.y_ground, e_start, e_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r,
+                                self.hd_atk_l))
+                elif spawn_choice == 2:
+                    self.pkgrim_group.add(
+                        Pkgrim(spawn_x, self.y_ground, e_start, e_end, self.pk_walk_r, self.pk_walk_l, self.pk_atk_r,
+                               self.pk_atk_l))
+                else:
+                    self.mau_group.add(
+                        Mau(spawn_x, self.y_ground, e_start, e_end, self.mau_walk_r, self.mau_walk_l, self.mau_atk_r,
+                            self.mau_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -552,33 +563,39 @@ class Level_03(Level_01):
 
         current_bg_index = int(player_x // self.bg_w)
 
-        # Alternate Spawning between Azule, Titus, Lionel, and Demented
         if current_bg_index > self.last_spawned_bg_index and current_bg_index < self.max_backgrounds - 1:
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            spawn_type = t_bg % 4
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
 
-            if spawn_type == 0:
-                self.azule_group.add(
-                    Azule(p_start + 100, self.y_ground, p_start, p_end, self.azule_walk_r, self.azule_walk_l,
-                          self.azule_atk_r, self.azule_atk_l)
-                )
-            elif spawn_type == 1:
-                self.titus_group.add(
-                    Titus(p_start + 100, self.y_ground, p_start, p_end, self.titus_walk_r, self.titus_walk_l,
-                          self.titus_atk_r, self.titus_atk_l)
-                )
-            elif spawn_type == 2:
-                self.lionel_group.add(
-                    Lionel(p_start + 100, self.y_ground, p_start, p_end, self.lionel_walk_r, self.lionel_walk_l,
-                           self.lionel_atk_r, self.lionel_atk_l)
-                )
-            else:
-                self.demented_group.add(
-                    Demented(p_start + 100, self.y_ground, p_start, p_end, self.dem_walk_r, self.dem_walk_l,
-                             self.dem_idle_r, self.dem_idle_l, self.dem_atk_r, self.dem_atk_l)
-                )
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                spawn_choice = random.randint(1, 4)
+                if spawn_choice == 1:
+                    self.azule_group.add(
+                        Azule(spawn_x, self.y_ground, e_start, e_end, self.azule_walk_r, self.azule_walk_l,
+                              self.azule_atk_r, self.azule_atk_l)
+                    )
+                elif spawn_choice == 2:
+                    self.titus_group.add(
+                        Titus(spawn_x, self.y_ground, e_start, e_end, self.titus_walk_r, self.titus_walk_l,
+                              self.titus_atk_r, self.titus_atk_l)
+                    )
+                elif spawn_choice == 3:
+                    self.lionel_group.add(
+                        Lionel(spawn_x, self.y_ground, e_start, e_end, self.lionel_walk_r, self.lionel_walk_l,
+                               self.lionel_atk_r, self.lionel_atk_l)
+                    )
+                else:
+                    self.demented_group.add(
+                        Demented(spawn_x, self.y_ground, e_start, e_end, self.dem_walk_r, self.dem_walk_l,
+                                 self.dem_idle_r, self.dem_idle_l, self.dem_atk_r, self.dem_atk_l)
+                    )
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -744,37 +761,43 @@ class Level_04(Level_01):
 
         current_bg_index = int(player_x // self.bg_w)
 
-        # Alternate Spawning between the 6 new Level 4 enemies
         if current_bg_index > self.last_spawned_bg_index and current_bg_index < self.max_backgrounds - 1:
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            spawn_type = t_bg % 6
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
 
-            if spawn_type == 0:
-                self.elaine_group.add(
-                    Elaine(p_start + 100, self.y_ground, p_start, p_end, self.elaine_walk_r, self.elaine_walk_l,
-                           self.elaine_atk_r, self.elaine_atk_l))
-            elif spawn_type == 1:
-                self.groundskeeper_group.add(
-                    Groundskeeper(p_start + 100, self.y_ground, p_start, p_end, self.gk_walk_r, self.gk_walk_l,
-                                  self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l))
-            elif spawn_type == 2:
-                self.royalhh_group.add(
-                    RoyalHH(p_start + 100, self.y_ground, p_start, p_end, self.rhh_walk_r, self.rhh_walk_l,
-                            self.rhh_atk_r, self.rhh_atk_l))
-            elif spawn_type == 3:
-                self.royalzombie_group.add(
-                    RoyalZombie(p_start + 100, self.y_ground, p_start, p_end, self.rz_walk_r, self.rz_walk_l,
-                                self.rz_atk_r, self.rz_atk_l))
-            elif spawn_type == 4:
-                self.zombie1_group.add(
-                    Zombie1(p_start + 100, self.y_ground, p_start, p_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r,
-                            self.z1_atk_l))
-            else:
-                self.zombie2_group.add(
-                    Zombie2(p_start + 100, self.y_ground, p_start, p_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r,
-                            self.z2_atk_l))
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                spawn_choice = random.randint(1, 6)
+                if spawn_choice == 1:
+                    self.elaine_group.add(
+                        Elaine(spawn_x, self.y_ground, e_start, e_end, self.elaine_walk_r, self.elaine_walk_l,
+                               self.elaine_atk_r, self.elaine_atk_l))
+                elif spawn_choice == 2:
+                    self.groundskeeper_group.add(
+                        Groundskeeper(spawn_x, self.y_ground, e_start, e_end, self.gk_walk_r, self.gk_walk_l,
+                                      self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l))
+                elif spawn_choice == 3:
+                    self.royalhh_group.add(
+                        RoyalHH(spawn_x, self.y_ground, e_start, e_end, self.rhh_walk_r, self.rhh_walk_l,
+                                self.rhh_atk_r, self.rhh_atk_l))
+                elif spawn_choice == 4:
+                    self.royalzombie_group.add(
+                        RoyalZombie(spawn_x, self.y_ground, e_start, e_end, self.rz_walk_r, self.rz_walk_l,
+                                    self.rz_atk_r, self.rz_atk_l))
+                elif spawn_choice == 5:
+                    self.zombie1_group.add(
+                        Zombie1(spawn_x, self.y_ground, e_start, e_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r,
+                                self.z1_atk_l))
+                else:
+                    self.zombie2_group.add(
+                        Zombie2(spawn_x, self.y_ground, e_start, e_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r,
+                                self.z2_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -906,32 +929,38 @@ class Level_05(Level_01):
 
         current_bg_index = int(player_x // self.bg_w)
 
-        # Alternate Spawning between the 5 Level 5 enemies
         if current_bg_index > self.last_spawned_bg_index and current_bg_index < self.max_backgrounds - 1:
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            spawn_type = t_bg % 5
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
 
-            if spawn_type == 0:
-                self.priestly_group.add(
-                    Priestly(p_start + 100, self.y_ground, p_start, p_end, self.priestly_walk_r, self.priestly_walk_l,
-                             self.priestly_atk_r, self.priestly_atk_l))
-            elif spawn_type == 1:
-                self.realmwalker_group.add(
-                    Realmwalker(p_start + 100, self.y_ground, p_start, p_end, self.realmwalker_walk_r,
-                                self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
-            elif spawn_type == 2:
-                self.pursuer_group.add(
-                    Pursuer(p_start + 100, self.y_ground, p_start, p_end, self.pursuer_walk_r, self.pursuer_walk_l,
-                            self.pursuer_atk_r, self.pursuer_atk_l))
-            elif spawn_type == 3:
-                self.braid_group.add(
-                    Braid(p_start + 100, self.y_ground, p_start, p_end, self.braid_walk_r, self.braid_walk_l,
-                          self.braid_atk_r, self.braid_atk_l))
-            else:
-                self.deadlight_group.add(Deadlight(p_start + 100, self.y_ground, p_start, p_end, self.deadlight_walk_r,
-                                                   self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                spawn_choice = random.randint(1, 5)
+                if spawn_choice == 1:
+                    self.priestly_group.add(
+                        Priestly(spawn_x, self.y_ground, e_start, e_end, self.priestly_walk_r, self.priestly_walk_l,
+                                 self.priestly_atk_r, self.priestly_atk_l))
+                elif spawn_choice == 2:
+                    self.realmwalker_group.add(
+                        Realmwalker(spawn_x, self.y_ground, e_start, e_end, self.realmwalker_walk_r,
+                                    self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
+                elif spawn_choice == 3:
+                    self.pursuer_group.add(
+                        Pursuer(spawn_x, self.y_ground, e_start, e_end, self.pursuer_walk_r, self.pursuer_walk_l,
+                                self.pursuer_atk_r, self.pursuer_atk_l))
+                elif spawn_choice == 4:
+                    self.braid_group.add(
+                        Braid(spawn_x, self.y_ground, e_start, e_end, self.braid_walk_r, self.braid_walk_l,
+                              self.braid_atk_r, self.braid_atk_l))
+                else:
+                    self.deadlight_group.add(Deadlight(spawn_x, self.y_ground, e_start, e_end, self.deadlight_walk_r,
+                                                       self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -1036,9 +1065,17 @@ class Level_06(Level_01):
             t_bg = current_bg_index + 1
             p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
 
-            self.victoria_group.add(
-                Victoria(p_start + 100, self.y_ground, p_start, p_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
-                         self.vic_atk_l))
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
+
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                self.victoria_group.add(
+                    Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
+                             self.vic_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
