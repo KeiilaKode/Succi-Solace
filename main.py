@@ -10,7 +10,7 @@ import config
 # OOP Imports
 from player import Player
 from entities import Projectile, Merchant, Companion
-from level import Level_01, Level_02, Level_03, Level_04, Level_05, Merchant_Room
+from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Merchant_Room
 
 # Isolated UI components
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text
@@ -80,7 +80,9 @@ def load_game(slot):
 
     global_merchant_sold_out = data["merchant_inventory"]
 
-    if current_state == "LEVEL_5":
+    if current_state == "LEVEL_6":
+        current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
+    elif current_state == "LEVEL_5":
         current_level = Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
     elif current_state == "LEVEL_4":
         current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -91,8 +93,8 @@ def load_game(slot):
     else:
         current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-    succi = Player(400.0, current_level.y_ground, animations, animation_speeds,
-                   animation_scale_corrections, jump_fx, cast_fx)
+    succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                   config.ANIMATION_SCALE_CORRECTIONS, jump_fx, cast_fx)
 
     succi.health = data["health"]
     succi.max_health = data["max_health"]
@@ -134,9 +136,9 @@ try:
     death_fx = pygame.mixer.Sound("mats/audio/Pause.mp3")
     death_fx.set_volume(0.6)
     cast_fx = pygame.mixer.Sound("mats/audio/cast.mp3")
-    cast_fx.set_volume(0.4)
+    cast_fx.set_volume(0.28)
     explode_fx = pygame.mixer.Sound("mats/audio/explode.mp3")
-    explode_fx.set_volume(0.2)
+    explode_fx.set_volume(0.18)
     # --- LEVEL 1 --- #
     merchant_voice_fx = pygame.mixer.Sound("mats/audio/merchant entrance.mp3")
     merchant_voice_fx.set_volume(0.6)
@@ -191,13 +193,6 @@ animations = {
     "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png"),
     "jump_kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYINGKICK_NB.png")
 }
-
-animation_speeds = {"idle": 175, "walk": 130, "run": 75, "jump": 80, "run_jump": 50, "duck": 50, "attack": 90,
-                    "run_attack": 75, "kick": 60, "jump_kick": 55}
-animation_loops = {"idle": True, "walk": True, "run": True, "jump": False, "run_jump": False, "duck": False,
-                   "attack": False, "run_attack": False, "kick": False, "jump_kick": False}
-animation_scale_corrections = {"idle": 1.0, "walk": 1.08, "run": 1.08, "jump": 1.1, "run_jump": 1.1, "duck": 1.0,
-                               "attack": 2.8, "run_attack": 1.08, "kick": 2.6, "jump_kick": 2.4}
 
 fireball_img = pygame.image.load("spritesheets/spell sheets/fireball.png").convert_alpha()
 explode_img = pygame.image.load("spritesheets/spell sheets/explode_NB.png").convert_alpha()
@@ -260,7 +255,7 @@ merchant_ui = None
 exiting_merchant = False
 exit_timer = 0
 
-succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections, jump_fx,
+succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS, jump_fx,
                cast_fx)
 tinera_companion = Companion(tinera_frames) if tinera_frames else None
 projectile_group = pygame.sprite.Group()
@@ -297,31 +292,31 @@ while run:
                         pause_menu.save_input_text += event.unicode
             else:
                 if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
-                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
+                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
                         if not game_over:
                             paused = not paused
                             if not paused:
                                 pause_menu.save_state = None  # Reset state when unpausing
 
-                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
+                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
                     succi.x = current_level.door_world_x
                     camera_x = current_level.level_end_x - SCREEN_WIDTH
-                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
-                    current_state = "LEVEL_5"
-                    checkpoint = 5
-                    current_level = Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    succi = Player(400.0, current_level.y_ground, animations, animation_speeds,
-                                   animation_scale_corrections,
+                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+                    current_state = "LEVEL_6"
+                    checkpoint = 6
+                    current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                                   config.ANIMATION_SCALE_CORRECTIONS,
                                    jump_fx, cast_fx)
                     succi.max_health = 3
                     succi.health = 3
                     camera_x = 0.0
                     projectile_group.empty()
-                    pygame.mixer.music.load("mats/audio/Satie_Gnossienne_1.mp3")
-                    pygame.mixer.music.set_volume(0.2)
+                    pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
+                    pygame.mixer.music.set_volume(0.23)
                     pygame.mixer.music.play(-1, 0.0)
 
-                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
+                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
                     if player_has_melee and not paused and not game_over:
                         succi.trigger_kick()
 
@@ -329,7 +324,7 @@ while run:
             if event.button == 1:
                 mouse_click = True
 
-            if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
+            if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
                 is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or keys[pygame.K_d]
                 is_running = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
@@ -351,7 +346,7 @@ while run:
         if action == "PLAY":
             current_state = "LEVEL_1"
             current_level.reset()
-            succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections,
+            succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
                            jump_fx, cast_fx)
             rem = 0
             checkpoint = 1
@@ -360,6 +355,7 @@ while run:
             paused = False
 
             pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+            pygame.mixer.music.set_volume(0.2)
             pygame.mixer.music.play(-1, 0.0)
 
         elif type(action) is dict:
@@ -371,18 +367,25 @@ while run:
                     paused = False
                     projectile_group.empty()
 
-                    if current_state == "LEVEL_5":
-                        pygame.mixer.music.load("mats/audio/Satie_Gnossienne_1.mp3")
+                    if current_state == "LEVEL_6":
+                        pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
+                        pygame.mixer.music.set_volume(0.23)
+                    elif current_state == "LEVEL_5":
+                        pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
+                        pygame.mixer.music.set_volume(0.23)
                     elif current_state == "LEVEL_4":
                         pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
+                        pygame.mixer.music.set_volume(0.2)
                     elif current_state == "LEVEL_3":
                         pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
+                        pygame.mixer.music.set_volume(0.23)
                     elif current_state == "LEVEL_2":
                         pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
+                        pygame.mixer.music.set_volume(0.2)
                     else:
                         pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+                        pygame.mixer.music.set_volume(0.2)
 
-                    pygame.mixer.music.set_volume(0.2)
                     pygame.mixer.music.play(-1, 0.0)
 
             elif action.get("action") == "DELETE":
@@ -394,8 +397,8 @@ while run:
                 main_menu._load_save_data()  # Refresh UI slots
 
     elif not game_over and not paused:
-        if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
-            succi.update(keys, dt, dt_ms, current_level.platform_group, animation_loops)
+        if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+            succi.update(keys, dt, dt_ms, current_level.platform_group, config.ANIMATION_LOOPS)
 
             if succi.x > current_level.level_end_x - 100:
                 succi.x = current_level.level_end_x - 100
@@ -460,6 +463,8 @@ while run:
                     elif current_state == "LEVEL_5":
                         enemy_targets.extend(
                             [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
+                    elif current_state == "LEVEL_6":
+                        enemy_targets.extend([current_level.victoria_group])
 
                     for group in enemy_targets:
                         for target in group:
@@ -584,6 +589,9 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_5", Level_05(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 5
                             elif last_completed_level == "LEVEL_5":
+                                current_state, current_level, checkpoint = "LEVEL_6", Level_06(SCREEN_WIDTH,
+                                                                                               SCREEN_HEIGHT), 6
+                            elif last_completed_level == "LEVEL_6":
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
 
@@ -596,18 +604,25 @@ while run:
                             is_level_3_merchant = False
                             is_level_4_merchant = False
 
-                            if current_state == "LEVEL_5":
-                                pygame.mixer.music.load("mats/audio/Satie_Gnossienne_1.mp3")
+                            if current_state == "LEVEL_6":
+                                pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
+                                pygame.mixer.music.set_volume(0.23)
+                            elif current_state == "LEVEL_5":
+                                pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
+                                pygame.mixer.music.set_volume(0.23)
                             elif current_state == "LEVEL_4":
                                 pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
+                                pygame.mixer.music.set_volume(0.2)
                             elif current_state == "LEVEL_3":
                                 pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
+                                pygame.mixer.music.set_volume(0.23)
                             elif current_state == "LEVEL_2":
                                 pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
+                                pygame.mixer.music.set_volume(0.2)
                             else:
                                 pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+                                pygame.mixer.music.set_volume(0.2)
 
-                            pygame.mixer.music.set_volume(0.2)
                             pygame.mixer.music.play(-1, 0.0)
 
           # ========================================== #
@@ -619,7 +634,7 @@ while run:
 
     else:
         if not game_over:
-            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5"]:
+            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
@@ -636,7 +651,7 @@ while run:
                         last_completed_level = current_state
                         is_level_2_merchant = (last_completed_level == "LEVEL_2")
                         is_level_3_merchant = (last_completed_level == "LEVEL_3")
-                        is_level_4_merchant = (last_completed_level in ["LEVEL_4", "LEVEL_5"])
+                        is_level_4_merchant = (last_completed_level in ["LEVEL_4", "LEVEL_5", "LEVEL_6"])
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
@@ -681,6 +696,8 @@ while run:
                 elif current_state == "LEVEL_5":
                     enemy_groups_to_check.extend(
                         [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
+                elif current_state == "LEVEL_6":
+                    enemy_groups_to_check.extend([current_level.victoria_group])
 
                 for group in enemy_groups_to_check:
                     for target in group:
@@ -758,7 +775,7 @@ while run:
             restart_action = None
             if pygame.key.get_pressed()[pygame.K_SPACE]:
                 restart_action = checkpoint
-            elif checkpoint in [2, 3, 4, 5] and pygame.key.get_pressed()[pygame.K_1]:
+            elif checkpoint in [2, 3, 4, 5, 6] and pygame.key.get_pressed()[pygame.K_1]:
                 restart_action = 1
 
             if restart_action is not None:
@@ -770,7 +787,9 @@ while run:
                 old_has_tinera = player_has_tinera
                 old_tinera_active = tinera_active
 
-                if restart_action == 5:
+                if restart_action == 6:
+                    current_state, current_level = "LEVEL_6", Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
+                elif restart_action == 5:
                     current_state, current_level = "LEVEL_5", Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
                 elif restart_action == 4:
                     current_state, current_level = "LEVEL_4", Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -792,7 +811,7 @@ while run:
 
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
-                succi = Player(400.0, current_level.y_ground, animations, animation_speeds, animation_scale_corrections,
+                succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
                                jump_fx, cast_fx)
                 succi.max_health = old_max_health
                 succi.health = old_max_health

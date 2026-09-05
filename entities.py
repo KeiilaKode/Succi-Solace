@@ -1,7 +1,5 @@
 #-entities-#
 
-#-entities-#
-
 import pygame
 import random
 import sys
@@ -256,6 +254,14 @@ class Deadlight(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=6, rem_value=25, speed=2.6, anim_speed=90)
+
+
+# --- LEVEL 6 ENEMIES --- #
+
+class Victoria(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=7, rem_value=30, speed=2.6, anim_speed=90)
 
 
 # ==========================================
