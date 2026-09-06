@@ -414,7 +414,7 @@ class Platform(pygame.sprite.Sprite):
 
 
 class Merchant(pygame.sprite.Sprite):
-    def __init__(self, screen_width, screen_height, sheet_filename, columns=7, rows=4, target_duration=10000):
+    def __init__(self, screen_width, screen_height, sheet_filename, columns=7, rows=4, target_duration=9600):
         super().__init__()
         self.screen_width = screen_width
         self.screen_height = screen_height

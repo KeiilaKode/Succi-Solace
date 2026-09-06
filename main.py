@@ -674,7 +674,7 @@ while run:
                         if is_level_5_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_5.png", columns=10,
-                                                    rows=8, target_duration=9590)
+                                                    rows=8, target_duration=9500)
                         elif is_level_4_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_4.png", columns=10,
@@ -686,11 +686,11 @@ while run:
                         elif is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
-                                                    rows=7, target_duration=11650) # or 11900
+                                                    rows=7, target_duration=11650) # or 11900 11650
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
-                                                    rows=6)
+                                                    rows=6, target_duration=9590)
 
                         merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)
                         succi.x = 400.0
