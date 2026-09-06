@@ -156,6 +156,9 @@ try:
     # --- LEVEL 4 --- #
     merchant_greet_lvl_4_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl4.mp3")
     merchant_greet_lvl_4_fx.set_volume(0.6)
+    # --- LEVEL 5 --- #
+    merchant_greet_lvl_5_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl5.mp3")
+    merchant_greet_lvl_5_fx.set_volume(0.6)
 
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
@@ -229,6 +232,7 @@ rem = 0
 is_level_2_merchant = False
 is_level_3_merchant = False
 is_level_4_merchant = False  #new#
+is_level_5_merchant = False
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -489,7 +493,9 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                if is_level_4_merchant:
+                if is_level_5_merchant:
+                    active_merchant_audio = merchant_greet_lvl_5_fx
+                elif is_level_4_merchant:
                     active_merchant_audio = merchant_greet_lvl_4_fx
                 elif is_level_3_merchant:
                     active_merchant_audio = merchant_greet_lvl_3_fx
@@ -502,7 +508,15 @@ while run:
                 if merchant_npc.state == "idle" and merchant_ui is not None:
                     if not exiting_merchant:
                         bought_item = merchant_ui.update(mouse_pos, mouse_click, rem)
-                        if bought_item:
+
+                        if bought_item == "EXIT_CLICKED":
+                            exiting_merchant = True
+                            exit_timer = pygame.time.get_ticks()
+                            try:
+                                departure_fx.play()
+                            except NameError:
+                                pass
+                        elif bought_item:
                             try:
                                 laugh_fx.play()
                             except NameError:
@@ -513,58 +527,58 @@ while run:
 
                             merchant_ui.selected_item = None
 
-                        if bought_item == "Health Potion":
-                            rem -= 50
-                            succi.max_health = 3
-                            succi.health = 3
+                            if bought_item == "Health Potion":
+                                rem -= 50
+                                succi.max_health = 3
+                                succi.health = 3
 
-                        elif bought_item == "Teal Potion":
-                            rem -= 50
-                            succi.health = min(succi.health + 3, succi.max_health)
+                            elif bought_item == "Teal Potion":
+                                rem -= 50
+                                succi.health = min(succi.health + 3, succi.max_health)
 
-                        elif bought_item == "Emerald Potion":
-                            rem -= 150
-                            succi.max_health += 2
-                            succi.health = succi.max_health
+                            elif bought_item == "Emerald Potion":
+                                rem -= 150
+                                succi.max_health += 2
+                                succi.health = succi.max_health
 
-                        elif bought_item == "Pink Potion":
-                            rem -= 100
-                            succi.health = min(succi.health + 5, succi.max_health)
+                            elif bought_item == "Pink Potion":
+                                rem -= 100
+                                succi.health = min(succi.health + 5, succi.max_health)
 
-                        elif bought_item == "Gold Potion":
-                            rem -= 250
-                            succi.max_health += 1
-                            succi.health = succi.max_health
+                            elif bought_item == "Gold Potion":
+                                rem -= 250
+                                succi.max_health += 1
+                                succi.health = succi.max_health
 
-                        elif bought_item == "Silver Potion":
-                            rem -= 50
-                            player_has_melee = True
+                            elif bought_item == "Silver Potion":
+                                rem -= 50
+                                player_has_melee = True
 
-                        elif bought_item == "Blue Potion":
-                            rem -= 50
-                            player_has_blue_magic = True
-                            if succi.spell_right_click is None:
-                                succi.spell_right_click = "blue"
+                            elif bought_item == "Blue Potion":
+                                rem -= 50
+                                player_has_blue_magic = True
+                                if succi.spell_right_click is None:
+                                    succi.spell_right_click = "blue"
 
-                        elif bought_item == "Wings Potion":
-                            rem -= 150
+                            elif bought_item == "Wings Potion":
+                                rem -= 150
 
-                        elif bought_item == "Purple Potion":
-                            rem -= 50
-                            player_has_purple_magic = True
-                            if succi.spell_right_click is None:
-                                succi.spell_right_click = "purple"
+                            elif bought_item == "Purple Potion":
+                                rem -= 50
+                                player_has_purple_magic = True
+                                if succi.spell_right_click is None:
+                                    succi.spell_right_click = "purple"
 
-                        elif bought_item == "Rainbow Potion":
-                            rem -= 50
-                            player_has_rainbow_dance = True
-                            if succi.spell_right_click is None:
-                                succi.spell_right_click = "rainbow"
+                            elif bought_item == "Rainbow Potion":
+                                rem -= 50
+                                player_has_rainbow_dance = True
+                                if succi.spell_right_click is None:
+                                    succi.spell_right_click = "rainbow"
 
-                        elif bought_item == "Royal Potion":
-                            rem -= 50
-                            player_has_tinera = True
-                            tinera_active = True
+                            elif bought_item == "Royal Potion":
+                                rem -= 50
+                                player_has_tinera = True
+                                tinera_active = True
 
                         if keys[pygame.K_e]:
                             exiting_merchant = True
@@ -603,6 +617,7 @@ while run:
                             is_level_2_merchant = False
                             is_level_3_merchant = False
                             is_level_4_merchant = False
+                            is_level_5_merchant = False
 
                             if current_state == "LEVEL_6":
                                 pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
@@ -651,11 +666,16 @@ while run:
                         last_completed_level = current_state
                         is_level_2_merchant = (last_completed_level == "LEVEL_2")
                         is_level_3_merchant = (last_completed_level == "LEVEL_3")
-                        is_level_4_merchant = (last_completed_level in ["LEVEL_4", "LEVEL_5", "LEVEL_6"])
+                        is_level_4_merchant = (last_completed_level == "LEVEL_4")
+                        is_level_5_merchant = (last_completed_level in ["LEVEL_5", "LEVEL_6"])
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
-                        if is_level_4_merchant:
+                        if is_level_5_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_5.png", columns=10,
+                                                    rows=8, target_duration=9590)
+                        elif is_level_4_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_4.png", columns=10,
                                                     rows=8, target_duration=9590)

@@ -1,3 +1,5 @@
+#-ui-#
+
 import pygame
 import os
 import json
@@ -588,11 +590,17 @@ class Merchant_UI:
             self.bg = pygame.transform.smoothscale(raw_bg, (screen_width, screen_height))
 
             try:
-                self.exit_hud_img = pygame.transform.smoothscale(
-                    pygame.image.load("mats/ui/exit_hud.png").convert_alpha(), (330, 100))
+                raw_exit = pygame.image.load("mats/ui/exit_hud.png").convert_alpha()
+                self.exit_hud_img = pygame.transform.smoothscale(raw_exit, (390, 140))
+                # Create the hover effect image (10% larger)
+                self.exit_hud_hover = pygame.transform.smoothscale(raw_exit, (int(390 * 1.10), int(140 * 1.10)))
+                # Set up the collision rectangle based on your specific screen coordinates
+                self.exit_rect = self.exit_hud_img.get_rect(topleft=(880, 5))
             except pygame.error as e:
                 print(f"Error loading exit HUD: {e}")
                 self.exit_hud_img = None
+                self.exit_hud_hover = None
+                self.exit_rect = None
 
             self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(),
                                                          (110, 150))
@@ -691,6 +699,11 @@ class Merchant_UI:
 
         if mouse_click and (current_time - self.last_click_time > 200):
             self.last_click_time = current_time
+
+            # --- NEW EXIT LOGIC TRIGGER ---
+            if getattr(self, 'exit_rect', None) and self.exit_rect.collidepoint(mouse_pos):
+                return "EXIT_CLICKED"
+
             if self.right_arrow_rect.collidepoint(mouse_pos) and self.current_page < self.max_pages - 1:
                 self.current_page += 1
                 self.selected_item_data = None
@@ -757,5 +770,12 @@ class Merchant_UI:
             screen.blit(self.font_title.render(f"COST: {self.selected_item_data['cost']} REM", True, PINK),
                         (text_x, y_offset + 10))
 
-        if self.exit_hud_img:
-            screen.blit(self.exit_hud_img, (935, 25))
+        # --- UPDATED EXIT HUD DRAWING ---
+        if self.exit_hud_img and getattr(self, 'exit_rect', None):
+            if self.exit_rect.collidepoint(mouse_pos):
+                # Draw the hovered version centered over the standard rect
+                hover_rect = self.exit_hud_hover.get_rect(center=self.exit_rect.center)
+                screen.blit(self.exit_hud_hover, hover_rect)
+            else:
+                # Draw the standard version
+                screen.blit(self.exit_hud_img, self.exit_rect)
