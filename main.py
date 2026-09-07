@@ -448,6 +448,7 @@ while run:
             current_level.update(dt, camera_x, succi.x, succi.y)
             projectile_group.update(dt, camera_x, SCREEN_WIDTH)
 
+            # ENEMIES IN THEIR LEVEL GROUPS #
             for proj in projectile_group:
                 if proj.state == "fly":
                     enemy_targets = [current_level.enemy_group]
@@ -619,6 +620,7 @@ while run:
                             is_level_4_merchant = False
                             is_level_5_merchant = False
 
+                            # SONG TO PLAY PER WHAT LEVEL #
                             if current_state == "LEVEL_6":
                                 pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
                                 pygame.mixer.music.set_volume(0.23)
@@ -671,6 +673,7 @@ while run:
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
+                        # MERCHANT ANIMATION LENGTHS #
                         if is_level_5_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_5.png", columns=10,
