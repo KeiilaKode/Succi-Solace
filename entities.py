@@ -2,6 +2,8 @@
 
 #-entities-#
 
+#-entities-#
+
 import pygame
 import random
 import sys
@@ -380,6 +382,47 @@ class GargoyleFlyer(pygame.sprite.Sprite):
         self.rect.x += self.direction * 4
         if self.rect.right < camera_x - 400 or self.rect.left > camera_x + screen_width + 400:
             self.kill()
+
+
+class GreyGargoyleFlyer(pygame.sprite.Sprite):
+    def __init__(self, x_pos, y, sheet_img, scale, forced_direction=None):
+        super().__init__()
+        self.rem_value = 5
+        self.animation_list = []
+        self.frame_index = 0
+        self.update_time = pygame.time.get_ticks()
+        self.direction = forced_direction if forced_direction is not None else random.choice([-1, 1])
+
+        sprite_sheet = SpriteSheet(sheet_img)
+        # Slicing for exactly 12 frames
+        fw = sheet_img.get_width() // 12
+        fh = sheet_img.get_height()
+
+        for i in range(12):
+            img = sprite_sheet.get_image(i, fw, fh, scale, (0, 0, 0))
+            # Image natively faces right, flip when direction is left (-1)
+            img = pygame.transform.flip(img, self.direction == -1, False)
+            img.set_colorkey((0, 0, 0))
+            self.animation_list.append(img)
+
+        self.image = self.animation_list[self.frame_index]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect(topleft=(x_pos, y))
+
+    def update(self, camera_x, screen_width):
+        if pygame.time.get_ticks() - self.update_time > 100:
+            self.update_time = pygame.time.get_ticks()
+            self.frame_index = (self.frame_index + 1) % len(self.animation_list)
+        self.image = self.animation_list[self.frame_index]
+
+        if getattr(self, "last_image", None) != self.image:
+            self.mask = pygame.mask.from_surface(self.image)
+            self.last_image = self.image
+
+        self.rect.x += self.direction * 4
+        if self.rect.right < camera_x - 400 or self.rect.left > camera_x + screen_width + 400:
+            self.kill()
+
 
 class Projectile(pygame.sprite.Sprite):
     # --- ADDED exp_offset=0 HERE ---

@@ -1,16 +1,13 @@
 #-level-#
 
-# -level-#
+#-level-#
 
-# -level-#
-
-# -level-#
 
 # --- level.py ---#
 import pygame
 import random
 import sys
-from entities import Enemy, GargoyleFlyer, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, \
+from entities import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
     Hellguard
 
@@ -160,7 +157,7 @@ class Level_01:
         self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
 
         self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         self.demon_walk_r, self.demon_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/D_WALK_SSNB.png",
                                                                  7, 0.35)
@@ -211,7 +208,7 @@ class Level_01:
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -364,7 +361,7 @@ class Level_02(Level_01):
             print(f"Error loading Level 2 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         enemy_scale = 0.55
         self.hd_walk_r, self.hd_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/helldog_walk_ss.png", 8,
@@ -404,7 +401,7 @@ class Level_02(Level_01):
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -502,7 +499,7 @@ class Level_03(Level_01):
             print(f"Error loading Level 3 platforms: {e}")
             self.platform_images = [self.platform_image]
 
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         # Load Azule's frames
         enemy_scale = 0.55
@@ -558,7 +555,7 @@ class Level_03(Level_01):
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -693,7 +690,7 @@ class Level_04(Level_01):
                 self.platform_images = [self.platform_image]
 
         # Load universal flyers
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         # --- CUSTOM SCALES FOR EACH ENEMY ---
         elaine_scale = 0.60
@@ -756,7 +753,7 @@ class Level_04(Level_01):
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -869,7 +866,7 @@ class Level_05(Level_01):
                 self.platform_images = [self.platform_image]
 
         # Load universal flyers
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         # --- ENEMY SCALES & FRAMES ---
         scale = 0.65
@@ -924,7 +921,7 @@ class Level_05(Level_01):
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -1027,7 +1024,7 @@ class Level_06(Level_01):
                 self.platform_images = [self.platform_image]
 
         # Load universal flyers
-        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_red_fly_ss.png").convert_alpha()
+        self.bird_sheet_img = pygame.image.load("spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         # --- ENEMY SCALES & FRAMES ---
         vic_scale = 0.60
@@ -1057,7 +1054,7 @@ class Level_06(Level_01):
             if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GargoyleFlyer(ex, random.randint(200, 520), self.bird_sheet_img, 0.28,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 510), self.bird_sheet_img, 0.31,
                                            forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
