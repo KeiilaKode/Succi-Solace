@@ -4,6 +4,8 @@
 
 #-entities-#
 
+#-entities-#
+
 import pygame
 import random
 import sys
@@ -153,10 +155,29 @@ class BaseIdleEnemy(BaseEnemy):
 # ==========================================
 # - - - LEVEL 1 ENEMIES - - - #
 
+# --- NOT IN USE (Preserved for future use) ---
 class Demon(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=1, rem_value=5, speed=2.0, anim_speed=100, y_offset=85)
+
+
+# --- NEW LEVEL 1 ENEMIES ---
+class Cecil(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=2, rem_value=6, speed=2.2, anim_speed=90, y_offset=160)
+
+class Margret(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=2, rem_value=8, speed=2.4, anim_speed=90, y_offset=160)
+
+class Lashly(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=3, rem_value=12, speed=1.8, anim_speed=100, y_offset=160)
+
 
 class Hellguard(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
@@ -278,6 +299,7 @@ class Victoria(BaseEnemy):
 # IDLE ENEMIES (Refactored)
 # ==========================================
 # LEVEL 1 ENEMY #
+# --- NOT IN USE (Preserved for future use) ---
 class Skeleton(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                  attack_l):
