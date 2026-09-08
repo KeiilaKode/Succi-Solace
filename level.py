@@ -1,3 +1,5 @@
+#-level-#
+
 # -level-#
 
 # -level-#
@@ -12,7 +14,7 @@ import sys
 from entities import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, \
     Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
-    Hellguard, Cecil, Margret, Lashly
+    Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad
 
 
 def trim_black_side_borders(surface, threshold=15):
@@ -1071,6 +1073,11 @@ class Level_06(Level_01):
         super().__init__(screen_width, screen_height)
 
         self.victoria_group = pygame.sprite.Group()
+        self.kali_group = pygame.sprite.Group()
+        self.kimoura_group = pygame.sprite.Group()
+        self.cassie_group = pygame.sprite.Group()
+        self.silas_group = pygame.sprite.Group()
+        self.thad_group = pygame.sprite.Group()
 
     def load_assets(self):
         # 1. Setup the 17 background images
@@ -1119,9 +1126,39 @@ class Level_06(Level_01):
         self.vic_atk_r, self.vic_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/victoria_attack_ss.png",
                                                            12, vic_scale)
 
+        self.kali_walk_r, self.kali_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kali_walk_ss.png",
+                                                               8, vic_scale)
+        self.kali_atk_r, self.kali_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kali_attack_ss.png",
+                                                             10, vic_scale)
+
+        self.kimoura_walk_r, self.kimoura_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kimoura_walk_ss.png",
+                                                                     8, vic_scale)
+        self.kimoura_atk_r, self.kimoura_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kimoura_attack_ss.png",
+                                                                   12, vic_scale)
+
+        self.cassie_walk_r, self.cassie_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/cassie_walk_ss.png",
+                                                                   8, vic_scale)
+        self.cassie_atk_r, self.cassie_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/cassie_attack_ss.png",
+                                                                 12, vic_scale)
+
+        self.silas_walk_r, self.silas_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/silas_walk_ss.png",
+                                                                 8, vic_scale)
+        self.silas_atk_r, self.silas_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/silas_attack_ss.png",
+                                                               12, vic_scale)
+
+        self.thad_walk_r, self.thad_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_walk_ss.png",
+                                                               8, vic_scale)
+        self.thad_atk_r, self.thad_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_attack_ss.png",
+                                                             12, vic_scale)
+
     def reset(self):
         super().reset()
         self.victoria_group.empty()
+        self.kali_group.empty()
+        self.kimoura_group.empty()
+        self.cassie_group.empty()
+        self.silas_group.empty()
+        self.thad_group.empty()
 
     def update(self, dt, camera_x, player_x, player_y):
         for platform in list(self.platform_group):
@@ -1158,17 +1195,45 @@ class Level_06(Level_01):
                 e_end = e_start + segment_width
                 spawn_x = random.randint(e_start + 110, e_end - 110)
 
-                self.victoria_group.add(
-                    Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
-                             self.vic_atk_l))
+                spawn_choice = random.randint(1, 6)
+                if spawn_choice == 1:
+                    self.victoria_group.add(
+                        Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
+                                 self.vic_atk_l))
+                elif spawn_choice == 2:
+                    self.kali_group.add(
+                        Kali(spawn_x, self.y_ground, e_start, e_end, self.kali_walk_r, self.kali_walk_l, self.kali_atk_r,
+                             self.kali_atk_l))
+                elif spawn_choice == 3:
+                    self.kimoura_group.add(
+                        Kimoura(spawn_x, self.y_ground, e_start, e_end, self.kimoura_walk_r, self.kimoura_walk_l, self.kimoura_atk_r,
+                                self.kimoura_atk_l))
+                elif spawn_choice == 4:
+                    self.cassie_group.add(
+                        Cassie(spawn_x, self.y_ground, e_start, e_end, self.cassie_walk_r, self.cassie_walk_l, self.cassie_atk_r,
+                               self.cassie_atk_l))
+                elif spawn_choice == 5:
+                    self.silas_group.add(
+                        Silas(spawn_x, self.y_ground, e_start, e_end, self.silas_walk_r, self.silas_walk_l, self.silas_atk_r,
+                              self.silas_atk_l))
+                else:
+                    self.thad_group.add(
+                        Thad(spawn_x, self.y_ground, e_start, e_end, self.thad_walk_r, self.thad_walk_l, self.thad_atk_r,
+                             self.thad_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
         self.enemy_group.update(camera_x, self.screen_width)
         self.victoria_group.update(camera_x, player_x, player_y)
+        self.kali_group.update(camera_x, player_x, player_y)
+        self.kimoura_group.update(camera_x, player_x, player_y)
+        self.cassie_group.update(camera_x, player_x, player_y)
+        self.silas_group.update(camera_x, player_x, player_y)
+        self.thad_group.update(camera_x, player_x, player_y)
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for enemy in self.victoria_group:
-            if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
-                screen.blit(enemy.image, (x, enemy.rect.top))
+        for group in [self.victoria_group, self.kali_group, self.kimoura_group, self.cassie_group, self.silas_group, self.thad_group]:
+            for enemy in group:
+                if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
+                    screen.blit(enemy.image, (x, enemy.rect.top))

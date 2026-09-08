@@ -471,7 +471,7 @@ while run:
                         enemy_targets.extend(
                             [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
                     elif current_state == "LEVEL_6":
-                        enemy_targets.extend([current_level.victoria_group])
+                        enemy_targets.extend([current_level.victoria_group, current_level.kali_group, current_level.kimoura_group, current_level.cassie_group, current_level.silas_group, current_level.thad_group])
 
                     for group in enemy_targets:
                         for target in group:
@@ -722,7 +722,7 @@ while run:
                     enemy_groups_to_check.extend(
                         [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
                 elif current_state == "LEVEL_6":
-                    enemy_groups_to_check.extend([current_level.victoria_group])
+                    enemy_groups_to_check.extend([current_level.victoria_group, current_level.kali_group, current_level.kimoura_group, current_level.cassie_group, current_level.silas_group, current_level.thad_group])
 
                 for group in enemy_groups_to_check:
                     for target in group:

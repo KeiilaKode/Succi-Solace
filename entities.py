@@ -294,6 +294,31 @@ class Victoria(BaseEnemy):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=7, rem_value=30, speed=2.6, anim_speed=90)
 
+class Kali(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=6, rem_value=28, speed=2.8, anim_speed=90)
+
+class Kimoura(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=7, rem_value=30, speed=2.5, anim_speed=90)
+
+class Cassie(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=7, rem_value=32, speed=2.7, anim_speed=90)
+
+class Silas(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=9, rem_value=35, speed=2.2, anim_speed=100)
+
+class Thad(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=8, rem_value=30, speed=3.0, anim_speed=80)
+
 
 # ==========================================
 # IDLE ENEMIES (Refactored)
