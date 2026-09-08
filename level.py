@@ -1,17 +1,11 @@
 #-level-#
 
-# -level-#
-
-# -level-#
-
-# -level-#
-
-
 # --- level.py ---#
 import pygame
 import random
 import sys
-from entities import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Platform, Helldog, Mau, Pkgrim, Azule, \
+from entities import Platform
+from enemies import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Helldog, Mau, Pkgrim, Azule, \
     Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
     Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad
