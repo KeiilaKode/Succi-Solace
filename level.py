@@ -1,5 +1,7 @@
 #-level-#
 
+#-level-#
+
 # --- level.py ---#
 import pygame
 import random
@@ -235,7 +237,7 @@ class Level_01:
             Platform(800, 480, self.start_plat_widths[2], random.choice(self.platform_images),
                      self.platform_offset_ratio))
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000: platform.kill()
 
@@ -250,7 +252,7 @@ class Level_01:
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
@@ -439,7 +441,7 @@ class Level_02(Level_01):
         self.mau_group.empty()
         self.pkgrim_group.empty()
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000: platform.kill()
 
@@ -453,7 +455,7 @@ class Level_02(Level_01):
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
@@ -599,7 +601,7 @@ class Level_03(Level_01):
         self.lionel_group.empty()
         self.demented_group.empty()
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000:
                 platform.kill()
@@ -614,7 +616,7 @@ class Level_03(Level_01):
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
@@ -804,7 +806,7 @@ class Level_04(Level_01):
         self.zombie1_group.empty()
         self.zombie2_group.empty()
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000:
                 platform.kill()
@@ -819,7 +821,7 @@ class Level_04(Level_01):
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
@@ -979,7 +981,7 @@ class Level_05(Level_01):
         self.braid_group.empty()
         self.deadlight_group.empty()
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000:
                 platform.kill()
@@ -994,7 +996,7 @@ class Level_05(Level_01):
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
@@ -1154,7 +1156,7 @@ class Level_06(Level_01):
         self.silas_group.empty()
         self.thad_group.empty()
 
-    def update(self, dt, camera_x, player_x, player_y):
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
             if platform.rect.right < camera_x - 4000:
                 platform.kill()
@@ -1169,7 +1171,7 @@ class Level_06(Level_01):
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
 
-            if len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,

@@ -1,6 +1,8 @@
-#-main-#
+# -main-#
 
-#-main-#
+# -main-#
+
+# -main-#
 
 import pygame
 import sys
@@ -14,8 +16,8 @@ from player import Player
 from entities import Projectile, Merchant, Companion
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Merchant_Room
 
-# Isolated UI components
-from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text
+# Isolated UI components - ADDED LevelBanner HERE
+from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner
 
 # SAVE FILE CREATION #
 
@@ -233,8 +235,11 @@ camera_x = 0.0
 rem = 0
 is_level_2_merchant = False
 is_level_3_merchant = False
-is_level_4_merchant = False  #new#
+is_level_4_merchant = False  # new#
 is_level_5_merchant = False
+
+# --- CURRENT LEVEL BANNER TRACKER ---
+current_banner = None
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -261,7 +266,8 @@ merchant_ui = None
 exiting_merchant = False
 exit_timer = 0
 
-succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS, jump_fx,
+succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
+               jump_fx,
                cast_fx)
 tinera_companion = Companion(tinera_frames) if tinera_frames else None
 projectile_group = pygame.sprite.Group()
@@ -304,13 +310,19 @@ while run:
                             if not paused:
                                 pause_menu.save_state = None  # Reset state when unpausing
 
-                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                   "LEVEL_5", "LEVEL_6"]:
                     succi.x = current_level.door_world_x
                     camera_x = current_level.level_end_x - SCREEN_WIDTH
-                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                   "LEVEL_5", "LEVEL_6"]:
                     current_state = "LEVEL_6"
                     checkpoint = 6
                     current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+                    # --- TRIGGER LEVEL BANNER FOR CHEAT KEY ---
+                    current_banner = LevelBanner(6, SCREEN_WIDTH)
+
                     succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
                                    config.ANIMATION_SCALE_CORRECTIONS,
                                    jump_fx, cast_fx)
@@ -322,7 +334,8 @@ while run:
                     pygame.mixer.music.set_volume(0.23)
                     pygame.mixer.music.play(-1, 0.0)
 
-                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                   "LEVEL_5", "LEVEL_6"]:
                     if player_has_melee and not paused and not game_over:
                         succi.trigger_kick()
 
@@ -330,7 +343,8 @@ while run:
             if event.button == 1:
                 mouse_click = True
 
-            if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+            if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5",
+                                                                  "LEVEL_6"]:
                 is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or keys[pygame.K_d]
                 is_running = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
 
@@ -351,8 +365,13 @@ while run:
         action = main_menu.update(mouse_pos, mouse_click)
         if action == "PLAY":
             current_state = "LEVEL_1"
+
+            # --- TRIGGER LEVEL BANNER ON NEW GAME ---
+            current_banner = LevelBanner(1, SCREEN_WIDTH)
+
             current_level.reset()
-            succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
+            succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                           config.ANIMATION_SCALE_CORRECTIONS,
                            jump_fx, cast_fx)
             rem = 0
             checkpoint = 1
@@ -368,6 +387,11 @@ while run:
             if action.get("action") == "LOAD":
                 loaded_name = load_game(action["slot"])
                 if loaded_name:
+
+                    # --- TRIGGER LEVEL BANNER ON LOAD GAME ---
+                    lvl_num = int(current_state.split("_")[1])
+                    current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
+
                     camera_x = 0.0
                     game_over = False
                     paused = False
@@ -447,7 +471,10 @@ while run:
             if camera_x < 0:
                 camera_x = 0
 
-            current_level.update(dt, camera_x, succi.x, succi.y)
+            # --- PREPARE SAFE ZONE LOGIC FOR LEVEL.PY (Coming Next!) ---
+            # We will pass the banner's active status down to level.py in the next step
+            # so we can stop the gargoyles gracefully.
+            current_level.update(dt, camera_x, succi.x, succi.y, current_banner is not None)
             projectile_group.update(dt, camera_x, SCREEN_WIDTH)
 
             # ENEMIES IN THEIR LEVEL GROUPS #
@@ -455,7 +482,9 @@ while run:
                 if proj.state == "fly":
                     enemy_targets = [current_level.enemy_group]
                     if current_state == "LEVEL_1":
-                        enemy_targets.extend([current_level.cecil_group, current_level.margret_group, current_level.lashly_group, current_level.hellguard_group])
+                        enemy_targets.extend(
+                            [current_level.cecil_group, current_level.margret_group, current_level.lashly_group,
+                             current_level.hellguard_group])
                     elif current_state == "LEVEL_2":
                         enemy_targets.extend(
                             [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group])
@@ -469,9 +498,12 @@ while run:
                              current_level.royalzombie_group, current_level.zombie1_group, current_level.zombie2_group])
                     elif current_state == "LEVEL_5":
                         enemy_targets.extend(
-                            [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
+                            [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group,
+                             current_level.braid_group, current_level.deadlight_group])
                     elif current_state == "LEVEL_6":
-                        enemy_targets.extend([current_level.victoria_group, current_level.kali_group, current_level.kimoura_group, current_level.cassie_group, current_level.silas_group, current_level.thad_group])
+                        enemy_targets.extend(
+                            [current_level.victoria_group, current_level.kali_group, current_level.kimoura_group,
+                             current_level.cassie_group, current_level.silas_group, current_level.thad_group])
 
                     for group in enemy_targets:
                         for target in group:
@@ -612,6 +644,10 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
 
+                            # --- TRIGGER LEVEL BANNER ON MERCHANT EXIT ---
+                            lvl_num = int(current_state.split("_")[1])
+                            current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
+
                             succi.x = 400.0
                             camera_x = 0.0
                             exiting_merchant = False
@@ -644,9 +680,9 @@ while run:
 
                             pygame.mixer.music.play(-1, 0.0)
 
-          # ========================================== #
-                   # # # DRAWING PHASE # # #
-          # ========================================== #
+        # ========================================== #
+        # # # DRAWING PHASE # # #
+        # ========================================== #
 
     if current_state == "MAIN_MENU":
         main_menu.draw(screen, mouse_pos)
@@ -675,6 +711,9 @@ while run:
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
+                        # Kill the banner if they enter the merchant room early
+                        current_banner = None
+
                         # MERCHANT ANIMATION LENGTHS #
                         if is_level_5_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -687,11 +726,11 @@ while run:
                         elif is_level_3_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_3.png", columns=10,
-                                                    rows=8, target_duration=9590) # or 9900
+                                                    rows=8, target_duration=9590)  # or 9900
                         elif is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
-                                                    rows=7, target_duration=11650) # or 11900 11650
+                                                    rows=7, target_duration=11650)  # or 11900 11650
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
@@ -706,7 +745,9 @@ while run:
 
                 enemy_groups_to_check = [current_level.enemy_group]
                 if current_state == "LEVEL_1":
-                    enemy_groups_to_check.extend([current_level.cecil_group, current_level.margret_group, current_level.lashly_group, current_level.hellguard_group])
+                    enemy_groups_to_check.extend(
+                        [current_level.cecil_group, current_level.margret_group, current_level.lashly_group,
+                         current_level.hellguard_group])
                 elif current_state == "LEVEL_2":
                     enemy_groups_to_check.extend(
                         [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group])
@@ -720,9 +761,12 @@ while run:
                          current_level.royalzombie_group, current_level.zombie1_group, current_level.zombie2_group])
                 elif current_state == "LEVEL_5":
                     enemy_groups_to_check.extend(
-                        [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group, current_level.braid_group, current_level.deadlight_group])
+                        [current_level.priestly_group, current_level.realmwalker_group, current_level.pursuer_group,
+                         current_level.braid_group, current_level.deadlight_group])
                 elif current_state == "LEVEL_6":
-                    enemy_groups_to_check.extend([current_level.victoria_group, current_level.kali_group, current_level.kimoura_group, current_level.cassie_group, current_level.silas_group, current_level.thad_group])
+                    enemy_groups_to_check.extend(
+                        [current_level.victoria_group, current_level.kali_group, current_level.kimoura_group,
+                         current_level.cassie_group, current_level.silas_group, current_level.thad_group])
 
                 for group in enemy_groups_to_check:
                     for target in group:
@@ -771,6 +815,13 @@ while run:
 
             hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
                      succi.spell_right_click)
+
+            # --- RENDER LEVEL BANNER OVER THE GAME (UNDER PAUSE MENU) ---
+            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6"]:
+                if current_banner:
+                    is_banner_active = current_banner.update_and_draw(screen)
+                    if not is_banner_active:
+                        current_banner = None
 
             if paused:
                 owned_spells = ["normal"]
@@ -834,9 +885,13 @@ while run:
                     old_has_tinera = False
                     old_tinera_active = False
 
+                # --- TRIGGER LEVEL BANNER ON RESPAWN ---
+                current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
+
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
-                succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
+                succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                               config.ANIMATION_SCALE_CORRECTIONS,
                                jump_fx, cast_fx)
                 succi.max_health = old_max_health
                 succi.health = old_max_health

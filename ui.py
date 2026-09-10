@@ -1,4 +1,6 @@
-#-ui-#
+# -ui-#
+
+# -ui-#
 
 import pygame
 import os
@@ -101,6 +103,51 @@ class HUD:
                 screen.blit(self.icon_blue, self.icon_blue.get_rect(center=right_icon_center))
             elif right_spell == "rainbow" and self.icon_rainbow:
                 screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=right_icon_center))
+
+
+class LevelBanner:
+    def __init__(self, level_num, screen_width):
+        self.duration = 3500  # Total display time in milliseconds (3.5 seconds)
+        self.start_time = pygame.time.get_ticks()
+
+        try:
+            img_path = f"mats/ui/level_huds/level {level_num} hud.png"
+            raw_img = pygame.image.load(img_path).convert_alpha()
+            # Scaled to your exact preferred size
+            self.image = pygame.transform.smoothscale(raw_img, (1225, 448))
+        except pygame.error as e:
+            print(f"Error loading level banner for level {level_num}: {e}")
+            self.image = pygame.Surface((1225, 448), pygame.SRCALPHA)
+            self.image.fill((0, 0, 0, 0))
+
+        self.rect = self.image.get_rect(center=(screen_width // 2, 230))
+
+    def update_and_draw(self, screen):
+        elapsed = pygame.time.get_ticks() - self.start_time
+        if elapsed > self.duration:
+            return False  # Banner finished playing
+
+        # Calculate alpha for smooth fade-in and fade-out
+        # 0 - 500ms: Fade In
+        # 500 - 2500ms: Fully Visible
+        # 2500 - 3500ms: Fade Out
+        if elapsed < 500:
+            alpha = int((elapsed / 500) * 255)
+        elif elapsed > 2500:
+            alpha = int((1.0 - ((elapsed - 2500) / 1000)) * 255)
+        else:
+            alpha = 255
+
+        alpha = max(0, min(255, alpha))
+
+        # Apply alpha to a copy of the image for smooth fading
+        fade_image = self.image.copy()
+        fade_image.set_alpha(alpha)
+        screen.blit(fade_image, self.rect)
+        return True
+
+    def is_finished(self):
+        return pygame.time.get_ticks() - self.start_time > self.duration
 
 
 class PauseMenu:
