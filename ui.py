@@ -413,61 +413,97 @@ class PauseMenu:
 class DeathScreen:
     def __init__(self, w, h):
         self.w = w
-        self.h = h
+        self.h = h  # 800
         self.font_big = pygame.font.SysFont("Lucida Sans", 48)
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
         try:
             self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/death_screen.png").convert_alpha(),
                                                    (w, h))
-            death_overlay_raw = pygame.image.load("mats/ui/death overlay.png").convert_alpha()
-            self.overlay = pygame.transform.smoothscale(death_overlay_raw, (1100, 1150))
-        except pygame.error:
+
+            # --- NEW CENTER HUD ---
+            # Scale proportionally to match screen height
+            center_raw = pygame.image.load("mats/ui/center_death_hud.png").convert_alpha()
+            c_raw_w, c_raw_h = center_raw.get_size()
+            c_ratio = self.h / c_raw_h
+            self.overlay = pygame.transform.smoothscale(center_raw, (int(c_raw_w * c_ratio), self.h))
+
+            # --- LOAD & SCALE THE OUTER FRAMES ---
+            frame_raw = pygame.image.load("mats/ui/small window frame.png").convert_alpha()
+            f_raw_w, f_raw_h = frame_raw.get_size()
+            f_ratio = self.h / f_raw_h
+            self.frame_w = int(f_raw_w * f_ratio)
+            self.frame_img = pygame.transform.smoothscale(frame_raw, (self.frame_w, self.h))
+
+            # --- LOAD & SCALE SUCCI ---
+            succi_raw = pygame.image.load("mats/ui/Succi_alpha.png").convert_alpha()
+            s_raw_w, s_raw_h = succi_raw.get_size()
+            s_target_h = int(self.h * 0.95)
+            s_ratio = s_target_h / s_raw_h
+            self.succi_img = pygame.transform.smoothscale(succi_raw, (int(s_raw_w * s_ratio), s_target_h))
+
+            # --- LOAD & SCALE ADELAIDE ---
+            adelaide_raw = pygame.image.load("mats/ui/Adelaide_alpha.png").convert_alpha()
+            a_raw_w, a_raw_h = adelaide_raw.get_size()
+            a_target_h = int(self.h * 0.95)
+            a_ratio = a_target_h / a_raw_h
+            self.adelaide_img = pygame.transform.smoothscale(adelaide_raw, (int(a_raw_w * a_ratio), a_target_h))
+
+        except pygame.error as e:
+            print(f"Error loading DeathScreen assets: {e}")
             self.bg = pygame.Surface((w, h))
             self.overlay = None
+            self.frame_img = None
+            self.succi_img = None
+            self.adelaide_img = None
 
     def draw_centered_scaled_text(self, screen, text, font, color, center_x, y_pos, scale):
         raw_text = font.render(text, True, color)
         scaled_w = int(raw_text.get_width() * scale)
         scaled_h = int(raw_text.get_height() * scale)
         scaled_text = pygame.transform.smoothscale(raw_text, (scaled_w, scaled_h))
-        text_rect = scaled_text.get_rect(center=(center_x + 20, y_pos))
+        text_rect = scaled_text.get_rect(center=(center_x, y_pos))
         screen.blit(scaled_text, text_rect)
 
     def draw(self, screen, current_state, checkpoint):
+        # 1. Background
         screen.blit(self.bg, (0, 0))
+
+        # 2. Outer Frames
+        if self.frame_img:
+            screen.blit(self.frame_img, (0, 0))
+            screen.blit(self.frame_img, (self.w - self.frame_w, 0))
+
+        # 3. Characters (Inside their frames)
+        if self.succi_img:
+            s_rect = self.succi_img.get_rect(midbottom=(self.frame_w // 2, self.h - 15))
+            screen.blit(self.succi_img, s_rect)
+
+        if self.adelaide_img:
+            a_rect = self.adelaide_img.get_rect(midbottom=(self.w - (self.frame_w // 2), self.h - 15))
+            screen.blit(self.adelaide_img, a_rect)
+
+        # 4. Center Tombstone Overlay (Draw ON TOP of characters)
         if self.overlay:
-            do_rect = self.overlay.get_rect(center=(self.w // 2, self.h // 2 + 50))
+            do_rect = self.overlay.get_rect(center=(self.w // 2, self.h // 2))
             screen.blit(self.overlay, do_rect)
 
-        center_x = self.w // 2
-        start_y = self.h // 2 - 35
-        line_w = 155
-        line_left = center_x - line_w
-        line_right = center_x + line_w + 40
-        line_color = pygame.Color("plum1")
-        line_thickness = 6
+        # 5. Dynamic Text Placements
+        center_x = self.w // 2 - 10
 
-        pygame.draw.line(screen, line_color, (line_left, start_y - 45), (line_right, start_y - 45), line_thickness)
-        self.draw_centered_scaled_text(screen, "YOUR SOUL HAS BEEN LOST!!", self.font_big, pygame.Color("turquoise1"),
-                                       center_x, start_y, 0.50)
+        # Tweak this Y value to move "LEVEL X" up or down so it sits right under "DIED ON:"
+        level_y_pos = self.h // 2 + 120
 
-        pygame.draw.line(screen, line_color, (line_left, start_y + 45), (line_right, start_y + 45), line_thickness)
-        self.draw_centered_scaled_text(screen, f"DIED ON: {current_state.replace('_', ' ')}", self.font_big,
-                                       pygame.Color("turquoise1"), center_x, start_y + 95, 0.45)
+        # Tweak this Y value to move the "Restart" text under "PRESS SPACE"
+        restart_y_pos = self.h - 160
 
-        pygame.draw.line(screen, line_color, (line_left, start_y + 145), (line_right, start_y + 145), line_thickness)
+        # Draw the dynamic Level Name (e.g., "LEVEL 1")
+        self.draw_centered_scaled_text(screen, f"{current_state.replace('_', ' ')}", self.font_big,
+                                       pygame.Color("turquoise1"), center_x, level_y_pos, 0.45)
 
-        if checkpoint in [2, 3, 4]:
-            self.draw_centered_scaled_text(screen, f"PRESS SPACE TO RETRY LEVEL {checkpoint}", self.font_small,
-                                           pygame.Color("turquoise1"), center_x, start_y + 185, 1.0)
-            self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART AT LEVEL 1", self.font_small, LIGHT_GRAY,
-                                           center_x, start_y + 215, 0.8)
-        else:
-            self.draw_centered_scaled_text(screen, "PRESS SPACE TO TRY AGAIN", self.font_small,
-                                           pygame.Color("turquoise1"), center_x, start_y + 200, 1.2)
-
-        pygame.draw.line(screen, line_color, (line_left, start_y + 255), (line_right, start_y + 255), line_thickness)
-
+        # Draw the dynamic Restart instruction
+        if checkpoint in [2, 3, 4, 5, 6, 7]:
+            self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART AT LEVEL 1", self.font_small,
+                                           pygame.Color("plum1"), center_x, restart_y_pos, 0.9)
 
 class MainMenu:
     def __init__(self, w, h):
