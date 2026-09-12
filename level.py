@@ -1,3 +1,5 @@
+#-level-#
+
 # -level-#
 
 # --- level.py ---#
@@ -8,7 +10,8 @@ from entities import Platform
 from enemies import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Helldog, Mau, Pkgrim, Azule, \
     Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
-    Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad, Castleguard
+    Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad, Castleguard, \
+    Molly, Skelter, Tilde, Topaz, Volgrim, Voss
 
 
 def trim_black_side_borders(surface, threshold=15):
@@ -1272,6 +1275,14 @@ class Level_07(Level_01):
         self.start_plat_widths = [180, 200, 160]
         super().__init__(screen_width, screen_height)
 
+        # Level 7 Specific Enemy Groups
+        self.molly_group = pygame.sprite.Group()
+        self.skelter_group = pygame.sprite.Group()
+        self.tilde_group = pygame.sprite.Group()
+        self.topaz_group = pygame.sprite.Group()
+        self.volgrim_group = pygame.sprite.Group()
+        self.voss_group = pygame.sprite.Group()
+
     def load_assets(self):
         # 1. Setup the 19 background images
         full_bg_filenames = [f"backgrounds/lvl_7_bgs/{i} lvl7.png" for i in range(1, 20)]
@@ -1312,8 +1323,38 @@ class Level_07(Level_01):
         self.bird_sheet_img = pygame.image.load(
             "spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
+        # --- ENEMY SCALES & FRAMES ---
+        base_scale = 0.65
+        molly_scale = 0.65  # Keeping her large and imposing!
+        tilde_scale = 0.58
+        topaz_scale = 0.69
+
+        self.molly_walk_r, self.molly_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/molly_walk_ss.png", 8, molly_scale)
+        self.molly_atk_r, self.molly_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/molly_attack_ss.png", 15, molly_scale)
+
+        self.skelter_walk_r, self.skelter_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/skelter_walk_ss.png", 8, base_scale)
+        self.skelter_atk_r, self.skelter_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/skelter_attack_ss.png", 12, base_scale)
+
+        self.tilde_walk_r, self.tilde_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/tilde_walk_ss.png", 10, tilde_scale)
+        self.tilde_atk_r, self.tilde_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/tilde_attack_ss.png", 10, tilde_scale)
+
+        self.topaz_walk_r, self.topaz_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/topaz_walk_ss.png", 8, topaz_scale)
+        self.topaz_atk_r, self.topaz_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/topaz_attack_ss.png", 12, topaz_scale)
+
+        self.volgrim_walk_r, self.volgrim_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/volgrim_walk_ss.png", 8, base_scale)
+        self.volgrim_atk_r, self.volgrim_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/volgrim_attack_ss.png", 10, base_scale)
+
+        self.voss_walk_r, self.voss_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_walk_ss.png", 8, base_scale)
+        self.voss_atk_r, self.voss_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_attack_ss.png", 12, base_scale)
+
     def reset(self):
         super().reset()
+        self.molly_group.empty()
+        self.skelter_group.empty()
+        self.tilde_group.empty()
+        self.topaz_group.empty()
+        self.volgrim_group.empty()
+        self.voss_group.empty()
 
     def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
@@ -1336,7 +1377,47 @@ class Level_07(Level_01):
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
                                                        forced_direction=1 if side == "left" else -1))
 
+        current_bg_index = int(player_x // self.bg_w)
+
+        if current_bg_index > self.last_spawned_bg_index and current_bg_index < self.max_backgrounds - 1:
+            t_bg = current_bg_index + 1
+            p_start, p_end = t_bg * self.bg_w, (t_bg + 1) * self.bg_w - 100
+
+            num_enemies = random.randint(2, 3)
+            segment_width = (p_end - p_start) // num_enemies
+
+            for i in range(num_enemies):
+                e_start = p_start + (i * segment_width)
+                e_end = e_start + segment_width
+                spawn_x = random.randint(e_start + 110, e_end - 110)
+
+                spawn_choice = random.randint(1, 6)
+                if spawn_choice == 1:
+                    self.molly_group.add(Molly(spawn_x, self.y_ground, e_start, e_end, self.molly_walk_r, self.molly_walk_l, self.molly_atk_r, self.molly_atk_l))
+                elif spawn_choice == 2:
+                    self.skelter_group.add(Skelter(spawn_x, self.y_ground, e_start, e_end, self.skelter_walk_r, self.skelter_walk_l, self.skelter_atk_r, self.skelter_atk_l))
+                elif spawn_choice == 3:
+                    self.tilde_group.add(Tilde(spawn_x, self.y_ground, e_start, e_end, self.tilde_walk_r, self.tilde_walk_l, self.tilde_atk_r, self.tilde_atk_l))
+                elif spawn_choice == 4:
+                    self.topaz_group.add(Topaz(spawn_x, self.y_ground, e_start, e_end, self.topaz_walk_r, self.topaz_walk_l, self.topaz_atk_r, self.topaz_atk_l))
+                elif spawn_choice == 5:
+                    self.volgrim_group.add(Volgrim(spawn_x, self.y_ground, e_start, e_end, self.volgrim_walk_r, self.volgrim_walk_l, self.volgrim_atk_r, self.volgrim_atk_l))
+                else:
+                    self.voss_group.add(Voss(spawn_x, self.y_ground, e_start, e_end, self.voss_walk_r, self.voss_walk_l, self.voss_atk_r, self.voss_atk_l))
+
+            self.last_spawned_bg_index = current_bg_index
+
         self.enemy_group.update(camera_x, self.screen_width)
+        self.molly_group.update(camera_x, player_x, player_y)
+        self.skelter_group.update(camera_x, player_x, player_y)
+        self.tilde_group.update(camera_x, player_x, player_y)
+        self.topaz_group.update(camera_x, player_x, player_y)
+        self.volgrim_group.update(camera_x, player_x, player_y)
+        self.voss_group.update(camera_x, player_x, player_y)
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
+        for group in [self.molly_group, self.skelter_group, self.tilde_group, self.topaz_group, self.volgrim_group, self.voss_group]:
+            for enemy in group:
+                if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
+                    screen.blit(enemy.image, (x, enemy.rect.top))
