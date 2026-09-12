@@ -1,6 +1,4 @@
-#-level-#
-
-#-level-#
+# -level-#
 
 # --- level.py ---#
 import pygame
@@ -10,7 +8,7 @@ from entities import Platform
 from enemies import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Helldog, Mau, Pkgrim, Azule, \
     Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
-    Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad
+    Hellguard, Cecil, Margret, Lashly, Kali, Kimoura, Cassie, Silas, Thad, Castleguard
 
 
 def trim_black_side_borders(surface, threshold=15):
@@ -377,6 +375,7 @@ class Level_02(Level_01):
         self.helldog_group = pygame.sprite.Group()
         self.mau_group = pygame.sprite.Group()
         self.pkgrim_group = pygame.sprite.Group()
+        self.castleguard_group = pygame.sprite.Group()
 
     def load_assets(self):
         base_bg_filenames = [
@@ -420,6 +419,7 @@ class Level_02(Level_01):
             "spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
 
         enemy_scale = 0.55
+        cg_scale = 0.75
         self.hd_walk_r, self.hd_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/helldog_walk_ss.png", 8,
                                                            enemy_scale)
         self.hd_atk_r, self.hd_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/helldog_attack_ss.png", 11,
@@ -435,11 +435,19 @@ class Level_02(Level_01):
         self.pk_atk_r, self.pk_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/pkgrim_attack_ss.png", 10,
                                                          enemy_scale)
 
+        self.cg_walk_r, self.cg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_walk_ss.png",
+                                                           8,
+                                                           cg_scale)
+        self.cg_atk_r, self.cg_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_attack_ss.png",
+                                                         12,
+                                                         cg_scale)
+
     def reset(self):
         super().reset()
         self.helldog_group.empty()
         self.mau_group.empty()
         self.pkgrim_group.empty()
+        self.castleguard_group.empty()
 
     def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
         for platform in list(self.platform_group):
@@ -475,7 +483,7 @@ class Level_02(Level_01):
                 e_end = e_start + segment_width
                 spawn_x = random.randint(e_start + 110, e_end - 110)
 
-                spawn_choice = random.randint(1, 3)
+                spawn_choice = random.randint(1, 4)
                 if spawn_choice == 1:
                     self.helldog_group.add(
                         Helldog(spawn_x, self.y_ground, e_start, e_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r,
@@ -484,10 +492,15 @@ class Level_02(Level_01):
                     self.pkgrim_group.add(
                         Pkgrim(spawn_x, self.y_ground, e_start, e_end, self.pk_walk_r, self.pk_walk_l, self.pk_atk_r,
                                self.pk_atk_l))
-                else:
+                elif spawn_choice == 3:
                     self.mau_group.add(
                         Mau(spawn_x, self.y_ground, e_start, e_end, self.mau_walk_r, self.mau_walk_l, self.mau_atk_r,
                             self.mau_atk_l))
+                else:
+                    self.castleguard_group.add(
+                        Castleguard(spawn_x, self.y_ground, e_start, e_end, self.cg_walk_r, self.cg_walk_l,
+                                    self.cg_atk_r,
+                                    self.cg_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
 
@@ -495,10 +508,11 @@ class Level_02(Level_01):
         self.helldog_group.update(camera_x, player_x, player_y)
         self.mau_group.update(camera_x, player_x, player_y)
         self.pkgrim_group.update(camera_x, player_x, player_y)
+        self.castleguard_group.update(camera_x, player_x, player_y)
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for group in [self.helldog_group, self.mau_group, self.pkgrim_group]:
+        for group in [self.helldog_group, self.mau_group, self.pkgrim_group, self.castleguard_group]:
             for enemy in group:
                 if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
                     screen.blit(enemy.image, (x, enemy.rect.top))
@@ -1127,15 +1141,19 @@ class Level_06(Level_01):
         self.kali_atk_r, self.kali_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kali_attack_ss.png",
                                                              10, vic_scale)
 
-        self.kimoura_walk_r, self.kimoura_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kimoura_walk_ss.png",
-                                                                     8, vic_scale)
-        self.kimoura_atk_r, self.kimoura_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/kimoura_attack_ss.png",
-                                                                   12, vic_scale)
+        self.kimoura_walk_r, self.kimoura_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_6_enemies/kimoura_walk_ss.png",
+            8, vic_scale)
+        self.kimoura_atk_r, self.kimoura_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_6_enemies/kimoura_attack_ss.png",
+            12, vic_scale)
 
-        self.cassie_walk_r, self.cassie_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/cassie_walk_ss.png",
-                                                                   8, vic_scale)
-        self.cassie_atk_r, self.cassie_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/cassie_attack_ss.png",
-                                                                 12, vic_scale)
+        self.cassie_walk_r, self.cassie_walk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_6_enemies/cassie_walk_ss.png",
+            8, vic_scale)
+        self.cassie_atk_r, self.cassie_atk_l = load_enemy_frames(
+            "spritesheets/enemies/lvl_6_enemies/cassie_attack_ss.png",
+            12, vic_scale)
 
         self.silas_walk_r, self.silas_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/silas_walk_ss.png",
                                                                  8, vic_scale)
@@ -1194,27 +1212,33 @@ class Level_06(Level_01):
                 spawn_choice = random.randint(1, 6)
                 if spawn_choice == 1:
                     self.victoria_group.add(
-                        Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r,
+                        Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l,
+                                 self.vic_atk_r,
                                  self.vic_atk_l))
                 elif spawn_choice == 2:
                     self.kali_group.add(
-                        Kali(spawn_x, self.y_ground, e_start, e_end, self.kali_walk_r, self.kali_walk_l, self.kali_atk_r,
+                        Kali(spawn_x, self.y_ground, e_start, e_end, self.kali_walk_r, self.kali_walk_l,
+                             self.kali_atk_r,
                              self.kali_atk_l))
                 elif spawn_choice == 3:
                     self.kimoura_group.add(
-                        Kimoura(spawn_x, self.y_ground, e_start, e_end, self.kimoura_walk_r, self.kimoura_walk_l, self.kimoura_atk_r,
+                        Kimoura(spawn_x, self.y_ground, e_start, e_end, self.kimoura_walk_r, self.kimoura_walk_l,
+                                self.kimoura_atk_r,
                                 self.kimoura_atk_l))
                 elif spawn_choice == 4:
                     self.cassie_group.add(
-                        Cassie(spawn_x, self.y_ground, e_start, e_end, self.cassie_walk_r, self.cassie_walk_l, self.cassie_atk_r,
+                        Cassie(spawn_x, self.y_ground, e_start, e_end, self.cassie_walk_r, self.cassie_walk_l,
+                               self.cassie_atk_r,
                                self.cassie_atk_l))
                 elif spawn_choice == 5:
                     self.silas_group.add(
-                        Silas(spawn_x, self.y_ground, e_start, e_end, self.silas_walk_r, self.silas_walk_l, self.silas_atk_r,
+                        Silas(spawn_x, self.y_ground, e_start, e_end, self.silas_walk_r, self.silas_walk_l,
+                              self.silas_atk_r,
                               self.silas_atk_l))
                 else:
                     self.thad_group.add(
-                        Thad(spawn_x, self.y_ground, e_start, e_end, self.thad_walk_r, self.thad_walk_l, self.thad_atk_r,
+                        Thad(spawn_x, self.y_ground, e_start, e_end, self.thad_walk_r, self.thad_walk_l,
+                             self.thad_atk_r,
                              self.thad_atk_l))
 
             self.last_spawned_bg_index = current_bg_index
@@ -1229,7 +1253,90 @@ class Level_06(Level_01):
 
     def draw(self, screen, camera_x):
         super().draw(screen, camera_x)
-        for group in [self.victoria_group, self.kali_group, self.kimoura_group, self.cassie_group, self.silas_group, self.thad_group]:
+        for group in [self.victoria_group, self.kali_group, self.kimoura_group, self.cassie_group, self.silas_group,
+                      self.thad_group]:
             for enemy in group:
                 if -200 < (x := enemy.rect.x - camera_x) < self.screen_width + 200:
                     screen.blit(enemy.image, (x, enemy.rect.top))
+
+
+# --- NEW LEVEL 7 CLASS ---
+class Level_07(Level_01):
+    def __init__(self, screen_width, screen_height):
+        self.platform_offset_ratio = 0.22
+        self.floor_y_offset = 0
+        self.plat_min_w = 90
+        self.plat_max_w = 200
+        self.plat_min_y = 320
+        self.plat_max_y = 625
+        self.start_plat_widths = [180, 200, 160]
+        super().__init__(screen_width, screen_height)
+
+    def load_assets(self):
+        # 1. Setup the 19 background images
+        full_bg_filenames = [f"backgrounds/lvl_7_bgs/{i} lvl7.png" for i in range(1, 20)]
+
+        first_raw = pygame.image.load(full_bg_filenames[0]).convert()
+        first_trimmed = trim_black_side_borders(first_raw)
+        bg_scale_ratio = self.screen_height / first_trimmed.get_height()
+        self.bg_w = int(first_trimmed.get_width() * bg_scale_ratio) - 1
+
+        self.bg_list = [pygame.transform.smoothscale(trim_black_side_borders(pygame.image.load(f).convert()),
+                                                     (self.bg_w, self.screen_height)) for f in full_bg_filenames]
+        self.max_backgrounds = len(full_bg_filenames)
+
+        # Load Custom Level 7 Floor
+        raw_floor = pygame.image.load("mats/platforms/level 7 plats/lvl7_floor.png").convert_alpha()
+        trimmed_floor = trim_transparent_borders(raw_floor)
+
+        self.target_floor_h = 200
+        floor_scale_ratio = self.target_floor_h / trimmed_floor.get_height()
+        self.floor_w = int(trimmed_floor.get_width() * floor_scale_ratio) - 1
+        self.floor_img = pygame.transform.smoothscale(trimmed_floor, (self.floor_w, self.target_floor_h))
+        self.floor_flip_img = pygame.transform.flip(self.floor_img, True, False)
+
+        self.platform_image = pygame.image.load("mats/platforms/level 1 plats/plat31c.png").convert_alpha()
+
+        # Load custom Level 7 platforms
+        self.platform_images = []
+        try:
+            for i in range(1, 4):
+                plat_raw = pygame.image.load(f"mats/platforms/level 7 plats/lvl_7_p{i}.png").convert_alpha()
+                self.platform_images.append(trim_transparent_borders(plat_raw))
+        except pygame.error as e:
+            print(f"Error loading Level 7 platforms: {e}")
+            if not self.platform_images:
+                self.platform_images = [self.platform_image]
+
+        # Load universal flyers
+        self.bird_sheet_img = pygame.image.load(
+            "spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
+
+    def reset(self):
+        super().reset()
+
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
+        for platform in list(self.platform_group):
+            if platform.rect.right < camera_x - 4000:
+                platform.kill()
+
+        if camera_x + self.screen_width < self.level_end_x - 500:
+            if len(self.platform_group) < 40:
+                last_p = max(self.platform_group, key=lambda p: p.rect.x, default=None)
+                p_x = (last_p.rect.right + random.randint(120, 290)) if last_p else (camera_x + self.screen_width + 100)
+                chosen_plat_img = random.choice(self.platform_images)
+                self.platform_group.add(
+                    Platform(p_x, random.randint(self.plat_min_y, self.plat_max_y),
+                             random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
+                             self.platform_offset_ratio))
+
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
+                side = random.choice(["left", "right"])
+                ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
+                                                       forced_direction=1 if side == "left" else -1))
+
+        self.enemy_group.update(camera_x, self.screen_width)
+
+    def draw(self, screen, camera_x):
+        super().draw(screen, camera_x)

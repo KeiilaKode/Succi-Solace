@@ -1,5 +1,7 @@
 #-enemies-#
 
+#-enemies-#
+
 import pygame
 import random
 from entities import SpriteSheet
@@ -180,6 +182,11 @@ class Pkgrim(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
                          health=2, rem_value=8, speed=2.5, anim_speed=90)
+
+class Castleguard(BaseEnemy):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+        super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
+                         health=3, rem_value=12, speed=1.9, anim_speed=90, y_offset=210)
 
 
 # - - - LEVEL 3 ENEMIES - - - #
