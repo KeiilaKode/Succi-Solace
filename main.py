@@ -1,7 +1,5 @@
 #-main-#
 
-#-main-#
-
 import pygame
 import sys
 import os
@@ -14,8 +12,8 @@ from player import Player
 from entities import Projectile, Merchant, Companion
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Merchant_Room
 
-# Isolated UI components - ADDED LevelBanner HERE
-from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner
+# Isolated UI components - ADDED CutsceneScreen HERE
+from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner, CutsceneScreen
 
 # SAVE FILE CREATION #
 
@@ -258,6 +256,7 @@ hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
+cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/6a-cut.mp4")
 
 current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 merchant_room = Merchant_Room(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -315,7 +314,11 @@ while run:
                     succi.x = current_level.door_world_x
                     camera_x = current_level.level_end_x - SCREEN_WIDTH
                 elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_6_CUTSCENE"]:
+
+                    if current_state == "LEVEL_6_CUTSCENE":
+                        cutscene_screen.stop()
+
                     current_state = "LEVEL_7"
                     checkpoint = 7
                     current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -490,7 +493,8 @@ while run:
                              current_level.hellguard_group])
                     elif current_state == "LEVEL_2":
                         enemy_targets.extend(
-                            [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group, current_level.castleguard_group])
+                            [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group,
+                             current_level.castleguard_group])
                     elif current_state == "LEVEL_3":
                         enemy_targets.extend(
                             [current_level.azule_group, current_level.titus_group, current_level.lionel_group,
@@ -648,15 +652,11 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_6", Level_06(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 6
                             elif last_completed_level == "LEVEL_6":
-                                current_state, current_level, checkpoint = "LEVEL_7", Level_07(SCREEN_WIDTH,
-                                                                                               SCREEN_HEIGHT), 7
+                                current_state = "LEVEL_6_CUTSCENE"
+                                checkpoint = 7
                             elif last_completed_level == "LEVEL_7":
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
-
-                            # --- TRIGGER LEVEL BANNER ON MERCHANT EXIT ---
-                            lvl_num = int(current_state.split("_")[1])
-                            current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
                             succi.x = 400.0
                             camera_x = 0.0
@@ -668,30 +668,48 @@ while run:
                             is_level_4_merchant = False
                             is_level_5_merchant = False
 
-                            # SONG TO PLAY PER WHAT LEVEL #
-                            if current_state == "LEVEL_7":
-                                pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
-                                pygame.mixer.music.set_volume(0.23)
-                            elif current_state == "LEVEL_6":
-                                pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
-                                pygame.mixer.music.set_volume(0.23)
-                            elif current_state == "LEVEL_5":
-                                pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
-                                pygame.mixer.music.set_volume(0.23)
-                            elif current_state == "LEVEL_4":
-                                pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
-                                pygame.mixer.music.set_volume(0.2)
-                            elif current_state == "LEVEL_3":
-                                pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
-                                pygame.mixer.music.set_volume(0.23)
-                            elif current_state == "LEVEL_2":
-                                pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
-                                pygame.mixer.music.set_volume(0.2)
+                            if current_state == "LEVEL_6_CUTSCENE":
+                                pygame.mixer.music.stop()
+                                cutscene_screen.start()
                             else:
-                                pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
-                                pygame.mixer.music.set_volume(0.2)
+                                # --- TRIGGER LEVEL BANNER ON MERCHANT EXIT ---
+                                lvl_num = int(current_state.split("_")[1])
+                                current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
-                            pygame.mixer.music.play(-1, 0.0)
+                                # SONG TO PLAY PER WHAT LEVEL #
+                                if current_state == "LEVEL_7":
+                                    pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
+                                    pygame.mixer.music.set_volume(0.23)
+                                elif current_state == "LEVEL_6":
+                                    pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
+                                    pygame.mixer.music.set_volume(0.23)
+                                elif current_state == "LEVEL_5":
+                                    pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
+                                    pygame.mixer.music.set_volume(0.23)
+                                elif current_state == "LEVEL_4":
+                                    pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
+                                    pygame.mixer.music.set_volume(0.2)
+                                elif current_state == "LEVEL_3":
+                                    pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
+                                    pygame.mixer.music.set_volume(0.23)
+                                elif current_state == "LEVEL_2":
+                                    pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
+                                    pygame.mixer.music.set_volume(0.2)
+                                else:
+                                    pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
+                                    pygame.mixer.music.set_volume(0.2)
+
+                                pygame.mixer.music.play(-1, 0.0)
+
+        elif current_state == "LEVEL_6_CUTSCENE":
+            if cutscene_screen.update(mouse_pos, mouse_click):
+                current_state = "LEVEL_7"
+                current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
+                current_banner = LevelBanner(7, SCREEN_WIDTH)
+
+                pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
+                pygame.mixer.music.set_volume(0.23)
+                pygame.mixer.music.play(-1, 0.0)
 
         # ========================================== #
         # # # DRAWING PHASE # # #
@@ -763,7 +781,8 @@ while run:
                          current_level.hellguard_group])
                 elif current_state == "LEVEL_2":
                     enemy_groups_to_check.extend(
-                        [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group, current_level.castleguard_group])
+                        [current_level.helldog_group, current_level.mau_group, current_level.pkgrim_group,
+                         current_level.castleguard_group])
                 elif current_state == "LEVEL_3":
                     enemy_groups_to_check.extend(
                         [current_level.azule_group, current_level.titus_group, current_level.lionel_group,
@@ -830,8 +849,12 @@ while run:
                 elif merchant_npc and merchant_npc.state == "idle" and merchant_ui:
                     merchant_ui.draw(screen, mouse_pos, rem)
 
-            hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
-                     succi.spell_right_click)
+            elif current_state == "LEVEL_6_CUTSCENE":
+                cutscene_screen.draw(screen, mouse_pos)
+
+            if current_state != "LEVEL_6_CUTSCENE":
+                hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
+                         succi.spell_right_click)
 
             # --- RENDER LEVEL BANNER OVER THE GAME (UNDER PAUSE MENU) ---
             if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:

@@ -235,7 +235,7 @@ class Level_01:
                     Platform(p_x, random.randint(self.plat_min_y, self.plat_max_y),
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
-
+            # Where I can adjust how many flyers are on the screen #
             if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
