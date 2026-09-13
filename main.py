@@ -130,9 +130,6 @@ clock = pygame.time.Clock()
 FPS = 60
 
 try:
-    pygame.mixer.music.load("mats/audio/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
-    pygame.mixer.music.set_volume(0.2)
-    pygame.mixer.music.play(-1, 0.0)
     jump_fx = pygame.mixer.Sound("mats/audio/Swoosh.mp3")
     jump_fx.set_volume(0.3)
     death_fx = pygame.mixer.Sound("mats/audio/Pause.mp3")
@@ -225,7 +222,7 @@ except pygame.error as e:
 # ==========================================
 # GAME STATE & UI SETUP
 # ==========================================
-current_state = "MAIN_MENU"
+current_state = "INTRO"
 last_completed_level = "LEVEL_1"
 checkpoint = 1
 game_over, paused = False, False
@@ -256,6 +253,10 @@ hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+# --- Initialize All Cutscene Screens ---
+intro_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/intro_cut.mp4")
+loading_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/Loading_screen_cut.mp4")
 cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/6a-cut.mp4")
 
 current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -274,6 +275,7 @@ projectile_group = pygame.sprite.Group()
 # ==========================================
 # MAIN GAME LOOP
 # ==========================================
+intro_screen.start()
 run = True
 while run:
     dt_ms = clock.tick(FPS)
@@ -314,10 +316,16 @@ while run:
                     succi.x = current_level.door_world_x
                     camera_x = current_level.level_end_x - SCREEN_WIDTH
                 elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_6_CUTSCENE"]:
+                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_6_CUTSCENE",
+                                                                   "INTRO", "LOADING"]:
 
+                    # Stop any running video player if skipping via K_n
                     if current_state == "LEVEL_6_CUTSCENE":
                         cutscene_screen.stop()
+                    elif current_state == "INTRO":
+                        intro_screen.stop()
+                    elif current_state == "LOADING":
+                        loading_screen.stop()
 
                     current_state = "LEVEL_7"
                     checkpoint = 7
@@ -364,7 +372,19 @@ while run:
                     if player_has_melee:
                         succi.trigger_kick()
 
-    if current_state == "MAIN_MENU":
+    if current_state == "INTRO":
+        if intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
+            current_state = "LOADING"
+            loading_screen.start()
+            pygame.mixer.music.load("mats/audio/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
+            pygame.mixer.music.set_volume(0.2)
+            pygame.mixer.music.play(-1, 0.0)
+
+    elif current_state == "LOADING":
+        if loading_screen.update(mouse_pos, mouse_click, allow_skip=False):
+            current_state = "MAIN_MENU"
+
+    elif current_state == "MAIN_MENU":
         action = main_menu.update(mouse_pos, mouse_click)
         if action == "PLAY":
             current_state = "LEVEL_1"
@@ -715,7 +735,13 @@ while run:
         # # # DRAWING PHASE # # #
         # ========================================== #
 
-    if current_state == "MAIN_MENU":
+    if current_state == "INTRO":
+        intro_screen.draw(screen, mouse_pos, show_skip=True)
+
+    elif current_state == "LOADING":
+        loading_screen.draw(screen, mouse_pos, show_skip=False)
+
+    elif current_state == "MAIN_MENU":
         main_menu.draw(screen, mouse_pos)
 
     else:
@@ -850,7 +876,7 @@ while run:
                     merchant_ui.draw(screen, mouse_pos, rem)
 
             elif current_state == "LEVEL_6_CUTSCENE":
-                cutscene_screen.draw(screen, mouse_pos)
+                cutscene_screen.draw(screen, mouse_pos, show_skip=True)
 
             if current_state != "LEVEL_6_CUTSCENE":
                 hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,

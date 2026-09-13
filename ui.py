@@ -924,3 +924,60 @@ class CutsceneScreen:
 
     def stop(self):
         self.vid.close()
+
+class CutsceneScreen:
+    def __init__(self, screen_width, screen_height, video_path):
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+
+        self.vid = Video(video_path)
+        self.vid.resize((screen_width, screen_height))
+        self.vid.pause()
+
+        # Load custom skip button maintaining natural proportions (~1.7:1)
+        try:
+            raw_skip = pygame.image.load("mats/ui/skip_button666.png").convert_alpha()
+            # Standard un-flattened size
+            self.skip_img = pygame.transform.smoothscale(raw_skip, (280, 220))
+            # 10% larger for hover effect
+            self.skip_img_hover = pygame.transform.smoothscale(raw_skip, (int(280 * 1.10), int(220 * 1.10)))
+        except pygame.error as e:
+            print(f"Error loading skip button: {e}")
+            self.skip_img = None
+            self.skip_img_hover = None
+
+        # Positioned right over the corner watermark (centered at x=1260, y=700)
+        self.skip_rect = pygame.Rect(0, 0, 280, 220)
+        self.skip_rect.center = (self.screen_width - 140, self.screen_height - 110)
+
+    def start(self):
+        self.vid.restart()
+        self.vid.resume()
+
+    def update(self, mouse_pos, mouse_click, allow_skip=True):
+        if allow_skip and mouse_click and self.skip_rect.collidepoint(mouse_pos):
+            self.vid.close()
+            return True
+
+        if not self.vid.active:
+            self.vid.close()
+            return True
+
+        return False
+
+    def draw(self, screen, mouse_pos, show_skip=True):
+        # Draw current video frame
+        self.vid.draw(screen, (0, 0))
+
+        # Draw skip button with hover enlargement
+        if show_skip and self.skip_img:
+            if self.skip_rect.collidepoint(mouse_pos) and self.skip_img_hover:
+                hover_rect = self.skip_img_hover.get_rect(center=self.skip_rect.center)
+                screen.blit(self.skip_img_hover, hover_rect.topleft)
+            else:
+                screen.blit(self.skip_img, self.skip_rect.topleft)
+        elif show_skip and not self.skip_img:
+            pygame.draw.rect(screen, (100, 100, 100), self.skip_rect, border_radius=8)
+
+    def stop(self):
+        self.vid.close()
