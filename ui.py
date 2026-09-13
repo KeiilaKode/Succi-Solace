@@ -499,23 +499,32 @@ class DeathScreen:
 class MainMenu:
     def __init__(self, w, h):
         try:
-            self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/start_bg.png").convert(), (w, h))
+            self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/start_screen_2.png").convert(), (w, h))
 
-            raw_play = pygame.image.load("mats/ui/play.png").convert_alpha()
-            raw_controls = pygame.image.load("mats/ui/controls.png").convert_alpha()
-            raw_load = pygame.image.load("mats/ui/load.png").convert_alpha()
+            raw_play = pygame.image.load("mats/ui/play1.png").convert_alpha()
+            raw_controls = pygame.image.load("mats/ui/controls1.png").convert_alpha()
+            raw_load = pygame.image.load("mats/ui/load1.png").convert_alpha()
 
-            self.play_b = pygame.transform.smoothscale(raw_play, (260, 140))
-            self.ctrl_b = pygame.transform.smoothscale(raw_controls, (260, 140))
-            self.load_b = pygame.transform.smoothscale(raw_load, (190, 190))
+            # --- 1. BUTTON SIZING (Adjust width, height here) ---
+            # Scaled up to fill the dark inner frames naturally
+            self.play_b = pygame.transform.smoothscale(raw_play, (400, 240))
+            self.ctrl_b = pygame.transform.smoothscale(raw_controls, (330, 180))
+            self.load_b = pygame.transform.smoothscale(raw_load, (270, 270))
 
-            self.play_h = pygame.transform.smoothscale(raw_play, (286, 154))
-            self.ctrl_h = pygame.transform.smoothscale(raw_controls, (286, 154))
-            self.load_h = pygame.transform.smoothscale(raw_load, (209, 209))
+            # 10% hover scaling
+            self.play_h = pygame.transform.smoothscale(raw_play, (int(400 * 1.10), int(240 * 1.10)))
+            self.ctrl_h = pygame.transform.smoothscale(raw_controls, (int(330 * 1.10), int(180 * 1.10)))
+            self.load_h = pygame.transform.smoothscale(raw_load, (int(270 * 1.10), int(270 * 1.10)))
 
-            self.play_rect = self.play_b.get_rect(center=(685, h // 2 + 80))
-            self.ctrl_rect = self.ctrl_b.get_rect(center=(185, h // 2 + 180))
-            self.load_rect = self.load_b.get_rect(center=(1190, h // 2 + 180))
+            # --- 2. BUTTON POSITIONING (Adjust X, Y centers here) ---
+            # CONTROLS: Left window (centered around x=200, moved up into the opening)
+            self.ctrl_rect = self.ctrl_b.get_rect(center=(223, h // 2 + 140))
+
+            # PLAY: Center archway (centered horizontally, raised to rest under the arch crest)
+            self.play_rect = self.play_b.get_rect(center=(w // 2 + 3, h // 2 + 130))
+
+            # LOAD: Right window (centered around x=w - 200, positioned inside the frame)
+            self.load_rect = self.load_b.get_rect(center=(w - 220, h // 2 + 140))
 
         except pygame.error as e:
             print(f"Menu Asset Error: {e}")
