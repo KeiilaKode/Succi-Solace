@@ -153,6 +153,7 @@ class LevelBanner:
         return pygame.time.get_ticks() - self.start_time > self.duration
 
 
+# PAUSE MENU #
 class PauseMenu:
     def __init__(self, w, h):
         self.w = w
@@ -161,53 +162,53 @@ class PauseMenu:
         self.font_med = pygame.font.SysFont("Lucida Sans", 32)
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
 
+        # Load the new unified background image
         try:
-            pause_bg_raw = pygame.image.load("mats/ui/pause 2.png").convert_alpha()
-            self.bg = pygame.transform.smoothscale(pause_bg_raw, (1050, 1100))
+            pause_bg_raw = pygame.image.load("mats/ui/pause_screen1.png").convert()
+            self.bg = pygame.transform.smoothscale(pause_bg_raw, (self.w, self.h))
         except pygame.error:
             self.bg = None
 
+        # Load and scale the new save button to fit the center frame (Made slightly bigger)
         try:
-            raw_save = pygame.image.load("mats/ui/save_hud.png").convert_alpha()
-            self.save_b = pygame.transform.smoothscale(raw_save, (340, 240))
-            self.save_h = pygame.transform.smoothscale(raw_save, (374, 254))
+            raw_save = pygame.image.load("mats/ui/save_hud1.png").convert_alpha()
+            self.save_b = pygame.transform.smoothscale(raw_save, (335, 230))
+            self.save_h = pygame.transform.smoothscale(raw_save, (366, 245))
         except pygame.error:
             self.save_b = self.save_h = None
 
-        self.left_cx = self.w // 2 - 350
-        self.right_cx = self.w // 2 + 350
+        # Calculate centers for the left and right mirrors
+        self.left_cx = self.w // 2 - 370
+        self.right_cx = self.w // 2 + 370
 
         if self.save_b:
-            self.save_rect = self.save_b.get_rect(center=(self.w // 2, 250))
+            # Nestle the save button in the bottom-center hole (Shifted slightly right)
+            self.save_rect = self.save_b.get_rect(center=(self.w // 2 + 15, self.h // 2 + 180))
         else:
-            self.save_rect = pygame.Rect(self.w // 2 - 170, 210, 340, 60)
+            self.save_rect = pygame.Rect(self.w // 2 - 167, self.h // 2 + 65, 335, 230)
 
         try:
-            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
-                                                          (55, 55))
-            self.icon_purple = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
-            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(),
-                                                          (55, 55))
-            self.icon_rainbow = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (55, 55))
-            self.icon_tinera = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/icon_tinera.png").convert_alpha(), (55, 55))
+            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(), (55, 55))
+            self.icon_purple = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
+            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(), (55, 55))
+            self.icon_rainbow = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (55, 55))
+            self.icon_tinera = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_tinera.png").convert_alpha(), (55, 55))
         except pygame.error:
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = self.icon_tinera = None
 
         # Multi-Slot Save Variables
-        self.save_state = None  # None, "SELECT", "TYPE"
+        self.save_state = None
         self.selected_save_slot = None
         self.save_slots = []
         self.save_input_text = ""
 
+        # Position the inventory grid inside the left mirror (Shifted further left)
         self.grid_rects = []
-        start_x = self.left_cx - 115
-        start_y = self.h // 2 + 60
+        start_x = self.left_cx - 200
+        start_y = self.h // 2 + 5
         for row in range(3):
             for col in range(3):
-                self.grid_rects.append(pygame.Rect(start_x + col * 90, start_y + row * 90, 70, 70))
+                self.grid_rects.append(pygame.Rect(start_x + col * 85, start_y + row * 85, 75, 75))
 
         self.selected_spell = None
         self.popup_active = False
@@ -217,7 +218,6 @@ class PauseMenu:
     def _load_save_data(self):
         self.save_slots = []
 
-        # Get the absolute path for saves regardless of temporary folders
         if getattr(sys, 'frozen', False):
             save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
         else:
@@ -248,11 +248,9 @@ class PauseMenu:
     def update(self, mouse_pos, mouse_click, owned_spells, player_has_tinera):
         result = None
         if mouse_click:
-            # If in the typing phase, block other clicks
             if self.save_state == "TYPE":
                 return None
 
-            # If in the slot selection phase
             if self.save_state == "SELECT":
                 clicked_inside = False
                 for slot in self.save_slots:
@@ -266,7 +264,6 @@ class PauseMenu:
                     self.save_state = None
                 return None
 
-            # Base Pause Menu Clicks
             if self.save_rect.collidepoint(mouse_pos):
                 self._load_save_data()
                 self.save_state = "SELECT"
@@ -297,21 +294,20 @@ class PauseMenu:
         return result
 
     def draw(self, screen, owned_spells, mouse_pos, player_has_tinera, tinera_active=True, tinera_icon_override=None):
-        overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 180))
-        screen.blit(overlay, (0, 0))
-
+        # 1. Draw the new unified background directly
         if self.bg:
-            left_rect = self.bg.get_rect(center=(self.left_cx, self.h // 2 + 50))
-            screen.blit(self.bg, left_rect)
-            right_rect = self.bg.get_rect(center=(self.right_cx, self.h // 2 + 50))
-            screen.blit(self.bg, right_rect)
+            screen.blit(self.bg, (0, 0))
+        else:
+            overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            screen.blit(overlay, (0, 0))
 
         center_x = self.w // 2
 
-        draw_text(screen, "GAME PAUSED", self.font_big, pygame.Color("turquoise1"), center_x - 165, 40)
-        draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, 95)
+        # Moved resume instructions to the bottom so it doesn't overlap the new header
+        draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
 
+        # 2. Draw the Save Button
         if self.save_b and self.save_h:
             if self.save_rect.collidepoint(mouse_pos):
                 hover_rect = self.save_h.get_rect(center=self.save_rect.center)
@@ -319,8 +315,7 @@ class PauseMenu:
             else:
                 screen.blit(self.save_b, self.save_rect)
 
-        draw_text(screen, "INVENTORY", self.font_med, PINK, self.left_cx - 75, self.h // 2 + 10)
-
+        # 3. Draw Inventory Grid
         for i, rect in enumerate(self.grid_rects):
             pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
 
@@ -348,10 +343,9 @@ class PauseMenu:
             if rect.collidepoint(mouse_pos) and not self.popup_active:
                 pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
-        draw_text(screen, "CONTROLS", self.font_med, PINK, self.right_cx - 70, self.h // 2 + 10)
-
-        ctrl_y = self.h // 2 + 60
-        ctrl_x = self.right_cx - 130
+        # 4. Draw Controls Text (Shifted further right)
+        ctrl_y = self.h // 2 + 5
+        ctrl_x = self.right_cx - 55
 
         draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
         draw_text(screen, "Shift      : Run", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 30)
@@ -366,14 +360,12 @@ class PauseMenu:
             pygame.draw.rect(screen, BLACK, self.popup_rect_left)
             col_l = PINK if self.popup_rect_left.collidepoint(mouse_pos) else WHITE
             pygame.draw.rect(screen, col_l, self.popup_rect_left, 2)
-            draw_text(screen, "Equip Left", self.font_small, col_l, self.popup_rect_left.x + 10,
-                      self.popup_rect_left.y + 8)
+            draw_text(screen, "Equip Left", self.font_small, col_l, self.popup_rect_left.x + 10, self.popup_rect_left.y + 8)
 
             pygame.draw.rect(screen, BLACK, self.popup_rect_right)
             col_r = PINK if self.popup_rect_right.collidepoint(mouse_pos) else WHITE
             pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
-            draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5,
-                      self.popup_rect_right.y + 8)
+            draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5, self.popup_rect_right.y + 8)
 
         # --- MULTI-SLOT SAVE SCREENS ---
         if self.save_state == "SELECT":
@@ -392,26 +384,21 @@ class PauseMenu:
                 text_surf = self.font_med.render(slot["name"], True, col)
                 screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
-            draw_text(screen, "Click anywhere outside to cancel", self.font_small, LIGHT_GRAY, center_x - 140,
-                      self.h - 80)
+            draw_text(screen, "Click anywhere outside to cancel", self.font_small, LIGHT_GRAY, center_x - 140, self.h - 80)
 
         elif self.save_state == "TYPE":
             dialog_rect = pygame.Rect(center_x - 250, self.h // 2 - 100, 500, 200)
             pygame.draw.rect(screen, (20, 10, 30), dialog_rect, border_radius=12)
             pygame.draw.rect(screen, PINK, dialog_rect, 3, border_radius=12)
 
-            draw_text(screen, f"SAVE NAME FOR SLOT {self.selected_save_slot}:", self.font_small, WHITE, center_x - 115,
-                      dialog_rect.y + 25)
+            draw_text(screen, f"SAVE NAME FOR SLOT {self.selected_save_slot}:", self.font_small, WHITE, center_x - 115, dialog_rect.y + 25)
 
             input_box_rect = pygame.Rect(dialog_rect.x + 40, dialog_rect.y + 65, 420, 50)
             pygame.draw.rect(screen, BLACK, input_box_rect, border_radius=6)
             pygame.draw.rect(screen, LIGHT_GRAY, input_box_rect, 2, border_radius=6)
 
-            draw_text(screen, self.save_input_text + "|", self.font_med, PINK, input_box_rect.x + 15,
-                      input_box_rect.y + 8)
-            draw_text(screen, "Press ENTER to Save | ESC to Cancel", self.font_small, LIGHT_GRAY, dialog_rect.x + 75,
-                      dialog_rect.y + 135)
-
+            draw_text(screen, self.save_input_text + "|", self.font_med, PINK, input_box_rect.x + 15, input_box_rect.y + 8)
+            draw_text(screen, "Press ENTER to Save | ESC to Cancel", self.font_small, LIGHT_GRAY, dialog_rect.x + 75, dialog_rect.y + 135)
 
 class DeathScreen:
     def __init__(self, w, h):
