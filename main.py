@@ -254,10 +254,10 @@ main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-# --- Initialize All Cutscene Screens ---
+# --- Initialize ONLY the intro video at boot ---
 intro_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/intro_cut.mp4")
-loading_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/Loading_screen_cut.mp4")
-cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/6a-cut.mp4")
+loading_screen = None
+cutscene_screen = None
 
 current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 merchant_room = Merchant_Room(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -275,7 +275,8 @@ projectile_group = pygame.sprite.Group()
 # ==========================================
 # MAIN GAME LOOP
 # ==========================================
-intro_screen.start()
+if intro_screen:
+    intro_screen.start()
 run = True
 while run:
     dt_ms = clock.tick(FPS)
@@ -320,11 +321,11 @@ while run:
                                                                    "INTRO", "LOADING"]:
 
                     # Stop any running video player if skipping via K_n
-                    if current_state == "LEVEL_6_CUTSCENE":
+                    if current_state == "LEVEL_6_CUTSCENE" and cutscene_screen:
                         cutscene_screen.stop()
-                    elif current_state == "INTRO":
+                    elif current_state == "INTRO" and intro_screen:
                         intro_screen.stop()
-                    elif current_state == "LOADING":
+                    elif current_state == "LOADING" and loading_screen:
                         loading_screen.stop()
 
                     current_state = "LEVEL_7"
@@ -373,15 +374,19 @@ while run:
                         succi.trigger_kick()
 
     if current_state == "INTRO":
-        if intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
+        if intro_screen and intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
             current_state = "LOADING"
+            intro_screen = None  # Free memory and video threads immediately
+            if loading_screen is None:
+                loading_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/Loading_screen_cut.mp4")
             loading_screen.start()
             pygame.mixer.music.load("mats/audio/Prelude and Fughetta in D minor, BWV 899 (Pedal-Harpsichord).mp3")
             pygame.mixer.music.set_volume(0.2)
             pygame.mixer.music.play(-1, 0.0)
 
     elif current_state == "LOADING":
-        if loading_screen.update(mouse_pos, mouse_click, allow_skip=False):
+        if loading_screen and loading_screen.update(mouse_pos, mouse_click, allow_skip=False):
+            loading_screen = None  # Free memory and video threads immediately
             current_state = "MAIN_MENU"
 
     elif current_state == "MAIN_MENU":
@@ -674,6 +679,8 @@ while run:
                             elif last_completed_level == "LEVEL_6":
                                 current_state = "LEVEL_6_CUTSCENE"
                                 checkpoint = 7
+                                if cutscene_screen is None:
+                                    cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/6a-cut.mp4")
                             elif last_completed_level == "LEVEL_7":
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
@@ -690,7 +697,8 @@ while run:
 
                             if current_state == "LEVEL_6_CUTSCENE":
                                 pygame.mixer.music.stop()
-                                cutscene_screen.start()
+                                if cutscene_screen:
+                                    cutscene_screen.start()
                             else:
                                 # --- TRIGGER LEVEL BANNER ON MERCHANT EXIT ---
                                 lvl_num = int(current_state.split("_")[1])
@@ -722,8 +730,9 @@ while run:
                                 pygame.mixer.music.play(-1, 0.0)
 
         elif current_state == "LEVEL_6_CUTSCENE":
-            if cutscene_screen.update(mouse_pos, mouse_click):
+            if cutscene_screen and cutscene_screen.update(mouse_pos, mouse_click):
                 current_state = "LEVEL_7"
+                cutscene_screen = None  # Free memory
                 current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
                 current_banner = LevelBanner(7, SCREEN_WIDTH)
 
@@ -736,10 +745,12 @@ while run:
         # ========================================== #
 
     if current_state == "INTRO":
-        intro_screen.draw(screen, mouse_pos, show_skip=True)
+        if intro_screen:
+            intro_screen.draw(screen, mouse_pos, show_skip=True)
 
     elif current_state == "LOADING":
-        loading_screen.draw(screen, mouse_pos, show_skip=False)
+        if loading_screen:
+            loading_screen.draw(screen, mouse_pos, show_skip=False)
 
     elif current_state == "MAIN_MENU":
         main_menu.draw(screen, mouse_pos)
@@ -876,7 +887,8 @@ while run:
                     merchant_ui.draw(screen, mouse_pos, rem)
 
             elif current_state == "LEVEL_6_CUTSCENE":
-                cutscene_screen.draw(screen, mouse_pos, show_skip=True)
+                if cutscene_screen:
+                    cutscene_screen.draw(screen, mouse_pos, show_skip=True)
 
             if current_state != "LEVEL_6_CUTSCENE":
                 hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
