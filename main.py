@@ -158,6 +158,12 @@ try:
     # --- LEVEL 5 --- #
     merchant_greet_lvl_5_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl5.mp3")
     merchant_greet_lvl_5_fx.set_volume(0.6)
+    # --- LEVEL 6 --- #
+    merchant_greet_lvl_6_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl6.mp3")
+    merchant_greet_lvl_6_fx.set_volume(0.6)
+    # --- LEVEL 7 --- #
+    merchant_greet_lvl_7_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl7.mp3")
+    merchant_greet_lvl_7_fx.set_volume(0.6)
 
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
@@ -232,6 +238,8 @@ is_level_2_merchant = False
 is_level_3_merchant = False
 is_level_4_merchant = False  # new#
 is_level_5_merchant = False
+is_level_6_merchant = False
+is_level_7_merchant = False
 
 # --- CURRENT LEVEL BANNER TRACKER ---
 current_banner = None
@@ -338,8 +346,8 @@ while run:
                     succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
                                    config.ANIMATION_SCALE_CORRECTIONS,
                                    jump_fx, cast_fx)
-                    succi.max_health = 3
-                    succi.health = 3
+                    succi.max_health = 1
+                    succi.health = 1
                     camera_x = 0.0
                     projectile_group.empty()
                     pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
@@ -564,7 +572,11 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                if is_level_5_merchant:
+                if is_level_7_merchant:
+                    active_merchant_audio = merchant_greet_lvl_7_fx
+                elif is_level_6_merchant:
+                    active_merchant_audio = merchant_greet_lvl_6_fx
+                elif is_level_5_merchant:
                     active_merchant_audio = merchant_greet_lvl_5_fx
                 elif is_level_4_merchant:
                     active_merchant_audio = merchant_greet_lvl_4_fx
@@ -694,6 +706,8 @@ while run:
                             is_level_3_merchant = False
                             is_level_4_merchant = False
                             is_level_5_merchant = False
+                            is_level_6_merchant = False
+                            is_level_7_merchant = False
 
                             if current_state == "LEVEL_6_CUTSCENE":
                                 pygame.mixer.music.stop()
@@ -775,7 +789,9 @@ while run:
                         is_level_2_merchant = (last_completed_level == "LEVEL_2")
                         is_level_3_merchant = (last_completed_level == "LEVEL_3")
                         is_level_4_merchant = (last_completed_level == "LEVEL_4")
-                        is_level_5_merchant = (last_completed_level in ["LEVEL_5", "LEVEL_6", "LEVEL_7"])
+                        is_level_5_merchant = (last_completed_level == "LEVEL_5")
+                        is_level_6_merchant = (last_completed_level == "LEVEL_6")
+                        is_level_7_merchant = (last_completed_level == "LEVEL_7")
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
@@ -783,7 +799,15 @@ while run:
                         current_banner = None
 
                         # MERCHANT ANIMATION LENGTHS #
-                        if is_level_5_merchant:
+                        if is_level_7_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_7.png", columns=10,
+                                                    rows=8, target_duration=9500)
+                        elif is_level_6_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_6.png", columns=10,
+                                                    rows=8, target_duration=9500)
+                        elif is_level_5_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_5.png", columns=10,
                                                     rows=8, target_duration=9500)
