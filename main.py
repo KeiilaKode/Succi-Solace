@@ -135,7 +135,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Succi Solace")
 
 try:
-    game_icon = pygame.image.load("mats/ui/pink design.png").convert_alpha()
+    game_icon = pygame.image.load("mats/ui/succi frame.png").convert_alpha()
     pygame.display.set_icon(game_icon)
 except pygame.error:
     pass
