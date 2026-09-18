@@ -9,6 +9,19 @@ import os
 import json
 import sys
 import config
+import subprocess # <--- Add this import
+
+# ==========================================
+# FIX FLASHING CMD WINDOW FOR PYVIDPLAYER2
+# ==========================================
+if os.name == 'nt':
+    _original_popen = subprocess.Popen
+    def _patched_popen(*args, **kwargs):
+        if 'creationflags' not in kwargs:
+            kwargs['creationflags'] = 0x08000000 # Forces CREATE_NO_WINDOW
+        return _original_popen(*args, **kwargs)
+    subprocess.Popen = _patched_popen
+# ==========================================
 from pyvidplayer2 import Video
 
 # Standard UI Colors

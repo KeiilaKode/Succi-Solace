@@ -4,6 +4,20 @@ import pygame
 import sys
 import os
 import json
+import subprocess
+
+# ==========================================
+# FIX FLASHING CMD WINDOW FOR PYVIDPLAYER2
+# ==========================================
+if os.name == 'nt':
+    _original_popen = subprocess.Popen
+    def _patched_popen(*args, **kwargs):
+        if 'creationflags' not in kwargs:
+            kwargs['creationflags'] = 0x08000000 # Forces CREATE_NO_WINDOW
+        return _original_popen(*args, **kwargs)
+    subprocess.Popen = _patched_popen
+# ==========================================
+
 from pygame import mixer, Color
 import config
 

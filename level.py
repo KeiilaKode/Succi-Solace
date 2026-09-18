@@ -210,7 +210,7 @@ class Level_01:
             self.hg_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/hellguard.mp3")
 
             for fx in [self.cecil_fx, self.margret_fx, self.lashly_fx, self.hg_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 1 audio: {e}")
             self.cecil_fx = self.margret_fx = self.lashly_fx = self.hg_fx = None
@@ -428,7 +428,7 @@ class Level_02(Level_01):
             self.cg_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/castleguard.mp3")
 
             for fx in [self.hd_fx, self.mau_fx, self.pk_fx, self.cg_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 2 audio: {e}")
             self.hd_fx = self.mau_fx = self.pk_fx = self.cg_fx = None
@@ -531,7 +531,7 @@ class Level_03(Level_01):
             self.dem_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/demented.mp3")
 
             for fx in [self.azule_fx, self.titus_fx, self.lionel_fx, self.dem_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 3 audio: {e}")
             self.azule_fx = self.titus_fx = self.lionel_fx = self.dem_fx = None
@@ -644,7 +644,7 @@ class Level_04(Level_01):
             self.z2_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/zombie2.mp3")
 
             for fx in [self.elaine_fx, self.gk_fx, self.rhh_fx, self.rz_fx, self.z1_fx, self.z2_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 4 audio: {e}")
             self.elaine_fx = self.gk_fx = self.rhh_fx = self.rz_fx = self.z1_fx = self.z2_fx = None
@@ -745,7 +745,7 @@ class Level_05(Level_01):
             self.deadlight_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/deadlight.mp3")
 
             for fx in [self.priestly_fx, self.realmwalker_fx, self.pursuer_fx, self.braid_fx, self.deadlight_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 5 audio: {e}")
             self.priestly_fx = self.realmwalker_fx = self.pursuer_fx = self.braid_fx = self.deadlight_fx = None
@@ -848,7 +848,7 @@ class Level_06(Level_01):
             self.thad_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/thad.mp3")
 
             for fx in [self.vic_fx, self.kali_fx, self.kimoura_fx, self.cassie_fx, self.silas_fx, self.thad_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 6 audio: {e}")
             self.vic_fx = self.kali_fx = self.kimoura_fx = self.cassie_fx = self.silas_fx = self.thad_fx = None
@@ -957,7 +957,7 @@ class Level_07(Level_01):
             self.voss_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/voss.mp3")
 
             for fx in [self.molly_fx, self.skelter_fx, self.tilde_fx, self.topaz_fx, self.volgrim_fx, self.voss_fx]:
-                fx.set_volume(0.15)
+                fx.set_volume(0.10)
         except pygame.error as e:
             print(f"Error loading Level 7 audio: {e}")
             self.molly_fx = self.skelter_fx = self.tilde_fx = self.topaz_fx = self.volgrim_fx = self.voss_fx = None
