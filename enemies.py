@@ -10,12 +10,13 @@ from entities import SpriteSheet
 
 class BaseEnemy(pygame.sprite.Sprite):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                 health, rem_value, speed, anim_speed, y_offset=160):
+                 health, rem_value, speed, anim_speed, y_offset=160, attack_fx=None):
         super().__init__()
         self.health = health
         self.rem_value = rem_value
         self.walk_frames_right, self.walk_frames_left = walk_r, walk_l
         self.attack_frames_right, self.attack_frames_left = attack_r, attack_l
+        self.attack_fx = attack_fx
 
         self.frame_index, self.update_time = 0, pygame.time.get_ticks()
         self.anim_speed = anim_speed
@@ -37,6 +38,11 @@ class BaseEnemy(pygame.sprite.Sprite):
             if abs(player_x - self.rect.centerx) < 310 and self.state != "attack":
                 self.state, self.frame_index, self.update_time = "attack", 0, pygame.time.get_ticks()
                 self.direction = 1 if player_x > self.rect.centerx else -1
+                if self.attack_fx:
+                    try:
+                        self.attack_fx.play()
+                    except pygame.error:
+                        pass
 
         # Walk State
         if self.state == "walk":
@@ -79,9 +85,9 @@ class BaseEnemy(pygame.sprite.Sprite):
 
 class BaseIdleEnemy(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r, attack_l,
-                 health, rem_value, speed, anim_speed, y_offset=160):
+                 health, rem_value, speed, anim_speed, y_offset=160, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health, rem_value, speed, anim_speed, y_offset)
+                         health, rem_value, speed, anim_speed, y_offset, attack_fx)
         self.idle_frames_right = idle_r
         self.idle_frames_left = idle_l
 
@@ -90,6 +96,11 @@ class BaseIdleEnemy(BaseEnemy):
             if abs(player_x - self.rect.centerx) < 300 and self.state != "attack":
                 self.state, self.frame_index, self.update_time = "attack", 0, pygame.time.get_ticks()
                 self.direction = 1 if player_x > self.rect.centerx else -1
+                if self.attack_fx:
+                    try:
+                        self.attack_fx.play()
+                    except pygame.error:
+                        pass
 
         if self.state == "walk":
             self.rect.x += self.direction * self.speed
@@ -132,228 +143,225 @@ class BaseIdleEnemy(BaseEnemy):
 
 
 # ==========================================
-# SPECIFIC ENEMIES (Refactored)
+# SPECIFIC ENEMIES
 # ==========================================
 # - - - LEVEL 1 ENEMIES - - - #
 
-# --- NOT IN USE (Preserved for future use) ---
 class Demon(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=1, rem_value=5, speed=2.0, anim_speed=100, y_offset=85)
+                         health=1, rem_value=5, speed=2.0, anim_speed=100, y_offset=85, attack_fx=attack_fx)
 
-# --- NEW LEVEL 1 ENEMIES ---
 class Cecil(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=6, speed=2.2, anim_speed=90, y_offset=160)
+                         health=2, rem_value=6, speed=2.2, anim_speed=90, y_offset=160, attack_fx=attack_fx)
 
 class Margret(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=8, speed=2.4, anim_speed=90, y_offset=160)
+                         health=2, rem_value=8, speed=2.4, anim_speed=90, y_offset=160, attack_fx=attack_fx)
 
 class Lashly(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=12, speed=1.8, anim_speed=100, y_offset=160)
+                         health=3, rem_value=12, speed=1.8, anim_speed=100, y_offset=160, attack_fx=attack_fx)
 
 class Hellguard(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=8, speed=1.8, anim_speed=90, y_offset=210)
+                         health=2, rem_value=8, speed=1.8, anim_speed=90, y_offset=210, attack_fx=attack_fx)
 
 
 # - - - LEVEL 2 ENEMIES - - - #
 
 class Helldog(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=10, speed=3.5, anim_speed=80)
+                         health=2, rem_value=10, speed=3.5, anim_speed=80, attack_fx=attack_fx)
 
 class Mau(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=12, speed=2.0, anim_speed=100)
+                         health=3, rem_value=12, speed=2.0, anim_speed=100, attack_fx=attack_fx)
 
 class Pkgrim(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=8, speed=2.5, anim_speed=90)
+                         health=2, rem_value=8, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 class Castleguard(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=12, speed=1.9, anim_speed=90, y_offset=210)
+                         health=3, rem_value=12, speed=1.9, anim_speed=90, y_offset=210, attack_fx=attack_fx)
 
 
 # - - - LEVEL 3 ENEMIES - - - #
 
 class Azule(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=12, speed=2.2, anim_speed=90)
+                         health=3, rem_value=12, speed=2.2, anim_speed=90, attack_fx=attack_fx)
 
 class Titus(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=4, rem_value=15, speed=1.8, anim_speed=100)
+                         health=4, rem_value=15, speed=1.8, anim_speed=100, attack_fx=attack_fx)
 
 class Lionel(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=4, rem_value=15, speed=2.5, anim_speed=90)
+                         health=4, rem_value=15, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 
 # - - - LEVEL 4 ENEMIES - - - #
 
 class Elaine(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=5, rem_value=18, speed=2.5, anim_speed=90)
+                         health=5, rem_value=18, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 class RoyalHH(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=4, rem_value=15, speed=2.8, anim_speed=65)
+                         health=4, rem_value=15, speed=2.8, anim_speed=65, attack_fx=attack_fx)
 
 class RoyalZombie(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=5, rem_value=18, speed=2.0, anim_speed=100)
+                         health=5, rem_value=18, speed=2.0, anim_speed=100, attack_fx=attack_fx)
 
 class Zombie1(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=10, speed=1.9, anim_speed=100)
+                         health=3, rem_value=10, speed=1.9, anim_speed=100, attack_fx=attack_fx)
 
 class Zombie2(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=3, rem_value=12, speed=2.1, anim_speed=100)
+                         health=3, rem_value=12, speed=2.1, anim_speed=100, attack_fx=attack_fx)
 
 
 # --- LEVEL 5 ENEMIES --- #
 
 class Priestly(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=5, rem_value=20, speed=2.0, anim_speed=90)
+                         health=5, rem_value=20, speed=2.0, anim_speed=90, attack_fx=attack_fx)
 
 class Realmwalker(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=6, rem_value=22, speed=3.0, anim_speed=80)
+                         health=6, rem_value=22, speed=3.0, anim_speed=80, attack_fx=attack_fx)
 
 class Pursuer(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=6, rem_value=25, speed=2.5, anim_speed=90)
+                         health=6, rem_value=25, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 class Braid(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=6, rem_value=24, speed=2.4, anim_speed=90)
+                         health=6, rem_value=24, speed=2.4, anim_speed=90, attack_fx=attack_fx)
 
 class Deadlight(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=6, rem_value=25, speed=2.6, anim_speed=90)
+                         health=6, rem_value=25, speed=2.6, anim_speed=90, attack_fx=attack_fx)
 
 
 # --- LEVEL 6 ENEMIES --- #
 
 class Victoria(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=7, rem_value=30, speed=2.6, anim_speed=90)
+                         health=7, rem_value=30, speed=2.6, anim_speed=90, attack_fx=attack_fx)
 
 class Kali(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=6, rem_value=28, speed=2.8, anim_speed=90)
+                         health=6, rem_value=28, speed=2.8, anim_speed=90, attack_fx=attack_fx)
 
 class Kimoura(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=7, rem_value=30, speed=2.5, anim_speed=90)
+                         health=7, rem_value=30, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 class Cassie(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=7, rem_value=32, speed=2.7, anim_speed=90)
+                         health=7, rem_value=32, speed=2.7, anim_speed=90, attack_fx=attack_fx)
 
 class Silas(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=9, rem_value=35, speed=2.2, anim_speed=100)
+                         health=9, rem_value=35, speed=2.2, anim_speed=100, attack_fx=attack_fx)
 
 class Thad(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=8, rem_value=30, speed=3.0, anim_speed=80)
+                         health=8, rem_value=30, speed=3.0, anim_speed=80, attack_fx=attack_fx)
 
 
 # --- LEVEL 7 ENEMIES --- #
 
 class Molly(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=10, rem_value=40, speed=2.0, anim_speed=90, y_offset=160)
+                         health=10, rem_value=40, speed=2.0, anim_speed=90, y_offset=160, attack_fx=attack_fx)
 
 class Skelter(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=8, rem_value=32, speed=2.6, anim_speed=90)
+                         health=8, rem_value=32, speed=2.6, anim_speed=90, attack_fx=attack_fx)
 
 class Tilde(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=7, rem_value=30, speed=3.2, anim_speed=80)
+                         health=7, rem_value=30, speed=3.2, anim_speed=80, attack_fx=attack_fx)
 
 class Topaz(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=12, rem_value=45, speed=1.8, anim_speed=100)
+                         health=12, rem_value=45, speed=1.8, anim_speed=100, attack_fx=attack_fx)
 
 class Volgrim(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=8, rem_value=35, speed=2.8, anim_speed=90)
+                         health=8, rem_value=35, speed=2.8, anim_speed=90, attack_fx=attack_fx)
 
 class Voss(BaseEnemy):
-    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l):
+    def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=10, rem_value=38, speed=2.2, anim_speed=90)
+                         health=10, rem_value=38, speed=2.2, anim_speed=90, attack_fx=attack_fx)
 
 
 # ==========================================
-# IDLE ENEMIES (Refactored)
+# IDLE ENEMIES
 # ==========================================
 # LEVEL 1 ENEMY #
-# --- NOT IN USE (Preserved for future use) ---
 class Skeleton(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
-                 attack_l):
+                 attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                          attack_l,
-                         health=1, rem_value=5, speed=1.8, anim_speed=100, y_offset=240)
+                         health=1, rem_value=5, speed=1.8, anim_speed=100, y_offset=240, attack_fx=attack_fx)
 
 # LEVEL 3 ENEMY #
 class Demented(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
-                 attack_l):
+                 attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                          attack_l,
-                         health=3, rem_value=12, speed=1.8, anim_speed=100)
+                         health=3, rem_value=12, speed=1.8, anim_speed=100, attack_fx=attack_fx)
 
 # LEVEL 4 ENEMY #
 class Groundskeeper(BaseIdleEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
-                 attack_l):
+                 attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, idle_r, idle_l, attack_r,
                          attack_l,
-                         health=4, rem_value=15, speed=1.8, anim_speed=100)
+                         health=4, rem_value=15, speed=1.8, anim_speed=100, attack_fx=attack_fx)
 
 
 # ==========================================
@@ -408,13 +416,11 @@ class GargoyleFlyer(pygame.sprite.Sprite):
         self.direction = forced_direction if forced_direction is not None else random.choice([-1, 1])
 
         sprite_sheet = SpriteSheet(sheet_img)
-        # Slicing for 10 frames
         fw = sheet_img.get_width() // 10
         fh = sheet_img.get_height()
 
         for i in range(10):
             img = sprite_sheet.get_image(i, fw, fh, scale, (0, 0, 0))
-            # FIXED: Inverted the flip logic here so it matches the right-facing sprite sheet
             img = pygame.transform.flip(img, self.direction == -1, False)
             img.set_colorkey((0, 0, 0))
             self.animation_list.append(img)
@@ -448,13 +454,11 @@ class GreyGargoyleFlyer(pygame.sprite.Sprite):
         self.direction = forced_direction if forced_direction is not None else random.choice([-1, 1])
 
         sprite_sheet = SpriteSheet(sheet_img)
-        # Slicing for exactly 12 frames
         fw = sheet_img.get_width() // 12
         fh = sheet_img.get_height()
 
         for i in range(12):
             img = sprite_sheet.get_image(i, fw, fh, scale, (0, 0, 0))
-            # Image natively faces right, flip when direction is left (-1)
             img = pygame.transform.flip(img, self.direction == -1, False)
             img.set_colorkey((0, 0, 0))
             self.animation_list.append(img)
