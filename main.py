@@ -979,43 +979,41 @@ while run:
                 old_has_tinera = player_has_tinera
                 old_tinera_active = tinera_active
 
-                if restart_action == 7:
-                    if current_state != "LEVEL_7":
+                target_state = f"LEVEL_{restart_action}"
+                if current_state != target_state:
+                    current_state = target_state
+                    if restart_action == 7:
                         pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                         pygame.mixer.music.set_volume(0.23)
-                    current_state, current_level = "LEVEL_7", Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
-                elif restart_action == 6:
-                    if current_state != "LEVEL_6":
+                        current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 6:
                         pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
                         pygame.mixer.music.set_volume(0.23)
-                    current_state, current_level = "LEVEL_6", Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
-                elif restart_action == 5:
-                    if current_state != "LEVEL_5":
+                        current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 5:
                         pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
                         pygame.mixer.music.set_volume(0.23)
-                    current_state, current_level = "LEVEL_5", Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
-                elif restart_action == 4:
-                    if current_state != "LEVEL_4":
+                        current_level = Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 4:
                         pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
                         pygame.mixer.music.set_volume(0.2)
-                    current_state, current_level = "LEVEL_4", Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
-                elif restart_action == 3:
-                    if current_state != "LEVEL_3":
+                        current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 3:
                         pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
                         pygame.mixer.music.set_volume(0.23)
-                    current_state, current_level = "LEVEL_3", Level_03(SCREEN_WIDTH, SCREEN_HEIGHT)
-                elif restart_action == 2:
-                    if current_state != "LEVEL_2":
+                        current_level = Level_03(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 2:
                         pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
                         pygame.mixer.music.set_volume(0.2)
-                    current_state, current_level = "LEVEL_2", Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
-                else:
-                    if current_state != "LEVEL_1":
+                        current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    else:
                         pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
                         pygame.mixer.music.set_volume(0.2)
                         pygame.mixer.music.play(-1, 0.0)
-                    current_state, current_level, old_max_health = "LEVEL_1", Level_01(SCREEN_WIDTH, SCREEN_HEIGHT), 1
+                        current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 
+                if restart_action == 1:
+                    old_max_health = 1
                     old_left_spell = "normal"
                     old_right_spell = None
                     old_has_tinera = False
