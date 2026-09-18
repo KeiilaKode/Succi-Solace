@@ -202,6 +202,19 @@ class Level_01:
         self.hg_walk_r, self.hg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/hellguard_walk_ss.png", 8, 0.7)
         self.hg_attack_r, self.hg_attack_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/hellguard_attack_ss.png", 12, 0.7)
 
+        # --- LEVEL 1 AUDIO FX ---
+        try:
+            self.cecil_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/cecil.mp3")
+            self.margret_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/margret.mp3")
+            self.lashly_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/lashly.mp3")
+            self.hg_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/hellguard.mp3")
+
+            for fx in [self.cecil_fx, self.margret_fx, self.lashly_fx, self.hg_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 1 audio: {e}")
+            self.cecil_fx = self.margret_fx = self.lashly_fx = self.hg_fx = None
+
     def reset(self):
         self.platform_group.empty()
         self.enemy_group.empty()
@@ -269,13 +282,13 @@ class Level_01:
         # Level 1 specific spawn distribution
         spawn_choice = random.randint(1, 4)
         if spawn_choice == 1:
-            self.cecil_group.add(Cecil(spawn_x, self.y_ground, e_start, e_end, self.cecil_walk_r, self.cecil_walk_l, self.cecil_attack_r, self.cecil_attack_l))
+            self.cecil_group.add(Cecil(spawn_x, self.y_ground, e_start, e_end, self.cecil_walk_r, self.cecil_walk_l, self.cecil_attack_r, self.cecil_attack_l, self.cecil_fx))
         elif spawn_choice == 2:
-            self.margret_group.add(Margret(spawn_x, self.y_ground, e_start, e_end, self.margret_walk_r, self.margret_walk_l, self.margret_attack_r, self.margret_attack_l))
+            self.margret_group.add(Margret(spawn_x, self.y_ground, e_start, e_end, self.margret_walk_r, self.margret_walk_l, self.margret_attack_r, self.margret_attack_l, self.margret_fx))
         elif spawn_choice == 3:
-            self.lashly_group.add(Lashly(spawn_x, self.y_ground, e_start, e_end, self.lashly_walk_r, self.lashly_walk_l, self.lashly_attack_r, self.lashly_attack_l))
+            self.lashly_group.add(Lashly(spawn_x, self.y_ground, e_start, e_end, self.lashly_walk_r, self.lashly_walk_l, self.lashly_attack_r, self.lashly_attack_l, self.lashly_fx))
         else:
-            self.hellguard_group.add(Hellguard(spawn_x, self.y_ground, e_start, e_end, self.hg_walk_r, self.hg_walk_l, self.hg_attack_r, self.hg_attack_l))
+            self.hellguard_group.add(Hellguard(spawn_x, self.y_ground, e_start, e_end, self.hg_walk_r, self.hg_walk_l, self.hg_attack_r, self.hg_attack_l, self.hg_fx))
 
     def draw(self, screen, camera_x):
         s_bg = int(camera_x // self.bg_w)
@@ -407,16 +420,29 @@ class Level_02(Level_01):
         self.cg_walk_r, self.cg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_walk_ss.png", 8, cg_scale)
         self.cg_atk_r, self.cg_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_attack_ss.png", 12, cg_scale)
 
+        # --- LEVEL 2 AUDIO FX ---
+        try:
+            self.hd_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/helldog.mp3")
+            self.mau_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/mau.mp3")
+            self.pk_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/pkgrim.mp3")
+            self.cg_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/castleguard.mp3")
+
+            for fx in [self.hd_fx, self.mau_fx, self.pk_fx, self.cg_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 2 audio: {e}")
+            self.hd_fx = self.mau_fx = self.pk_fx = self.cg_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 4)
         if spawn_choice == 1:
-            self.helldog_group.add(Helldog(spawn_x, self.y_ground, e_start, e_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r, self.hd_atk_l))
+            self.helldog_group.add(Helldog(spawn_x, self.y_ground, e_start, e_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r, self.hd_atk_l, self.hd_fx))
         elif spawn_choice == 2:
-            self.pkgrim_group.add(Pkgrim(spawn_x, self.y_ground, e_start, e_end, self.pk_walk_r, self.pk_walk_l, self.pk_atk_r, self.pk_atk_l))
+            self.pkgrim_group.add(Pkgrim(spawn_x, self.y_ground, e_start, e_end, self.pk_walk_r, self.pk_walk_l, self.pk_atk_r, self.pk_atk_l, self.pk_fx))
         elif spawn_choice == 3:
-            self.mau_group.add(Mau(spawn_x, self.y_ground, e_start, e_end, self.mau_walk_r, self.mau_walk_l, self.mau_atk_r, self.mau_atk_l))
+            self.mau_group.add(Mau(spawn_x, self.y_ground, e_start, e_end, self.mau_walk_r, self.mau_walk_l, self.mau_atk_r, self.mau_atk_l, self.mau_fx))
         else:
-            self.castleguard_group.add(Castleguard(spawn_x, self.y_ground, e_start, e_end, self.cg_walk_r, self.cg_walk_l, self.cg_atk_r, self.cg_atk_l))
+            self.castleguard_group.add(Castleguard(spawn_x, self.y_ground, e_start, e_end, self.cg_walk_r, self.cg_walk_l, self.cg_atk_r, self.cg_atk_l, self.cg_fx))
 
 
 class Level_03(Level_01):
@@ -497,16 +523,29 @@ class Level_03(Level_01):
         self.dem_idle_r, self.dem_idle_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_idle_ss.png", 9, demented_scale)
         self.dem_atk_r, self.dem_atk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_attack_ss.png", 10, demented_scale)
 
+        # --- LEVEL 3 AUDIO FX ---
+        try:
+            self.azule_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/azule.mp3")
+            self.titus_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/titus.mp3")
+            self.lionel_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/lionel.mp3")
+            self.dem_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/demented.mp3")
+
+            for fx in [self.azule_fx, self.titus_fx, self.lionel_fx, self.dem_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 3 audio: {e}")
+            self.azule_fx = self.titus_fx = self.lionel_fx = self.dem_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 4)
         if spawn_choice == 1:
-            self.azule_group.add(Azule(spawn_x, self.y_ground, e_start, e_end, self.azule_walk_r, self.azule_walk_l, self.azule_atk_r, self.azule_atk_l))
+            self.azule_group.add(Azule(spawn_x, self.y_ground, e_start, e_end, self.azule_walk_r, self.azule_walk_l, self.azule_atk_r, self.azule_atk_l, self.azule_fx))
         elif spawn_choice == 2:
-            self.titus_group.add(Titus(spawn_x, self.y_ground, e_start, e_end, self.titus_walk_r, self.titus_walk_l, self.titus_atk_r, self.titus_atk_l))
+            self.titus_group.add(Titus(spawn_x, self.y_ground, e_start, e_end, self.titus_walk_r, self.titus_walk_l, self.titus_atk_r, self.titus_atk_l, self.titus_fx))
         elif spawn_choice == 3:
-            self.lionel_group.add(Lionel(spawn_x, self.y_ground, e_start, e_end, self.lionel_walk_r, self.lionel_walk_l, self.lionel_atk_r, self.lionel_atk_l))
+            self.lionel_group.add(Lionel(spawn_x, self.y_ground, e_start, e_end, self.lionel_walk_r, self.lionel_walk_l, self.lionel_atk_r, self.lionel_atk_l, self.lionel_fx))
         else:
-            self.demented_group.add(Demented(spawn_x, self.y_ground, e_start, e_end, self.dem_walk_r, self.dem_walk_l, self.dem_idle_r, self.dem_idle_l, self.dem_atk_r, self.dem_atk_l))
+            self.demented_group.add(Demented(spawn_x, self.y_ground, e_start, e_end, self.dem_walk_r, self.dem_walk_l, self.dem_idle_r, self.dem_idle_l, self.dem_atk_r, self.dem_atk_l, self.dem_fx))
 
 
 class Level_04(Level_01):
@@ -595,20 +634,35 @@ class Level_04(Level_01):
         self.z2_walk_r, self.z2_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_walk_ss.png", 8, z2_scale)
         self.z2_atk_r, self.z2_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_attack_ss.png", 13, z2_scale)
 
+        # --- LEVEL 4 AUDIO FX ---
+        try:
+            self.elaine_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/elaine.mp3")
+            self.gk_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/groundskeeper.mp3")
+            self.rhh_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/royalhh.mp3")
+            self.rz_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/royalzombie.mp3")
+            self.z1_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/zombie1.mp3")
+            self.z2_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/zombie2.mp3")
+
+            for fx in [self.elaine_fx, self.gk_fx, self.rhh_fx, self.rz_fx, self.z1_fx, self.z2_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 4 audio: {e}")
+            self.elaine_fx = self.gk_fx = self.rhh_fx = self.rz_fx = self.z1_fx = self.z2_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 6)
         if spawn_choice == 1:
-            self.elaine_group.add(Elaine(spawn_x, self.y_ground, e_start, e_end, self.elaine_walk_r, self.elaine_walk_l, self.elaine_atk_r, self.elaine_atk_l))
+            self.elaine_group.add(Elaine(spawn_x, self.y_ground, e_start, e_end, self.elaine_walk_r, self.elaine_walk_l, self.elaine_atk_r, self.elaine_atk_l, self.elaine_fx))
         elif spawn_choice == 2:
-            self.groundskeeper_group.add(Groundskeeper(spawn_x, self.y_ground, e_start, e_end, self.gk_walk_r, self.gk_walk_l, self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l))
+            self.groundskeeper_group.add(Groundskeeper(spawn_x, self.y_ground, e_start, e_end, self.gk_walk_r, self.gk_walk_l, self.gk_idle_r, self.gk_idle_l, self.gk_atk_r, self.gk_atk_l, self.gk_fx))
         elif spawn_choice == 3:
-            self.royalhh_group.add(RoyalHH(spawn_x, self.y_ground, e_start, e_end, self.rhh_walk_r, self.rhh_walk_l, self.rhh_atk_r, self.rhh_atk_l))
+            self.royalhh_group.add(RoyalHH(spawn_x, self.y_ground, e_start, e_end, self.rhh_walk_r, self.rhh_walk_l, self.rhh_atk_r, self.rhh_atk_l, self.rhh_fx))
         elif spawn_choice == 4:
-            self.royalzombie_group.add(RoyalZombie(spawn_x, self.y_ground, e_start, e_end, self.rz_walk_r, self.rz_walk_l, self.rz_atk_r, self.rz_atk_l))
+            self.royalzombie_group.add(RoyalZombie(spawn_x, self.y_ground, e_start, e_end, self.rz_walk_r, self.rz_walk_l, self.rz_atk_r, self.rz_atk_l, self.rz_fx))
         elif spawn_choice == 5:
-            self.zombie1_group.add(Zombie1(spawn_x, self.y_ground, e_start, e_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r, self.z1_atk_l))
+            self.zombie1_group.add(Zombie1(spawn_x, self.y_ground, e_start, e_end, self.z1_walk_r, self.z1_walk_l, self.z1_atk_r, self.z1_atk_l, self.z1_fx))
         else:
-            self.zombie2_group.add(Zombie2(spawn_x, self.y_ground, e_start, e_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r, self.z2_atk_l))
+            self.zombie2_group.add(Zombie2(spawn_x, self.y_ground, e_start, e_end, self.z2_walk_r, self.z2_walk_l, self.z2_atk_r, self.z2_atk_l, self.z2_fx))
 
 
 class Level_05(Level_01):
@@ -682,18 +736,32 @@ class Level_05(Level_01):
         self.deadlight_walk_r, self.deadlight_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_walk_ss.png", 8, scale)
         self.deadlight_atk_r, self.deadlight_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_attack_ss.png", 10, scale)
 
+        # --- LEVEL 5 AUDIO FX ---
+        try:
+            self.priestly_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/priestly.mp3")
+            self.realmwalker_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/realmwalker.mp3")
+            self.pursuer_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/pursuer.mp3")
+            self.braid_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/braid.mp3")
+            self.deadlight_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/deadlight.mp3")
+
+            for fx in [self.priestly_fx, self.realmwalker_fx, self.pursuer_fx, self.braid_fx, self.deadlight_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 5 audio: {e}")
+            self.priestly_fx = self.realmwalker_fx = self.pursuer_fx = self.braid_fx = self.deadlight_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 5)
         if spawn_choice == 1:
-            self.priestly_group.add(Priestly(spawn_x, self.y_ground, e_start, e_end, self.priestly_walk_r, self.priestly_walk_l, self.priestly_atk_r, self.priestly_atk_l))
+            self.priestly_group.add(Priestly(spawn_x, self.y_ground, e_start, e_end, self.priestly_walk_r, self.priestly_walk_l, self.priestly_atk_r, self.priestly_atk_l, self.priestly_fx))
         elif spawn_choice == 2:
-            self.realmwalker_group.add(Realmwalker(spawn_x, self.y_ground, e_start, e_end, self.realmwalker_walk_r, self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l))
+            self.realmwalker_group.add(Realmwalker(spawn_x, self.y_ground, e_start, e_end, self.realmwalker_walk_r, self.realmwalker_walk_l, self.realmwalker_atk_r, self.realmwalker_atk_l, self.realmwalker_fx))
         elif spawn_choice == 3:
-            self.pursuer_group.add(Pursuer(spawn_x, self.y_ground, e_start, e_end, self.pursuer_walk_r, self.pursuer_walk_l, self.pursuer_atk_r, self.pursuer_atk_l))
+            self.pursuer_group.add(Pursuer(spawn_x, self.y_ground, e_start, e_end, self.pursuer_walk_r, self.pursuer_walk_l, self.pursuer_atk_r, self.pursuer_atk_l, self.pursuer_fx))
         elif spawn_choice == 4:
-            self.braid_group.add(Braid(spawn_x, self.y_ground, e_start, e_end, self.braid_walk_r, self.braid_walk_l, self.braid_atk_r, self.braid_atk_l))
+            self.braid_group.add(Braid(spawn_x, self.y_ground, e_start, e_end, self.braid_walk_r, self.braid_walk_l, self.braid_atk_r, self.braid_atk_l, self.braid_fx))
         else:
-            self.deadlight_group.add(Deadlight(spawn_x, self.y_ground, e_start, e_end, self.deadlight_walk_r, self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l))
+            self.deadlight_group.add(Deadlight(spawn_x, self.y_ground, e_start, e_end, self.deadlight_walk_r, self.deadlight_walk_l, self.deadlight_atk_r, self.deadlight_atk_l, self.deadlight_fx))
 
 
 class Level_06(Level_01):
@@ -770,20 +838,35 @@ class Level_06(Level_01):
         self.thad_walk_r, self.thad_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_walk_ss.png", 8, vic_scale)
         self.thad_atk_r, self.thad_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_attack_ss.png", 12, vic_scale)
 
+        # --- LEVEL 6 AUDIO FX ---
+        try:
+            self.vic_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/victoria.mp3")
+            self.kali_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/kali.mp3")
+            self.kimoura_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/kimoura.mp3")
+            self.cassie_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/cassie.mp3")
+            self.silas_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/silas.mp3")
+            self.thad_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/thad.mp3")
+
+            for fx in [self.vic_fx, self.kali_fx, self.kimoura_fx, self.cassie_fx, self.silas_fx, self.thad_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 6 audio: {e}")
+            self.vic_fx = self.kali_fx = self.kimoura_fx = self.cassie_fx = self.silas_fx = self.thad_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 6)
         if spawn_choice == 1:
-            self.victoria_group.add(Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r, self.vic_atk_l))
+            self.victoria_group.add(Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r, self.vic_atk_l, self.vic_fx))
         elif spawn_choice == 2:
-            self.kali_group.add(Kali(spawn_x, self.y_ground, e_start, e_end, self.kali_walk_r, self.kali_walk_l, self.kali_atk_r, self.kali_atk_l))
+            self.kali_group.add(Kali(spawn_x, self.y_ground, e_start, e_end, self.kali_walk_r, self.kali_walk_l, self.kali_atk_r, self.kali_atk_l, self.kali_fx))
         elif spawn_choice == 3:
-            self.kimoura_group.add(Kimoura(spawn_x, self.y_ground, e_start, e_end, self.kimoura_walk_r, self.kimoura_walk_l, self.kimoura_atk_r, self.kimoura_atk_l))
+            self.kimoura_group.add(Kimoura(spawn_x, self.y_ground, e_start, e_end, self.kimoura_walk_r, self.kimoura_walk_l, self.kimoura_atk_r, self.kimoura_atk_l, self.kimoura_fx))
         elif spawn_choice == 4:
-            self.cassie_group.add(Cassie(spawn_x, self.y_ground, e_start, e_end, self.cassie_walk_r, self.cassie_walk_l, self.cassie_atk_r, self.cassie_atk_l))
+            self.cassie_group.add(Cassie(spawn_x, self.y_ground, e_start, e_end, self.cassie_walk_r, self.cassie_walk_l, self.cassie_atk_r, self.cassie_atk_l, self.cassie_fx))
         elif spawn_choice == 5:
-            self.silas_group.add(Silas(spawn_x, self.y_ground, e_start, e_end, self.silas_walk_r, self.silas_walk_l, self.silas_atk_r, self.silas_atk_l))
+            self.silas_group.add(Silas(spawn_x, self.y_ground, e_start, e_end, self.silas_walk_r, self.silas_walk_l, self.silas_atk_r, self.silas_atk_l, self.silas_fx))
         else:
-            self.thad_group.add(Thad(spawn_x, self.y_ground, e_start, e_end, self.thad_walk_r, self.thad_walk_l, self.thad_atk_r, self.thad_atk_l))
+            self.thad_group.add(Thad(spawn_x, self.y_ground, e_start, e_end, self.thad_walk_r, self.thad_walk_l, self.thad_atk_r, self.thad_atk_l, self.thad_fx))
 
 
 class Level_07(Level_01):
@@ -864,17 +947,32 @@ class Level_07(Level_01):
         self.voss_walk_r, self.voss_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_walk_ss.png", 8, base_scale)
         self.voss_atk_r, self.voss_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_attack_ss.png", 12, base_scale)
 
+        # --- LEVEL 7 AUDIO FX ---
+        try:
+            self.molly_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/molly.mp3")
+            self.skelter_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/skelter.mp3")
+            self.tilde_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/tilde.mp3")
+            self.topaz_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/topaz.mp3")
+            self.volgrim_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/volgrim.mp3")
+            self.voss_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/voss.mp3")
+
+            for fx in [self.molly_fx, self.skelter_fx, self.tilde_fx, self.topaz_fx, self.volgrim_fx, self.voss_fx]:
+                fx.set_volume(0.15)
+        except pygame.error as e:
+            print(f"Error loading Level 7 audio: {e}")
+            self.molly_fx = self.skelter_fx = self.tilde_fx = self.topaz_fx = self.volgrim_fx = self.voss_fx = None
+
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
         spawn_choice = random.randint(1, 6)
         if spawn_choice == 1:
-            self.molly_group.add(Molly(spawn_x, self.y_ground, e_start, e_end, self.molly_walk_r, self.molly_walk_l, self.molly_atk_r, self.molly_atk_l))
+            self.molly_group.add(Molly(spawn_x, self.y_ground, e_start, e_end, self.molly_walk_r, self.molly_walk_l, self.molly_atk_r, self.molly_atk_l, self.molly_fx))
         elif spawn_choice == 2:
-            self.skelter_group.add(Skelter(spawn_x, self.y_ground, e_start, e_end, self.skelter_walk_r, self.skelter_walk_l, self.skelter_atk_r, self.skelter_atk_l))
+            self.skelter_group.add(Skelter(spawn_x, self.y_ground, e_start, e_end, self.skelter_walk_r, self.skelter_walk_l, self.skelter_atk_r, self.skelter_atk_l, self.skelter_fx))
         elif spawn_choice == 3:
-            self.tilde_group.add(Tilde(spawn_x, self.y_ground, e_start, e_end, self.tilde_walk_r, self.tilde_walk_l, self.tilde_atk_r, self.tilde_atk_l))
+            self.tilde_group.add(Tilde(spawn_x, self.y_ground, e_start, e_end, self.tilde_walk_r, self.tilde_walk_l, self.tilde_atk_r, self.tilde_atk_l, self.tilde_fx))
         elif spawn_choice == 4:
-            self.topaz_group.add(Topaz(spawn_x, self.y_ground, e_start, e_end, self.topaz_walk_r, self.topaz_walk_l, self.topaz_atk_r, self.topaz_atk_l))
+            self.topaz_group.add(Topaz(spawn_x, self.y_ground, e_start, e_end, self.topaz_walk_r, self.topaz_walk_l, self.topaz_atk_r, self.topaz_atk_l, self.topaz_fx))
         elif spawn_choice == 5:
-            self.volgrim_group.add(Volgrim(spawn_x, self.y_ground, e_start, e_end, self.volgrim_walk_r, self.volgrim_walk_l, self.volgrim_atk_r, self.volgrim_atk_l))
+            self.volgrim_group.add(Volgrim(spawn_x, self.y_ground, e_start, e_end, self.volgrim_walk_r, self.volgrim_walk_l, self.volgrim_atk_r, self.volgrim_atk_l, self.volgrim_fx))
         else:
-            self.voss_group.add(Voss(spawn_x, self.y_ground, e_start, e_end, self.voss_walk_r, self.voss_walk_l, self.voss_atk_r, self.voss_atk_l))
+            self.voss_group.add(Voss(spawn_x, self.y_ground, e_start, e_end, self.voss_walk_r, self.voss_walk_l, self.voss_atk_r, self.voss_atk_l, self.voss_fx))
