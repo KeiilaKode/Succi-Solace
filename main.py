@@ -11,10 +11,14 @@ import subprocess
 # ==========================================
 if os.name == 'nt':
     _original_popen = subprocess.Popen
+
+
     def _patched_popen(*args, **kwargs):
         if 'creationflags' not in kwargs:
-            kwargs['creationflags'] = 0x08000000 # Forces CREATE_NO_WINDOW
+            kwargs['creationflags'] = 0x08000000  # Forces CREATE_NO_WINDOW
         return _original_popen(*args, **kwargs)
+
+
     subprocess.Popen = _patched_popen
 # ==========================================
 
@@ -54,8 +58,10 @@ def save_game(slot, save_name):
         "player_has_purple_magic": player_has_purple_magic,
         "player_has_blue_magic": player_has_blue_magic,
         "player_has_rainbow_dance": player_has_rainbow_dance,
-        "player_has_tinera": player_has_tinera,
-        "tinera_active": tinera_active,
+
+        # Upgraded Pet Saving
+        "owned_pets": owned_pets,
+        "active_pet": active_pet,
 
         "spell_left": succi.spell_left_click,
         "spell_right": succi.spell_right_click,
@@ -70,7 +76,7 @@ def save_game(slot, save_name):
 def load_game(slot):
     global current_state, checkpoint, rem
     global player_has_melee, player_has_purple_magic, player_has_blue_magic
-    global player_has_rainbow_dance, player_has_tinera, tinera_active
+    global player_has_rainbow_dance, owned_pets, active_pet
     global succi, current_level
     global global_merchant_sold_out
 
@@ -89,8 +95,14 @@ def load_game(slot):
     player_has_purple_magic = data["player_has_purple_magic"]
     player_has_blue_magic = data["player_has_blue_magic"]
     player_has_rainbow_dance = data["player_has_rainbow_dance"]
-    player_has_tinera = data["player_has_tinera"]
-    tinera_active = data["tinera_active"]
+
+    # Backward compatibility for old saves
+    if "owned_pets" in data:
+        owned_pets = data["owned_pets"]
+        active_pet = data["active_pet"]
+    else:
+        owned_pets = ["tinera"] if data.get("player_has_tinera", False) else []
+        active_pet = "tinera" if data.get("tinera_active", False) else None
 
     global_merchant_sold_out = data["merchant_inventory"]
 
@@ -226,18 +238,31 @@ blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode
 rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
 rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
 
-try:
-    raw_tinera_icon = pygame.image.load("mats/ui/icon_tinera.png").convert_alpha()
-    tinera_icon = pygame.transform.smoothscale(raw_tinera_icon, (55, 55))
-except pygame.error:
-    tinera_icon = None
+pet_frames = {}
+pet_icons = {}
+pet_names = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
 
-try:
-    raw_tinera_frames = get_sprites_from_sheet("spritesheets/pet sheets/Tinera_ss.png")
-    tinera_frames = [pygame.transform.smoothscale(f, (int(810 * 0.15), int(1080 * 0.15))) for f in raw_tinera_frames]
-except pygame.error as e:
-    print(f"Error loading Tinera companion: {e}")
-    tinera_frames = []
+for p in pet_names:
+    # Load actual UI icons from mats/ui/ directory
+    try:
+        raw_icon = pygame.image.load(f"mats/ui/icon_{p}.png").convert_alpha()
+        pet_icons[p] = pygame.transform.smoothscale(raw_icon,(68, 68))
+    except pygame.error as e:
+        print(f"Error loading icon for {p}: {e}")
+        pet_icons[p] = None
+
+    # Load dynamic Pet Sprite Sheets using your original 810px slicing logic
+    try:
+        file_prefix = p.capitalize()
+        raw_frames = get_sprites_from_sheet(f"spritesheets/pet sheets/{file_prefix}_ss.png")
+        scale_val = 0.20 if p == "tinera" else 0.25
+        pet_frames[p] = [
+            pygame.transform.smoothscale(f,(int(810 * scale_val), int(1080 * scale_val)))
+            for f in raw_frames
+        ]
+    except pygame.error as e:
+        print(f"Error loading pet {p}: {e}")
+        pet_frames[p] = []
 
 # ==========================================
 # GAME STATE & UI SETUP
@@ -268,8 +293,11 @@ player_has_purple_magic = False
 player_has_rainbow_dance = False
 player_has_melee = False
 player_has_blue_magic = False
-player_has_tinera = False
-tinera_active = True
+
+# New Multi-Pet Tracking
+owned_pets = []
+active_pet = None
+active_companion = None
 
 hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -291,7 +319,6 @@ exit_timer = 0
 succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
                jump_fx,
                cast_fx)
-tinera_companion = Companion(tinera_frames) if tinera_frames else None
 projectile_group = pygame.sprite.Group()
 
 # ==========================================
@@ -628,54 +655,74 @@ while run:
                                 rem -= 50
                                 succi.max_health = 3
                                 succi.health = 3
-
                             elif bought_item == "Teal Potion":
                                 rem -= 50
                                 succi.health = min(succi.health + 3, succi.max_health)
-
                             elif bought_item == "Emerald Potion":
                                 rem -= 150
                                 succi.max_health += 2
                                 succi.health = succi.max_health
-
                             elif bought_item == "Pink Potion":
                                 rem -= 100
                                 succi.health = min(succi.health + 5, succi.max_health)
-
                             elif bought_item == "Gold Potion":
                                 rem -= 250
                                 succi.max_health += 1
                                 succi.health = succi.max_health
-
                             elif bought_item == "Silver Potion":
                                 rem -= 50
                                 player_has_melee = True
-
                             elif bought_item == "Blue Potion":
                                 rem -= 50
                                 player_has_blue_magic = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "blue"
-
                             elif bought_item == "Wings Potion":
                                 rem -= 150
-
                             elif bought_item == "Purple Potion":
                                 rem -= 50
                                 player_has_purple_magic = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "purple"
-
                             elif bought_item == "Rainbow Potion":
                                 rem -= 50
                                 player_has_rainbow_dance = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "rainbow"
 
+                            # PET LOGIC INJECTION
                             elif bought_item == "Royal Potion":
                                 rem -= 50
-                                player_has_tinera = True
-                                tinera_active = True
+                                if "tinera" not in owned_pets: owned_pets.append("tinera")
+                                active_pet = "tinera"
+                            elif bought_item == "Crowley Potion":
+                                rem -= 50
+                                if "crowley" not in owned_pets: owned_pets.append("crowley")
+                                active_pet = "crowley"
+                            elif bought_item == "Gloom Potion":
+                                rem -= 50
+                                if "gloom" not in owned_pets: owned_pets.append("gloom")
+                                active_pet = "gloom"
+                            elif bought_item == "Losslyn Potion":
+                                rem -= 50
+                                if "losslyn" not in owned_pets: owned_pets.append("losslyn")
+                                active_pet = "losslyn"
+                            elif bought_item == "Opal Potion":
+                                rem -= 50
+                                if "opal" not in owned_pets: owned_pets.append("opal")
+                                active_pet = "opal"
+                            elif bought_item == "Saphy Potion":
+                                rem -= 50
+                                if "saphy" not in owned_pets: owned_pets.append("saphy")
+                                active_pet = "saphy"
+                            elif bought_item == "Trinity Potion":
+                                rem -= 50
+                                if "trinity" not in owned_pets: owned_pets.append("trinity")
+                                active_pet = "trinity"
+                            elif bought_item == "Whisper Potion":
+                                rem -= 50
+                                if "whisper" not in owned_pets: owned_pets.append("whisper")
+                                active_pet = "whisper"
 
                         if keys[pygame.K_e]:
                             exiting_merchant = True
@@ -706,7 +753,8 @@ while run:
                                 current_state = "LEVEL_6_CUTSCENE"
                                 checkpoint = 7
                                 if cutscene_screen is None:
-                                    cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/6a-cut.mp4")
+                                    cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                                     "mats/cut_scenes/6a-cut.mp4")
                             elif last_completed_level == "LEVEL_7":
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
@@ -789,11 +837,16 @@ while run:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
-                if player_has_tinera and tinera_active and tinera_companion:
+                # DYNAMIC PET DRAWING INJECTION #
+                if active_pet and active_pet in pet_frames and pet_frames[active_pet]:
+                    if active_companion is None or getattr(active_companion, 'pet_id', None) != active_pet:
+                        active_companion = Companion(pet_frames[active_pet])
+                        active_companion.pet_id = active_pet
+
                     stable_screen_x = succi.x - camera_x
                     stable_screen_y = succi.y
-                    tinera_companion.update(stable_screen_x, stable_screen_y, succi.facing_right)
-                    tinera_companion.draw(screen)
+                    active_companion.update(stable_screen_x, stable_screen_y, succi.facing_right)
+                    active_companion.draw(screen)
 
                 if abs(succi.x - current_level.door_world_x) < 150:
                     draw_text(screen, "Press 'E' to Enter", font_small, Color("turquoise1"), succi_blit_x + 20,
@@ -948,7 +1001,7 @@ while run:
                 if player_has_rainbow_dance:
                     owned_spells.append("rainbow")
 
-                action = pause_menu.update(mouse_pos, mouse_click, owned_spells, player_has_tinera)
+                action = pause_menu.update(mouse_pos, mouse_click, owned_spells, owned_pets, active_pet)
 
                 if action:
                     if action["action"] == "EQUIP":
@@ -956,10 +1009,18 @@ while run:
                             succi.spell_left_click = action["spell"]
                         elif action["slot"] == "right":
                             succi.spell_right_click = action["spell"]
+                    elif action["action"] == "EQUIP_PET":
+                        active_pet = action["pet"]
+                    elif action["action"] == "UNEQUIP_PET":
+                        active_pet = None
+                    # Fallback compatibility
                     elif action["action"] == "TOGGLE_TINERA":
-                        tinera_active = not tinera_active
+                        if active_pet == "tinera":
+                            active_pet = None
+                        elif "tinera" in owned_pets:
+                            active_pet = "tinera"
 
-                pause_menu.draw(screen, owned_spells, mouse_pos, player_has_tinera, tinera_active, tinera_icon)
+                pause_menu.draw(screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons)
 
         else:
             death_screen.draw(screen, current_state, checkpoint)
@@ -976,8 +1037,9 @@ while run:
 
                 old_left_spell = getattr(succi, 'spell_left_click', 'normal')
                 old_right_spell = getattr(succi, 'spell_right_click', None)
-                old_has_tinera = player_has_tinera
-                old_tinera_active = tinera_active
+
+                old_owned_pets = list(owned_pets)
+                old_active_pet = active_pet
 
                 target_state = f"LEVEL_{restart_action}"
                 if current_state != target_state:
@@ -1016,8 +1078,8 @@ while run:
                     old_max_health = 1
                     old_left_spell = "normal"
                     old_right_spell = None
-                    old_has_tinera = False
-                    old_tinera_active = False
+                    old_owned_pets = []
+                    old_active_pet = None
 
                 # --- TRIGGER LEVEL BANNER ON RESPAWN ---
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
@@ -1032,8 +1094,10 @@ while run:
 
                 succi.spell_left_click = old_left_spell
                 succi.spell_right_click = old_right_spell
-                player_has_tinera = old_has_tinera
-                tinera_active = old_tinera_active
+
+                owned_pets = old_owned_pets
+                active_pet = old_active_pet
+                active_companion = None
 
                 projectile_group.empty()
 

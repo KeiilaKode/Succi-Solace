@@ -1,8 +1,4 @@
-# -ui-#
-
-# -ui-#
-
-# -ui-#
+#-ui-#
 
 import pygame
 import os
@@ -205,9 +201,8 @@ class PauseMenu:
             self.icon_purple = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
             self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(), (55, 55))
             self.icon_rainbow = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (55, 55))
-            self.icon_tinera = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_tinera.png").convert_alpha(), (55, 55))
         except pygame.error:
-            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = self.icon_tinera = None
+            self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
         # Multi-Slot Save Variables
         self.save_state = None
@@ -258,7 +253,7 @@ class PauseMenu:
                 self.save_slots.append({"rect": rect, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
             y_offset += 65
 
-    def update(self, mouse_pos, mouse_click, owned_spells, player_has_tinera):
+    def update(self, mouse_pos, mouse_click, owned_spells, owned_pets, active_pet):
         result = None
         if mouse_click:
             if self.save_state == "TYPE":
@@ -300,13 +295,23 @@ class PauseMenu:
                         self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
                         return result
 
-                if player_has_tinera and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
-                    result = {"action": "TOGGLE_TINERA"}
-                    return result
+                # Pet Cycling Logic
+                if len(owned_pets) > 0 and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
+                    if active_pet is None:
+                        return {"action": "EQUIP_PET", "pet": owned_pets[0]}
+                    else:
+                        try:
+                            current_idx = owned_pets.index(active_pet)
+                            if current_idx + 1 < len(owned_pets):
+                                return {"action": "EQUIP_PET", "pet": owned_pets[current_idx + 1]}
+                            else:
+                                return {"action": "UNEQUIP_PET"}
+                        except ValueError:
+                            return {"action": "UNEQUIP_PET"}
 
         return result
 
-    def draw(self, screen, owned_spells, mouse_pos, player_has_tinera, tinera_active=True, tinera_icon_override=None):
+    def draw(self, screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons):
         # 1. Draw the new unified background directly
         if self.bg:
             screen.blit(self.bg, (0, 0))
@@ -343,10 +348,12 @@ class PauseMenu:
                 elif spell == "rainbow" and self.icon_rainbow:
                     screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
 
-            elif i == 4 and player_has_tinera:
-                active_icon = tinera_icon_override if tinera_icon_override else self.icon_tinera
+            elif i == 4 and len(owned_pets) > 0:
+                display_pet = active_pet if active_pet else owned_pets[0]
+                active_icon = pet_icons.get(display_pet)
+
                 if active_icon:
-                    if not tinera_active:
+                    if not active_pet:
                         dim_icon = active_icon.copy()
                         dim_icon.fill((100, 100, 100), special_flags=pygame.BLEND_RGB_MULT)
                         screen.blit(dim_icon, dim_icon.get_rect(center=rect.center))
@@ -727,6 +734,23 @@ class Merchant_UI:
             self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/gold potion.png").convert_alpha(),
                                                        (110, 150))
 
+            # --- NEW PET POTIONS LOADING ---
+            def load_pet_potion(name):
+                try:
+                    return pygame.transform.smoothscale(
+                        pygame.image.load(f"mats/ui/potions/{name}.png").convert_alpha(), (110, 150))
+                except pygame.error:
+                    surf = pygame.Surface((110, 150), pygame.SRCALPHA)
+                    return surf
+
+            self.crowley_p = load_pet_potion("crowley potion")
+            self.gloom_p = load_pet_potion("gloom potion")
+            self.losslyn_p = load_pet_potion("losslyn potion")
+            self.opal_p = load_pet_potion("opal potion")
+            self.saphy_p = load_pet_potion("saphy potion")
+            self.trinity_p = load_pet_potion("trinity potion")
+            self.whisper_p = load_pet_potion("whisper potion")
+
             raw_left = pygame.image.load("mats/ui/left.png").convert_alpha()
             raw_right = pygame.image.load("mats/ui/right.png").convert_alpha()
             arrow_w, arrow_h = 245, 120
@@ -770,10 +794,25 @@ class Merchant_UI:
              "cost": 50, "color": (50, 50, 255)},
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."],
              "cost": 50, "color": (255, 100, 255)},
-            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons companion..."],
+            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons Tinera..."],
              "cost": 50, "color": (255, 180, 50)},
             {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."],
-             "cost": 250, "color": (255, 220, 50)}
+             "cost": 250, "color": (255, 220, 50)},
+            # --- NEW PET POTIONS INJECTION ---
+            {"id": "Crowley Potion", "img": self.crowley_p, "title": "Crowley Potion", "desc": ["Summons Crowley..."],
+             "cost": 50, "color": (180, 180, 180)},
+            {"id": "Gloom Potion", "img": self.gloom_p, "title": "Gloom Potion", "desc": ["Summons Gloom..."],
+             "cost": 50, "color": (150, 100, 150)},
+            {"id": "Losslyn Potion", "img": self.losslyn_p, "title": "Losslyn Potion", "desc": ["Summons Losslyn..."],
+             "cost": 50, "color": (100, 150, 200)},
+            {"id": "Opal Potion", "img": self.opal_p, "title": "Opal Potion", "desc": ["Summons Opal..."], "cost": 50,
+             "color": (200, 200, 255)},
+            {"id": "Saphy Potion", "img": self.saphy_p, "title": "Saphy Potion", "desc": ["Summons Saphy..."],
+             "cost": 50, "color": (50, 100, 255)},
+            {"id": "Trinity Potion", "img": self.trinity_p, "title": "Trinity Potion", "desc": ["Summons Trinity..."],
+             "cost": 50, "color": (255, 100, 100)},
+            {"id": "Whisper Potion", "img": self.whisper_p, "title": "Whisper Potion", "desc": ["Summons Whisper..."],
+             "cost": 50, "color": (200, 150, 255)}
         ]
 
         self.current_page = 0
