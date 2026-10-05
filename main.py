@@ -57,6 +57,7 @@ def save_game(slot, save_name):
         "player_has_blue_magic": player_has_blue_magic,
         "player_has_rainbow_dance": player_has_rainbow_dance,
         "player_has_double_jump": player_has_double_jump,
+        "player_has_dash": player_has_dash,
 
         # Upgraded Pet Saving
         "owned_pets": owned_pets,
@@ -75,7 +76,7 @@ def save_game(slot, save_name):
 def load_game(slot):
     global current_state, checkpoint, rem
     global player_has_melee, player_has_purple_magic, player_has_blue_magic
-    global player_has_rainbow_dance, player_has_double_jump, owned_pets, active_pet
+    global player_has_rainbow_dance, player_has_double_jump, player_has_dash, owned_pets, active_pet
     global succi, current_level
     global global_merchant_sold_out
 
@@ -95,6 +96,7 @@ def load_game(slot):
     player_has_blue_magic = data["player_has_blue_magic"]
     player_has_rainbow_dance = data["player_has_rainbow_dance"]
     player_has_double_jump = data.get("player_has_double_jump", False)
+    player_has_dash = data.get("player_has_dash", False)
 
     # Backward compatibility for old saves
     if "owned_pets" in data:
@@ -129,6 +131,7 @@ def load_game(slot):
     succi.spell_left_click = data["spell_left"]
     succi.spell_right_click = data["spell_right"]
     succi.has_double_jump = player_has_double_jump
+    succi.has_dash = player_has_dash
 
     return data["save_name"]
 
@@ -279,13 +282,13 @@ is_level_5_merchant = False
 is_level_6_merchant = False
 is_level_7_merchant = False
 
-# --- CURRENT LEVEL BANNER TRACKER ---
 current_banner = None
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
-    "Mysterious Potion": False, "Silver Potion": False, "Wings Potion": False, "Purple Potion": False,
-    "Blue Potion": False, "Rainbow Potion": False, "Royal Potion": False, "Gold Potion": False
+    "Mysterious Potion": False, "Silver Potion": False, "Dash Potion": False, "Wings Potion": False,
+    "Purple Potion": False, "Blue Potion": False, "Rainbow Potion": False, "Royal Potion": False,
+    "Gold Potion": False
 }
 
 player_has_purple_magic = False
@@ -293,6 +296,7 @@ player_has_rainbow_dance = False
 player_has_melee = False
 player_has_blue_magic = False
 player_has_double_jump = False
+player_has_dash = False
 
 # Multi-Pet Tracking
 owned_pets = []
@@ -385,6 +389,7 @@ while run:
                     succi.max_health = 1
                     succi.health = 1
                     succi.has_double_jump = player_has_double_jump
+                    succi.has_dash = player_has_dash
                     camera_x = 0.0
                     projectile_group.empty()
                     pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
@@ -664,7 +669,7 @@ while run:
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "blue"
                             elif bought_item == "Wings Potion":
-                                rem -= 150
+                                rem -= 200
                             elif bought_item == "Purple Potion":
                                 rem -= 50
                                 player_has_purple_magic = True
@@ -676,11 +681,18 @@ while run:
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "rainbow"
 
-                            # UNLOCK DOUBLE JUMP
+                            # UNLOCK DOUBLE JUMP (Mysterious Potion updated to 50 REM)
                             elif bought_item == "Mysterious Potion":
                                 rem -= 50
                                 player_has_double_jump = True
                                 succi.has_double_jump = True
+
+                            # UNLOCK SHADOW DASH (Dash Potion set to 50 REM)
+                            elif bought_item == "Dash Potion":
+                                rem -= 50
+                                player_has_dash = True
+                                succi.has_dash = True
+                                succi.dash_charges = getattr(config, 'PLAYER_DASH_MAX_CHARGES', 2)
 
                             # PET LOGIC
                             elif bought_item == "Royal Potion":
@@ -753,6 +765,7 @@ while run:
 
                             succi.x = 400.0
                             succi.has_double_jump = player_has_double_jump
+                            succi.has_dash = player_has_dash
                             camera_x = 0.0
                             exiting_merchant = False
                             merchant_npc = None
@@ -804,6 +817,7 @@ while run:
                 current_banner = LevelBanner(7, SCREEN_WIDTH)
 
                 succi.has_double_jump = player_has_double_jump
+                succi.has_dash = player_has_dash
 
                 pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                 pygame.mixer.music.set_volume(0.23)
@@ -1029,6 +1043,7 @@ while run:
                 old_owned_pets = list(owned_pets)
                 old_active_pet = active_pet
                 old_has_double_jump = player_has_double_jump
+                old_has_dash = player_has_dash
 
                 target_state = f"LEVEL_{restart_action}"
                 if current_state != target_state:
@@ -1071,6 +1086,8 @@ while run:
                     old_active_pet = None
                     old_has_double_jump = False
                     player_has_double_jump = False
+                    old_has_dash = False
+                    player_has_dash = False
 
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
 
@@ -1086,6 +1103,7 @@ while run:
                 succi.spell_right_click = old_right_spell
 
                 succi.has_double_jump = old_has_double_jump
+                succi.has_dash = old_has_dash
 
                 owned_pets = old_owned_pets
                 active_pet = old_active_pet

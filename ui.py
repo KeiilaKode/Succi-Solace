@@ -5,7 +5,7 @@ import os
 import json
 import sys
 import config
-import subprocess # <--- Add this import
+import subprocess
 
 # ==========================================
 # FIX FLASHING CMD WINDOW FOR PYVIDPLAYER2
@@ -14,7 +14,7 @@ if os.name == 'nt':
     _original_popen = subprocess.Popen
     def _patched_popen(*args, **kwargs):
         if 'creationflags' not in kwargs:
-            kwargs['creationflags'] = 0x08000000 # Forces CREATE_NO_WINDOW
+            kwargs['creationflags'] = 0x08000000  # Forces CREATE_NO_WINDOW
         return _original_popen(*args, **kwargs)
     subprocess.Popen = _patched_popen
 # ==========================================
@@ -37,7 +37,6 @@ class HUD:
         self.font_tiny = pygame.font.SysFont("Lucida Sans", 14)
         self.font_rem = pygame.font.SysFont("Lucida Sans", 24, bold=True)
 
-        # --- LOAD UI ICONS ---
         try:
             self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
                                                           (48, 48))
@@ -51,7 +50,6 @@ class HUD:
             print(f"Error loading HUD icons: {e}")
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
-        # --- LOAD & SCALE NEW GOTHIC HUD ELEMENTS ---
         try:
             self.succi_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/succi_hud.png").convert_alpha(), (450, 150))
@@ -119,13 +117,12 @@ class HUD:
 
 class LevelBanner:
     def __init__(self, level_num, screen_width):
-        self.duration = 3500  # Total display time in milliseconds (3.5 seconds)
+        self.duration = 3500
         self.start_time = pygame.time.get_ticks()
 
         try:
             img_path = f"mats/ui/level_huds/level {level_num} hud.png"
             raw_img = pygame.image.load(img_path).convert_alpha()
-            # Scaled to your exact preferred size
             self.image = pygame.transform.smoothscale(raw_img, (1225, 448))
         except pygame.error as e:
             print(f"Error loading level banner for level {level_num}: {e}")
@@ -137,12 +134,8 @@ class LevelBanner:
     def update_and_draw(self, screen):
         elapsed = pygame.time.get_ticks() - self.start_time
         if elapsed > self.duration:
-            return False  # Banner finished playing
+            return False
 
-        # Calculate alpha for smooth fade-in and fade-out
-        # 0 - 500ms: Fade In
-        # 500 - 2500ms: Fully Visible
-        # 2500 - 3500ms: Fade Out
         if elapsed < 500:
             alpha = int((elapsed / 500) * 255)
         elif elapsed > 2500:
@@ -152,7 +145,6 @@ class LevelBanner:
 
         alpha = max(0, min(255, alpha))
 
-        # Apply alpha to a copy of the image for smooth fading
         fade_image = self.image.copy()
         fade_image.set_alpha(alpha)
         screen.blit(fade_image, self.rect)
@@ -162,7 +154,6 @@ class LevelBanner:
         return pygame.time.get_ticks() - self.start_time > self.duration
 
 
-# PAUSE MENU #
 class PauseMenu:
     def __init__(self, w, h):
         self.w = w
@@ -171,14 +162,12 @@ class PauseMenu:
         self.font_med = pygame.font.SysFont("Lucida Sans", 32)
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
 
-        # Load the new unified background image
         try:
             pause_bg_raw = pygame.image.load("mats/ui/pause_screen1.png").convert()
             self.bg = pygame.transform.smoothscale(pause_bg_raw, (self.w, self.h))
         except pygame.error:
             self.bg = None
 
-        # Load and scale the new save button to fit the center frame (Made slightly bigger)
         try:
             raw_save = pygame.image.load("mats/ui/save_hud1.png").convert_alpha()
             self.save_b = pygame.transform.smoothscale(raw_save, (335, 230))
@@ -186,12 +175,10 @@ class PauseMenu:
         except pygame.error:
             self.save_b = self.save_h = None
 
-        # Calculate centers for the left and right mirrors
         self.left_cx = self.w // 2 - 370
         self.right_cx = self.w // 2 + 370
 
         if self.save_b:
-            # Nestle the save button in the bottom-center hole (Shifted slightly right)
             self.save_rect = self.save_b.get_rect(center=(self.w // 2 + 15, self.h // 2 + 180))
         else:
             self.save_rect = pygame.Rect(self.w // 2 - 167, self.h // 2 + 65, 335, 230)
@@ -204,13 +191,11 @@ class PauseMenu:
         except pygame.error:
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
-        # Multi-Slot Save Variables
         self.save_state = None
         self.selected_save_slot = None
         self.save_slots = []
         self.save_input_text = ""
 
-        # Position the inventory grid inside the left mirror (Shifted further left)
         self.grid_rects = []
         start_x = self.left_cx - 200
         start_y = self.h // 2 + 5
@@ -295,7 +280,6 @@ class PauseMenu:
                         self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
                         return result
 
-                # Pet Cycling Logic
                 if len(owned_pets) > 0 and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
                     if active_pet is None:
                         return {"action": "EQUIP_PET", "pet": owned_pets[0]}
@@ -312,7 +296,6 @@ class PauseMenu:
         return result
 
     def draw(self, screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons):
-        # 1. Draw the new unified background directly
         if self.bg:
             screen.blit(self.bg, (0, 0))
         else:
@@ -322,10 +305,8 @@ class PauseMenu:
 
         center_x = self.w // 2
 
-        # Moved resume instructions to the bottom so it doesn't overlap the new header
         draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
 
-        # 2. Draw the Save Button
         if self.save_b and self.save_h:
             if self.save_rect.collidepoint(mouse_pos):
                 hover_rect = self.save_h.get_rect(center=self.save_rect.center)
@@ -333,7 +314,6 @@ class PauseMenu:
             else:
                 screen.blit(self.save_b, self.save_rect)
 
-        # 3. Draw Inventory Grid
         for i, rect in enumerate(self.grid_rects):
             pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
 
@@ -363,18 +343,18 @@ class PauseMenu:
             if rect.collidepoint(mouse_pos) and not self.popup_active:
                 pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
-        # 4. Draw Controls Text (Shifted further right)
         ctrl_y = self.h // 2 + 5
         ctrl_x = self.right_cx - 55
 
         draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
         draw_text(screen, "Shift      : Run", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 30)
-        draw_text(screen, "Space      : Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 60)
-        draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 90)
-        draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 120)
-        draw_text(screen, "3 / MMB    : Melee Kick", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 150)
-        draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
-        draw_text(screen, "P / ESC    : Pause", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
+        draw_text(screen, "Space      : Jump & Double Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 60)
+        draw_text(screen, "W Key      : Shadow Dash", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 90)
+        draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 120)
+        draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 150)
+        draw_text(screen, "3 / MMB    : Melee Kick", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
+        draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
+        draw_text(screen, "P / ESC    : Pause", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 240)
 
         if self.popup_active:
             pygame.draw.rect(screen, BLACK, self.popup_rect_left)
@@ -387,7 +367,6 @@ class PauseMenu:
             pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
             draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5, self.popup_rect_right.y + 8)
 
-        # --- MULTI-SLOT SAVE SCREENS ---
         if self.save_state == "SELECT":
             dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
             dark_overlay.fill((0, 0, 0, 220))
@@ -420,38 +399,34 @@ class PauseMenu:
             draw_text(screen, self.save_input_text + "|", self.font_med, PINK, input_box_rect.x + 15, input_box_rect.y + 8)
             draw_text(screen, "Press ENTER to Save | ESC to Cancel", self.font_small, LIGHT_GRAY, dialog_rect.x + 75, dialog_rect.y + 135)
 
+
 class DeathScreen:
     def __init__(self, w, h):
         self.w = w
-        self.h = h  # 800
+        self.h = h
         self.font_big = pygame.font.SysFont("Lucida Sans", 48)
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
         try:
             self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/death_screen.png").convert_alpha(),
                                                    (w, h))
 
-            # --- NEW CENTER HUD ---
-            # Scale proportionally to match screen height
             center_raw = pygame.image.load("mats/ui/center_death_hud.png").convert_alpha()
             c_raw_w, c_raw_h = center_raw.get_size()
             c_ratio = self.h / c_raw_h
             self.overlay = pygame.transform.smoothscale(center_raw, (int(c_raw_w * c_ratio), self.h))
 
-            # --- LOAD & SCALE THE OUTER FRAMES ---
             frame_raw = pygame.image.load("mats/ui/small window frame.png").convert_alpha()
             f_raw_w, f_raw_h = frame_raw.get_size()
             f_ratio = self.h / f_raw_h
             self.frame_w = int(f_raw_w * f_ratio)
             self.frame_img = pygame.transform.smoothscale(frame_raw, (self.frame_w, self.h))
 
-            # --- LOAD & SCALE SUCCI ---
             succi_raw = pygame.image.load("mats/ui/Succi_alpha.png").convert_alpha()
             s_raw_w, s_raw_h = succi_raw.get_size()
             s_target_h = int(self.h * 0.95)
             s_ratio = s_target_h / s_raw_h
             self.succi_img = pygame.transform.smoothscale(succi_raw, (int(s_raw_w * s_ratio), s_target_h))
 
-            # --- LOAD & SCALE ADELAIDE ---
             adelaide_raw = pygame.image.load("mats/ui/Adelaide_alpha.png").convert_alpha()
             a_raw_w, a_raw_h = adelaide_raw.get_size()
             a_target_h = int(self.h * 0.95)
@@ -475,15 +450,12 @@ class DeathScreen:
         screen.blit(scaled_text, text_rect)
 
     def draw(self, screen, current_state, checkpoint):
-        # 1. Background
         screen.blit(self.bg, (0, 0))
 
-        # 2. Outer Frames
         if self.frame_img:
             screen.blit(self.frame_img, (0, 0))
             screen.blit(self.frame_img, (self.w - self.frame_w, 0))
 
-        # 3. Characters (Inside their frames)
         if self.succi_img:
             s_rect = self.succi_img.get_rect(midbottom=(self.frame_w // 2, self.h - 15))
             screen.blit(self.succi_img, s_rect)
@@ -492,25 +464,17 @@ class DeathScreen:
             a_rect = self.adelaide_img.get_rect(midbottom=(self.w - (self.frame_w // 2), self.h - 15))
             screen.blit(self.adelaide_img, a_rect)
 
-        # 4. Center Tombstone Overlay (Draw ON TOP of characters)
         if self.overlay:
             do_rect = self.overlay.get_rect(center=(self.w // 2, self.h // 2))
             screen.blit(self.overlay, do_rect)
 
-        # 5. Dynamic Text Placements
         center_x = self.w // 2 - 10
-
-        # Tweak this Y value to move "LEVEL X" up or down so it sits right under "DIED ON:"
         level_y_pos = self.h // 2 + 120
-
-        # Tweak this Y value to move the "Restart" text under "PRESS SPACE"
         restart_y_pos = self.h - 160
 
-        # Draw the dynamic Level Name (e.g., "LEVEL 1")
         self.draw_centered_scaled_text(screen, f"{current_state.replace('_', ' ')}", self.font_big,
                                        pygame.Color("turquoise1"), center_x, level_y_pos, 0.45)
 
-        # Draw the dynamic Restart instruction
         if checkpoint in [2, 3, 4, 5, 6, 7]:
             self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART AT LEVEL 1", self.font_small,
                                            pygame.Color("plum1"), center_x, restart_y_pos, 0.9)
@@ -525,25 +489,16 @@ class MainMenu:
             raw_controls = pygame.image.load("mats/ui/controls1.png").convert_alpha()
             raw_load = pygame.image.load("mats/ui/load1.png").convert_alpha()
 
-            # --- 1. BUTTON SIZING (Adjust width, height here) ---
-            # Scaled up to fill the dark inner frames naturally
             self.play_b = pygame.transform.smoothscale(raw_play, (400, 240))
             self.ctrl_b = pygame.transform.smoothscale(raw_controls, (330, 180))
             self.load_b = pygame.transform.smoothscale(raw_load, (270, 270))
 
-            # 10% hover scaling
             self.play_h = pygame.transform.smoothscale(raw_play, (int(400 * 1.10), int(240 * 1.10)))
             self.ctrl_h = pygame.transform.smoothscale(raw_controls, (int(330 * 1.10), int(180 * 1.10)))
             self.load_h = pygame.transform.smoothscale(raw_load, (int(270 * 1.10), int(270 * 1.10)))
 
-            # --- 2. BUTTON POSITIONING (Adjust X, Y centers here) ---
-            # CONTROLS: Left window (centered around x=200, moved up into the opening)
             self.ctrl_rect = self.ctrl_b.get_rect(center=(223, h // 2 + 140))
-
-            # PLAY: Center archway (centered horizontally, raised to rest under the arch crest)
             self.play_rect = self.play_b.get_rect(center=(w // 2 + 3, h // 2 + 130))
-
-            # LOAD: Right window (centered around x=w - 200, positioned inside the frame)
             self.load_rect = self.load_b.get_rect(center=(w - 220, h // 2 + 140))
 
         except pygame.error as e:
@@ -559,7 +514,6 @@ class MainMenu:
     def _load_save_data(self):
         self.save_slots = []
 
-        # Get the absolute path for saves regardless of temporary folders
         if getattr(sys, 'frozen', False):
             save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
         else:
@@ -599,7 +553,6 @@ class MainMenu:
                         self.sub_menu = None
                         return {"action": "LOAD", "slot": slot["slot"]}
 
-                # Close if clicked outside
                 if not any(slot["rect"].collidepoint(mouse_pos) for slot in self.save_slots):
                     self.sub_menu = None
                 return None
@@ -651,7 +604,6 @@ class MainMenu:
                 text_surf = self.font_text.render(slot["name"], True, col)
                 screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
-                # Draw Delete [ DEL ] Button for Populated Slots
                 if not slot["empty"] and slot["del_rect"]:
                     d_rect = slot["del_rect"]
                     d_col = (255, 50, 50) if d_rect.collidepoint(mouse_pos) else (150, 50, 50)
@@ -669,7 +621,8 @@ class MainMenu:
                 ("CONTROLS", PINK),
                 ("WASD / Arrows : Move & Duck", (100, 200, 255)),
                 ("Shift : Run", (100, 200, 255)),
-                ("Space : Jump", (100, 200, 255)),
+                ("Space : Jump & Double Jump", (100, 200, 255)),
+                ("W Key : Shadow Dash", (100, 200, 255)),
                 ("Left Mouse : Cast Red Fireball", (100, 200, 255)),
                 ("Right Mouse : Cast Purple Magic", (100, 200, 255)),
                 ("3 / MMB : Melee Kick", (100, 200, 255)),
@@ -695,9 +648,7 @@ class Merchant_UI:
             try:
                 raw_exit = pygame.image.load("mats/ui/exit_hud.png").convert_alpha()
                 self.exit_hud_img = pygame.transform.smoothscale(raw_exit, (390, 140))
-                # Create the hover effect image (10% larger)
                 self.exit_hud_hover = pygame.transform.smoothscale(raw_exit, (int(390 * 1.10), int(140 * 1.10)))
-                # Set up the collision rectangle based on your specific screen coordinates
                 self.exit_rect = self.exit_hud_img.get_rect(topleft=(880, 5))
             except pygame.error as e:
                 print(f"Error loading exit HUD: {e}")
@@ -734,7 +685,14 @@ class Merchant_UI:
             self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/gold potion.png").convert_alpha(),
                                                        (110, 150))
 
-            # --- NEW PET POTIONS LOADING ---
+            # --- LOAD DASH POTION ---
+            try:
+                self.dash_p = pygame.transform.smoothscale(
+                    pygame.image.load("mats/ui/dash potion.png").convert_alpha(), (110, 150))
+            except pygame.error:
+                self.dash_p = pygame.Surface((110, 150), pygame.SRCALPHA)
+
+            # --- LOAD PET POTIONS ---
             def load_pet_potion(name):
                 try:
                     return pygame.transform.smoothscale(
@@ -773,7 +731,11 @@ class Merchant_UI:
         self.left_arrow_rect = self.left_arrow_img.get_rect(midright=(self.buy_rect.left - 15, self.buy_rect.centery))
         self.right_arrow_rect = self.right_arrow_img.get_rect(midleft=(self.buy_rect.right + 15, self.buy_rect.centery))
 
+        # ==============================================================================
+        # --- REORGANIZED INVENTORY (DASH ON PAGE 1, WINGS & RAINBOW ON PAGE 2 TOP) ---
+        # ==============================================================================
         self.inventory = [
+            # --- PAGE 1: CORE COMBAT, HEALTH & MOVEMENT (Slots 0 - 8) ---
             {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."],
              "cost": 50, "color": (50, 255, 50)},
             {"id": "Teal Potion", "img": self.teal_p, "title": "Minor Heal", "desc": ["Restores up to 3 Health."],
@@ -786,19 +748,22 @@ class Merchant_UI:
              "desc": ["Unlocks Double Jump."], "cost": 50, "color": (150, 50, 255)},
             {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."],
              "cost": 50, "color": (220, 220, 220)},
-            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],
-             "cost": 200, "color": (255, 200, 50)},
+            {"id": "Dash Potion", "img": self.dash_p, "title": "Shadow Dash", "desc": ["Unlocks the Shadow Dash.", "Tap 'W' to burst forward."],
+             "cost": 50, "color": (200, 50, 255)},
             {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion", "desc": ["Unlocks Void-ball."],
              "cost": 50, "color": (180, 50, 255)},
             {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"],
              "cost": 50, "color": (50, 50, 255)},
+
+            # --- PAGE 2: ELITE ARSENAL (TOP ROW) & PETS START ON ROW 2 (Slots 9 - 17) ---
+            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],
+             "cost": 200, "color": (255, 200, 50)},
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."],
              "cost": 50, "color": (255, 100, 255)},
-            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons Tinera..."],
-             "cost": 50, "color": (255, 180, 50)},
             {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."],
              "cost": 250, "color": (255, 220, 50)},
-            # --- NEW PET POTIONS INJECTION ---
+            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons Tinera..."],
+             "cost": 50, "color": (255, 180, 50)},
             {"id": "Crowley Potion", "img": self.crowley_p, "title": "Crowley Potion", "desc": ["Summons Crowley..."],
              "cost": 50, "color": (180, 180, 180)},
             {"id": "Gloom Potion", "img": self.gloom_p, "title": "Gloom Potion", "desc": ["Summons Gloom..."],
@@ -809,11 +774,19 @@ class Merchant_UI:
              "color": (200, 200, 255)},
             {"id": "Saphy Potion", "img": self.saphy_p, "title": "Saphy Potion", "desc": ["Summons Saphy..."],
              "cost": 50, "color": (50, 100, 255)},
+
+            # --- PAGE 3: REMAINING PETS & FUTURE EXPANSIONS (Slots 18 - 19) ---
             {"id": "Trinity Potion", "img": self.trinity_p, "title": "Trinity Potion", "desc": ["Summons Trinity..."],
              "cost": 50, "color": (255, 100, 100)},
             {"id": "Whisper Potion", "img": self.whisper_p, "title": "Whisper Potion", "desc": ["Summons Whisper..."],
              "cost": 50, "color": (200, 150, 255)}
         ]
+
+        # Set of item IDs that represent cosmetic companion pets
+        self.pet_item_ids = {
+            "Royal Potion", "Crowley Potion", "Gloom Potion", "Losslyn Potion",
+            "Opal Potion", "Saphy Potion", "Trinity Potion", "Whisper Potion"
+        }
 
         self.current_page = 0
         self.selected_item_data = None
@@ -835,7 +808,6 @@ class Merchant_UI:
         if mouse_click and (current_time - self.last_click_time > 200):
             self.last_click_time = current_time
 
-            # --- NEW EXIT LOGIC TRIGGER ---
             if getattr(self, 'exit_rect', None) and self.exit_rect.collidepoint(mouse_pos):
                 return "EXIT_CLICKED"
 
@@ -870,6 +842,11 @@ class Merchant_UI:
             if not self.sold_out.get(item["id"], False):
                 slot = self.grid_rects[i]
                 screen.blit(item["img"], (slot.x + 10, slot.y - 10))
+
+                # --- DRAW ELEGANT THIN GOLD BORDER FOR PET POTION SLOTS ---
+                if item["id"] in self.pet_item_ids:
+                    pygame.draw.rect(screen, (218, 165, 32), slot, 2, border_radius=4)
+
                 if slot.collidepoint(mouse_pos) or (
                         self.selected_item_data and self.selected_item_data["id"] == item["id"]):
                     pygame.draw.rect(screen, WHITE, slot, 3)
@@ -905,14 +882,11 @@ class Merchant_UI:
             screen.blit(self.font_title.render(f"COST: {self.selected_item_data['cost']} REM", True, PINK),
                         (text_x, y_offset + 10))
 
-        # --- UPDATED EXIT HUD DRAWING ---
         if self.exit_hud_img and getattr(self, 'exit_rect', None):
             if self.exit_rect.collidepoint(mouse_pos):
-                # Draw the hovered version centered over the standard rect
                 hover_rect = self.exit_hud_hover.get_rect(center=self.exit_rect.center)
                 screen.blit(self.exit_hud_hover, hover_rect)
             else:
-                # Draw the standard version
                 screen.blit(self.exit_hud_img, self.exit_rect)
 
 
@@ -925,19 +899,15 @@ class CutsceneScreen:
         self.vid.resize((screen_width, screen_height))
         self.vid.pause()
 
-        # Load custom skip button maintaining natural proportions (~1.7:1)
         try:
             raw_skip = pygame.image.load("mats/ui/skip_button666.png").convert_alpha()
-            # Standard un-flattened size
             self.skip_img = pygame.transform.smoothscale(raw_skip, (280, 220))
-            # 10% larger for hover effect
             self.skip_img_hover = pygame.transform.smoothscale(raw_skip, (int(280 * 1.10), int(220 * 1.10)))
         except pygame.error as e:
             print(f"Error loading skip button: {e}")
             self.skip_img = None
             self.skip_img_hover = None
 
-        # Positioned right over the corner watermark (centered at x=1260, y=700)
         self.skip_rect = pygame.Rect(0, 0, 280, 220)
         self.skip_rect.center = (self.screen_width - 140, self.screen_height - 110)
 
@@ -957,10 +927,8 @@ class CutsceneScreen:
         return False
 
     def draw(self, screen, mouse_pos, show_skip=True):
-        # Draw current video frame
         self.vid.draw(screen, (0, 0))
 
-        # Draw skip button with hover enlargement
         if show_skip and self.skip_img:
             if self.skip_rect.collidepoint(mouse_pos) and self.skip_img_hover:
                 hover_rect = self.skip_img_hover.get_rect(center=self.skip_rect.center)

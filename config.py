@@ -8,6 +8,24 @@ PLAYER_JUMP_IMPULSE = -800.0
 PLAYER_DOUBLE_JUMP_IMPULSE = -800.0  # Tunable mid-air wing thrust
 PLAYER_GRAVITY = 1500.0
 
+# ==============================================================================
+# --- DASH TUNING PARAMETERS ---
+# ==============================================================================
+# Speed of the burst in pixels/second (Higher = faster, further dash)
+PLAYER_DASH_SPEED = 850.0
+
+# How long the dash burst lasts in milliseconds (180ms = approx 0.18 seconds)
+# Formula for distance traveled: (PLAYER_DASH_SPEED * PLAYER_DASH_DURATION / 1000)
+# At 850 px/s for 180ms, she dashes approx 153 pixels.
+PLAYER_DASH_DURATION = 180
+
+# Time in milliseconds it takes for ONE dash charge to regenerate (2000ms = 2.0s)
+PLAYER_DASH_RECHARGE_TIME = 2000
+
+# Total number of dash charges Succi can hold at once
+PLAYER_DASH_MAX_CHARGES = 2
+# ==============================================================================
+
 # --- PLAYER STATS --- #
 PLAYER_STARTING_HEALTH = 1
 PLAYER_INVULNERABLE_DURATION = 1000  # in milliseconds
