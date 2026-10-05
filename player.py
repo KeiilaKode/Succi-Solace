@@ -17,6 +17,11 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = True
         self.facing_right = True
 
+        # Double Jump Capabilities
+        self.has_double_jump = False
+        self.can_double_jump = False
+        self.jump_key_released = True
+
         # Health System
         self.health = config.PLAYER_STARTING_HEALTH
         self.max_health = config.PLAYER_STARTING_HEALTH
@@ -54,6 +59,7 @@ class Player(pygame.sprite.Sprite):
         moving = False
         run_pressed = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
         duck_pressed = keys[pygame.K_DOWN] or keys[pygame.K_s]
+        space_pressed = keys[pygame.K_SPACE]
 
         self.recovering_duck = (self.current_anim == "duck" and not duck_pressed and self.playing)
         self.attacking = (self.current_anim in ["attack", "run_attack", "kick", "jump_kick"] and self.playing)
@@ -72,9 +78,8 @@ class Player(pygame.sprite.Sprite):
         else:
             self.vx = 0
 
-        # Jump Intent
-        if keys[
-            pygame.K_SPACE] and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
+        # Jump Intent (Ground Jump)
+        if space_pressed and self.on_ground and not duck_pressed and not self.recovering_duck and not self.attacking:
             if moving and "run_jump" in self.animations:
                 self.current_anim = "run_jump"
             else:
@@ -84,8 +89,28 @@ class Player(pygame.sprite.Sprite):
             self.playing = True
             self.vy = config.PLAYER_JUMP_IMPULSE
             self.on_ground = False
+            self.can_double_jump = self.has_double_jump
             if self.jump_fx:
                 self.jump_fx.play()
+
+        # Double Jump Intent (Mid-Air Leap)
+        elif space_pressed and not self.on_ground and self.can_double_jump and self.jump_key_released and not self.attacking:
+            if moving and "run_jump" in self.animations:
+                self.current_anim = "run_jump"
+            else:
+                self.current_anim = "jump"
+            self.current_frame = 0
+            self.animation_timer = 0
+            self.playing = True
+
+            # Reset downward velocity instantly for snappy jump feel
+            self.vy = getattr(config, 'PLAYER_DOUBLE_JUMP_IMPULSE', config.PLAYER_JUMP_IMPULSE)
+            self.can_double_jump = False
+            if self.jump_fx:
+                self.jump_fx.play()
+
+        # Track key release so holding space doesn't automatically trigger the double jump
+        self.jump_key_released = not space_pressed
 
         return moving, run_pressed, duck_pressed
 
@@ -135,12 +160,14 @@ class Player(pygame.sprite.Sprite):
                         self.y = col_rect.top
                         self.vy = 0
                         self.on_ground = True
+                        self.can_double_jump = self.has_double_jump
                         break
 
             if self.y >= self.y_ground:
                 self.y = self.y_ground
                 self.vy = 0
                 self.on_ground = True
+                self.can_double_jump = self.has_double_jump
         else:
             on_platform = False
             for platform in platform_group:
@@ -150,6 +177,8 @@ class Player(pygame.sprite.Sprite):
                     break
             if not on_platform and self.y < self.y_ground:
                 self.on_ground = False
+                # If player walked off a ledge, allow double-jump as a mid-air recovery
+                self.can_double_jump = self.has_double_jump
 
     def update_animation_state(self, moving, run_pressed, duck_pressed):
         if self.attacking or not self.on_ground or self.recovering_duck:
@@ -198,9 +227,8 @@ class Player(pygame.sprite.Sprite):
             if self.current_frame >= 9:
                 self.current_frame = 9
                 self.animation_timer = 0
-        # --- NEW: Hold the jump kick pose in the air ---
         if self.current_anim == "jump_kick" and not self.on_ground:
-            if self.current_frame >= 5:  # Assuming frame 5 is the final held kick pose
+            if self.current_frame >= 5:
                 self.current_frame = 5
                 self.animation_timer = 0
 
@@ -247,7 +275,6 @@ class Player(pygame.sprite.Sprite):
 
         fw, fh = self.current_image.get_size()
 
-        # --- UPDATED OFFSET LOGIC ---
         y_offset = 0
         x_offset = 0
 
@@ -256,10 +283,7 @@ class Player(pygame.sprite.Sprite):
             x_offset = config.PLAYER_ATTACK_X_SHIFT if self.facing_right else -config.PLAYER_ATTACK_X_SHIFT
 
         elif self.current_anim in ["kick", "jump_kick"]:
-            # TWEAK THIS: A higher number pushes her DOWN.
             y_offset = 210
-
-            # TWEAK THIS: A higher number pushes her FORWARD into the kick.
             kick_x_shift = 40
             x_offset = kick_x_shift if self.facing_right else -kick_x_shift
 

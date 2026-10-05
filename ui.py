@@ -783,7 +783,7 @@ class Merchant_UI:
             {"id": "Pink Potion", "img": self.pink_p, "title": "Major Heal", "desc": ["Restores up to 5 Health."],
              "cost": 100, "color": (255, 100, 200)},
             {"id": "Mysterious Potion", "img": self.mysterious_p, "title": "Mysterious Potion",
-             "desc": ["Unlocks Double Jump."], "cost": 200, "color": (150, 50, 255)},
+             "desc": ["Unlocks Double Jump."], "cost": 50, "color": (150, 50, 255)},
             {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."],
              "cost": 50, "color": (220, 220, 220)},
             {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],

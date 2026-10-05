@@ -30,16 +30,14 @@ from player import Player
 from entities import Projectile, Merchant, Companion
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Merchant_Room
 
-# Isolated UI components - ADDED CutsceneScreen HERE
+# Isolated UI components
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner, CutsceneScreen
 
 # SAVE FILE CREATION #
 
 if getattr(sys, 'frozen', False):
-    # When packaged as an .exe, save exactly where the .exe is located
     SAVE_DIR = os.path.join(os.path.dirname(sys.executable), "saves")
 else:
-    # When running in PyCharm
     SAVE_DIR = os.path.abspath("saves")
 
 os.makedirs(SAVE_DIR, exist_ok=True)
@@ -58,6 +56,7 @@ def save_game(slot, save_name):
         "player_has_purple_magic": player_has_purple_magic,
         "player_has_blue_magic": player_has_blue_magic,
         "player_has_rainbow_dance": player_has_rainbow_dance,
+        "player_has_double_jump": player_has_double_jump,
 
         # Upgraded Pet Saving
         "owned_pets": owned_pets,
@@ -76,7 +75,7 @@ def save_game(slot, save_name):
 def load_game(slot):
     global current_state, checkpoint, rem
     global player_has_melee, player_has_purple_magic, player_has_blue_magic
-    global player_has_rainbow_dance, owned_pets, active_pet
+    global player_has_rainbow_dance, player_has_double_jump, owned_pets, active_pet
     global succi, current_level
     global global_merchant_sold_out
 
@@ -95,6 +94,7 @@ def load_game(slot):
     player_has_purple_magic = data["player_has_purple_magic"]
     player_has_blue_magic = data["player_has_blue_magic"]
     player_has_rainbow_dance = data["player_has_rainbow_dance"]
+    player_has_double_jump = data.get("player_has_double_jump", False)
 
     # Backward compatibility for old saves
     if "owned_pets" in data:
@@ -128,6 +128,7 @@ def load_game(slot):
     succi.max_health = data["max_health"]
     succi.spell_left_click = data["spell_left"]
     succi.spell_right_click = data["spell_right"]
+    succi.has_double_jump = player_has_double_jump
 
     return data["save_name"]
 
@@ -175,7 +176,7 @@ try:
     # --- LEVEL 2 --- #
     merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/audio/merchant greet lvl 2.mp3")
     merchant_greet_lvl_2_fx.set_volume(0.6)
-    # --- LEVEL 3 ---
+    # --- LEVEL 3 --- #
     merchant_greet_lvl_3_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl3.mp3")
     merchant_greet_lvl_3_fx.set_volume(0.6)
     # --- LEVEL 4 --- #
@@ -243,21 +244,19 @@ pet_icons = {}
 pet_names = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
 
 for p in pet_names:
-    # Load actual UI icons from mats/ui/ directory
     try:
         raw_icon = pygame.image.load(f"mats/ui/icon_{p}.png").convert_alpha()
-        pet_icons[p] = pygame.transform.smoothscale(raw_icon,(68, 68))
+        pet_icons[p] = pygame.transform.smoothscale(raw_icon, (68, 68))
     except pygame.error as e:
         print(f"Error loading icon for {p}: {e}")
         pet_icons[p] = None
 
-    # Load dynamic Pet Sprite Sheets using your original 810px slicing logic
     try:
         file_prefix = p.capitalize()
         raw_frames = get_sprites_from_sheet(f"spritesheets/pet sheets/{file_prefix}_ss.png")
         scale_val = 0.20 if p == "tinera" else 0.25
         pet_frames[p] = [
-            pygame.transform.smoothscale(f,(int(810 * scale_val), int(1080 * scale_val)))
+            pygame.transform.smoothscale(f, (int(810 * scale_val), int(1080 * scale_val)))
             for f in raw_frames
         ]
     except pygame.error as e:
@@ -275,7 +274,7 @@ camera_x = 0.0
 rem = 0
 is_level_2_merchant = False
 is_level_3_merchant = False
-is_level_4_merchant = False  # new#
+is_level_4_merchant = False
 is_level_5_merchant = False
 is_level_6_merchant = False
 is_level_7_merchant = False
@@ -293,8 +292,9 @@ player_has_purple_magic = False
 player_has_rainbow_dance = False
 player_has_melee = False
 player_has_blue_magic = False
+player_has_double_jump = False
 
-# New Multi-Pet Tracking
+# Multi-Pet Tracking
 owned_pets = []
 active_pet = None
 active_companion = None
@@ -304,7 +304,6 @@ main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-# --- Initialize ONLY the intro video at boot ---
 intro_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/intro_cut.mp4")
 loading_screen = None
 cutscene_screen = None
@@ -317,8 +316,7 @@ exiting_merchant = False
 exit_timer = 0
 
 succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
-               jump_fx,
-               cast_fx)
+               jump_fx, cast_fx)
 projectile_group = pygame.sprite.Group()
 
 # ==========================================
@@ -340,7 +338,6 @@ while run:
             run = False
 
         if event.type == pygame.KEYDOWN:
-            # --- TYPING CUSTOM SAVE NAME LOGIC ---
             if paused and pause_menu.save_state == "TYPE":
                 if event.key == pygame.K_RETURN:
                     custom_name = pause_menu.save_input_text.strip() or f"Save_0{pause_menu.selected_save_slot}"
@@ -359,7 +356,7 @@ while run:
                         if not game_over:
                             paused = not paused
                             if not paused:
-                                pause_menu.save_state = None  # Reset state when unpausing
+                                pause_menu.save_state = None
 
                 elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
                                                                    "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
@@ -369,7 +366,6 @@ while run:
                                                                    "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_6_CUTSCENE",
                                                                    "INTRO", "LOADING"]:
 
-                    # Stop any running video player if skipping via K_n
                     if current_state == "LEVEL_6_CUTSCENE" and cutscene_screen:
                         cutscene_screen.stop()
                     elif current_state == "INTRO" and intro_screen:
@@ -381,7 +377,6 @@ while run:
                     checkpoint = 7
                     current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-                    # --- TRIGGER LEVEL BANNER FOR CHEAT KEY ---
                     current_banner = LevelBanner(7, SCREEN_WIDTH)
 
                     succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
@@ -389,6 +384,7 @@ while run:
                                    jump_fx, cast_fx)
                     succi.max_health = 1
                     succi.health = 1
+                    succi.has_double_jump = player_has_double_jump
                     camera_x = 0.0
                     projectile_group.empty()
                     pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
@@ -425,7 +421,7 @@ while run:
     if current_state == "INTRO":
         if intro_screen and intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
             current_state = "LOADING"
-            intro_screen = None  # Free memory and video threads immediately
+            intro_screen = None
             if loading_screen is None:
                 loading_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/Loading_screen_cut.mp4")
             loading_screen.start()
@@ -435,15 +431,13 @@ while run:
 
     elif current_state == "LOADING":
         if loading_screen and loading_screen.update(mouse_pos, mouse_click, allow_skip=False):
-            loading_screen = None  # Free memory and video threads immediately
+            loading_screen = None
             current_state = "MAIN_MENU"
 
     elif current_state == "MAIN_MENU":
         action = main_menu.update(mouse_pos, mouse_click)
         if action == "PLAY":
             current_state = "LEVEL_1"
-
-            # --- TRIGGER LEVEL BANNER ON NEW GAME ---
             current_banner = LevelBanner(1, SCREEN_WIDTH)
 
             current_level.reset()
@@ -464,8 +458,6 @@ while run:
             if action.get("action") == "LOAD":
                 loaded_name = load_game(action["slot"])
                 if loaded_name:
-
-                    # --- TRIGGER LEVEL BANNER ON LOAD GAME ---
                     lvl_num = int(current_state.split("_")[1])
                     current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
@@ -504,7 +496,7 @@ while run:
                     print(f"Deleted save slot {action['slot']}.")
                 except FileNotFoundError:
                     pass
-                main_menu._load_save_data()  # Refresh UI slots
+                main_menu._load_save_data()
 
     elif not game_over and not paused:
         if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
@@ -520,7 +512,6 @@ while run:
                 spawn_x = succi.x + (90 if succi.facing_right else -90)
                 spell_type = getattr(succi, 'current_spell_type', 'normal')
 
-                # --- PROJECTILE DAMAGE BUFF IMPLEMENTED HERE ---
                 if spell_type == "purple":
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0, 1
                 elif spell_type == "blue":
@@ -551,13 +542,9 @@ while run:
             if camera_x < 0:
                 camera_x = 0
 
-            # --- PREPARE SAFE ZONE LOGIC FOR LEVEL.PY (Coming Next!) ---
-            # We will pass the banner's active status down to level.py in the next step
-            # so we can stop the gargoyles gracefully.
             current_level.update(dt, camera_x, succi.x, succi.y, current_banner is not None)
             projectile_group.update(dt, camera_x, SCREEN_WIDTH)
 
-            # ENEMIES IN THEIR LEVEL GROUPS #
             for proj in projectile_group:
                 if proj.state == "fly":
                     enemy_targets = [current_level.enemy_group]
@@ -596,7 +583,6 @@ while run:
                             if proj.mask.overlap(target.mask, (target.rect.x - proj.rect.x, ty - proj.rect.y)):
                                 proj.explode()
                                 if hasattr(target, 'take_damage'):
-                                    # --- PROJ.DAMAGE PASSED IN HERE ---
                                     if target.take_damage(proj.damage):
                                         rem += target.rem_value
                                         target.kill()
@@ -690,7 +676,13 @@ while run:
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "rainbow"
 
-                            # PET LOGIC INJECTION
+                            # UNLOCK DOUBLE JUMP
+                            elif bought_item == "Mysterious Potion":
+                                rem -= 50
+                                player_has_double_jump = True
+                                succi.has_double_jump = True
+
+                            # PET LOGIC
                             elif bought_item == "Royal Potion":
                                 rem -= 50
                                 if "tinera" not in owned_pets: owned_pets.append("tinera")
@@ -760,6 +752,7 @@ while run:
                                                                                                SCREEN_HEIGHT), 1
 
                             succi.x = 400.0
+                            succi.has_double_jump = player_has_double_jump
                             camera_x = 0.0
                             exiting_merchant = False
                             merchant_npc = None
@@ -776,11 +769,9 @@ while run:
                                 if cutscene_screen:
                                     cutscene_screen.start()
                             else:
-                                # --- TRIGGER LEVEL BANNER ON MERCHANT EXIT ---
                                 lvl_num = int(current_state.split("_")[1])
                                 current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
-                                # SONG TO PLAY PER WHAT LEVEL #
                                 if current_state == "LEVEL_7":
                                     pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                                     pygame.mixer.music.set_volume(0.23)
@@ -808,17 +799,19 @@ while run:
         elif current_state == "LEVEL_6_CUTSCENE":
             if cutscene_screen and cutscene_screen.update(mouse_pos, mouse_click):
                 current_state = "LEVEL_7"
-                cutscene_screen = None  # Free memory
+                cutscene_screen = None
                 current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
                 current_banner = LevelBanner(7, SCREEN_WIDTH)
+
+                succi.has_double_jump = player_has_double_jump
 
                 pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                 pygame.mixer.music.set_volume(0.23)
                 pygame.mixer.music.play(-1, 0.0)
 
-        # ========================================== #
-        # # # DRAWING PHASE # # #
-        # ========================================== #
+        # ==========================================
+        # DRAWING PHASE
+        # ==========================================
 
     if current_state == "INTRO":
         if intro_screen:
@@ -837,7 +830,6 @@ while run:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
-                # DYNAMIC PET DRAWING INJECTION #
                 if active_pet and active_pet in pet_frames and pet_frames[active_pet]:
                     if active_companion is None or getattr(active_companion, 'pet_id', None) != active_pet:
                         active_companion = Companion(pet_frames[active_pet])
@@ -862,10 +854,8 @@ while run:
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
-                        # Kill the banner if they enter the merchant room early
                         current_banner = None
 
-                        # MERCHANT ANIMATION LENGTHS #
                         if is_level_7_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_7.png", columns=10,
@@ -885,11 +875,11 @@ while run:
                         elif is_level_3_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_3.png", columns=10,
-                                                    rows=8, target_duration=9590)  # or 9900
+                                                    rows=8, target_duration=9590)
                         elif is_level_2_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl2_sheet.png", columns=10,
-                                                    rows=7, target_duration=11650)  # or 11900 11650
+                                                    rows=7, target_duration=11650)
                         else:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl1_sheet.png", columns=10,
@@ -985,7 +975,6 @@ while run:
                 hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
                          succi.spell_right_click)
 
-            # --- RENDER LEVEL BANNER OVER THE GAME (UNDER PAUSE MENU) ---
             if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
                 if current_banner:
                     is_banner_active = current_banner.update_and_draw(screen)
@@ -1013,7 +1002,6 @@ while run:
                         active_pet = action["pet"]
                     elif action["action"] == "UNEQUIP_PET":
                         active_pet = None
-                    # Fallback compatibility
                     elif action["action"] == "TOGGLE_TINERA":
                         if active_pet == "tinera":
                             active_pet = None
@@ -1040,6 +1028,7 @@ while run:
 
                 old_owned_pets = list(owned_pets)
                 old_active_pet = active_pet
+                old_has_double_jump = player_has_double_jump
 
                 target_state = f"LEVEL_{restart_action}"
                 if current_state != target_state:
@@ -1080,8 +1069,9 @@ while run:
                     old_right_spell = None
                     old_owned_pets = []
                     old_active_pet = None
+                    old_has_double_jump = False
+                    player_has_double_jump = False
 
-                # --- TRIGGER LEVEL BANNER ON RESPAWN ---
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
 
                 current_level.reset()
@@ -1094,6 +1084,8 @@ while run:
 
                 succi.spell_left_click = old_left_spell
                 succi.spell_right_click = old_right_spell
+
+                succi.has_double_jump = old_has_double_jump
 
                 owned_pets = old_owned_pets
                 active_pet = old_active_pet
