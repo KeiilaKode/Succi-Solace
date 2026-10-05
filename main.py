@@ -1,4 +1,4 @@
-#-main-#
+# -main-#
 
 import pygame
 import sys
@@ -28,7 +28,7 @@ import config
 # OOP Imports
 from player import Player
 from entities import Projectile, Merchant, Companion
-from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Merchant_Room
+from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Level_08, Merchant_Room
 
 # Isolated UI components
 from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner, CutsceneScreen
@@ -58,6 +58,7 @@ def save_game(slot, save_name):
         "player_has_rainbow_dance": player_has_rainbow_dance,
         "player_has_double_jump": player_has_double_jump,
         "player_has_dash": player_has_dash,
+        "player_has_wings": player_has_wings,
 
         # Upgraded Pet Saving
         "owned_pets": owned_pets,
@@ -76,7 +77,8 @@ def save_game(slot, save_name):
 def load_game(slot):
     global current_state, checkpoint, rem
     global player_has_melee, player_has_purple_magic, player_has_blue_magic
-    global player_has_rainbow_dance, player_has_double_jump, player_has_dash, owned_pets, active_pet
+    global player_has_rainbow_dance, player_has_double_jump, player_has_dash, player_has_wings
+    global owned_pets, active_pet
     global succi, current_level
     global global_merchant_sold_out
 
@@ -97,8 +99,8 @@ def load_game(slot):
     player_has_rainbow_dance = data["player_has_rainbow_dance"]
     player_has_double_jump = data.get("player_has_double_jump", False)
     player_has_dash = data.get("player_has_dash", False)
+    player_has_wings = data.get("player_has_wings", False)
 
-    # Backward compatibility for old saves
     if "owned_pets" in data:
         owned_pets = data["owned_pets"]
         active_pet = data["active_pet"]
@@ -108,7 +110,9 @@ def load_game(slot):
 
     global_merchant_sold_out = data["merchant_inventory"]
 
-    if current_state == "LEVEL_7":
+    if current_state == "LEVEL_8":
+        current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
+    elif current_state == "LEVEL_7":
         current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
     elif current_state == "LEVEL_6":
         current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -132,6 +136,7 @@ def load_game(slot):
     succi.spell_right_click = data["spell_right"]
     succi.has_double_jump = player_has_double_jump
     succi.has_dash = player_has_dash
+    succi.is_flying_level = (current_state == "LEVEL_8")
 
     return data["save_name"]
 
@@ -191,7 +196,7 @@ try:
     # --- LEVEL 6 --- #
     merchant_greet_lvl_6_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl6.mp3")
     merchant_greet_lvl_6_fx.set_volume(0.6)
-    # --- LEVEL 7 --- #
+    # --- LEVEL 7 & 8 --- #
     merchant_greet_lvl_7_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl7.mp3")
     merchant_greet_lvl_7_fx.set_volume(0.6)
 
@@ -229,7 +234,13 @@ animations = {
     "attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_ATTACK_NB.png"),
     "run_attack": get_sprites_from_sheet("spritesheets/succi's sheets/S_RUNSHOT_NB.png"),
     "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png"),
-    "jump_kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYINGKICK_NB.png")
+    "jump_kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYINGKICK_NB.png"),
+
+    # Flight animations
+    "idle_fly": get_sprites_from_sheet("spritesheets/succi's sheets/S_IDLE_FLY_NB.png"),
+    "idle_fly_shot": get_sprites_from_sheet("spritesheets/succi's sheets/S_IDLE_FLY_SHOT_NB.png"),
+    "flying": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYING_NB.png"),
+    "fly_shot_reg": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLY_SHOT_REG_NB.png")
 }
 
 fireball_img = pygame.image.load("spritesheets/spell sheets/fireball.png").convert_alpha()
@@ -281,6 +292,7 @@ is_level_4_merchant = False
 is_level_5_merchant = False
 is_level_6_merchant = False
 is_level_7_merchant = False
+is_level_8_merchant = False
 
 current_banner = None
 
@@ -297,8 +309,8 @@ player_has_melee = False
 player_has_blue_magic = False
 player_has_double_jump = False
 player_has_dash = False
+player_has_wings = False
 
-# Multi-Pet Tracking
 owned_pets = []
 active_pet = None
 active_companion = None
@@ -356,18 +368,20 @@ while run:
                         pause_menu.save_input_text += event.unicode
             else:
                 if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
-                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7",
+                                         "LEVEL_8"]:
                         if not game_over:
                             paused = not paused
                             if not paused:
                                 pause_menu.save_state = None
 
                 elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
                     succi.x = current_level.door_world_x
                     camera_x = current_level.level_end_x - SCREEN_WIDTH
                 elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_6_CUTSCENE",
+                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8",
+                                                                   "LEVEL_6_CUTSCENE",
                                                                    "INTRO", "LOADING"]:
 
                     if current_state == "LEVEL_6_CUTSCENE" and cutscene_screen:
@@ -377,22 +391,24 @@ while run:
                     elif current_state == "LOADING" and loading_screen:
                         loading_screen.stop()
 
-                    current_state = "LEVEL_7"
-                    checkpoint = 7
-                    current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    current_state = "LEVEL_8"
+                    checkpoint = 8
+                    current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    current_banner = LevelBanner(8, SCREEN_WIDTH)
 
-                    current_banner = LevelBanner(7, SCREEN_WIDTH)
-
-                    succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                    player_has_wings = True
+                    succi = Player(400.0, 400.0, animations, config.ANIMATION_SPEEDS,
                                    config.ANIMATION_SCALE_CORRECTIONS,
                                    jump_fx, cast_fx)
                     succi.max_health = 1
                     succi.health = 1
                     succi.has_double_jump = player_has_double_jump
                     succi.has_dash = player_has_dash
+                    succi.is_flying_level = True
                     camera_x = 0.0
                     projectile_group.empty()
-                    pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
+                    pygame.mixer.music.load(
+                        "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
                     pygame.mixer.music.set_volume(0.23)
                     pygame.mixer.music.play(-1, 0.0)
 
@@ -401,27 +417,37 @@ while run:
                     if player_has_melee and not paused and not game_over:
                         succi.trigger_kick()
 
+        # ======================================================================
+        # --- INSTANT REAL-TIME SHOOTING INPUT TRIGGER ---
+        # ======================================================================
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                mouse_click = True
+            if event.button in [1, 3]:
+                mouse_click = (event.button == 1)
 
-            if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5",
-                                                                  "LEVEL_6", "LEVEL_7"]:
-                is_moving = keys[pygame.K_LEFT] or keys[pygame.K_RIGHT] or keys[pygame.K_a] or keys[pygame.K_d]
-                is_running = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
+                if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                      "LEVEL_5",
+                                                                      "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
+                    # Direct live query of currently held keys at the exact moment of mouse click
+                    live_k = pygame.key.get_pressed()
+                    is_moving = live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[
+                        pygame.K_d] or (
+                                        succi.is_flying_level and (
+                                            live_k[pygame.K_w] or live_k[pygame.K_s] or live_k[pygame.K_UP] or live_k[
+                                        pygame.K_DOWN])
+                                )
+                    is_running = live_k[pygame.K_LSHIFT] or live_k[pygame.K_RSHIFT]
 
-                if event.button == 1:
-                    succi.trigger_attack(is_running, is_moving)
-                    succi.current_spell_type = succi.spell_left_click
-
-                elif event.button == 3:
-                    if succi.spell_right_click is not None:
+                    if event.button == 1:
                         succi.trigger_attack(is_running, is_moving)
-                        succi.current_spell_type = succi.spell_right_click
+                        succi.current_spell_type = succi.spell_left_click
+                    elif event.button == 3:
+                        if succi.spell_right_click is not None:
+                            succi.trigger_attack(is_running, is_moving)
+                            succi.current_spell_type = succi.spell_right_click
 
-                elif event.button == 2:
-                    if player_has_melee:
-                        succi.trigger_kick()
+            elif event.button == 2:
+                if player_has_melee and not succi.is_flying_level and not game_over and not paused:
+                    succi.trigger_kick()
 
     if current_state == "INTRO":
         if intro_screen and intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
@@ -471,7 +497,11 @@ while run:
                     paused = False
                     projectile_group.empty()
 
-                    if current_state == "LEVEL_7":
+                    if current_state == "LEVEL_8":
+                        pygame.mixer.music.load(
+                            "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
+                        pygame.mixer.music.set_volume(0.23)
+                    elif current_state == "LEVEL_7":
                         pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                         pygame.mixer.music.set_volume(0.23)
                     elif current_state == "LEVEL_6":
@@ -504,17 +534,33 @@ while run:
                 main_menu._load_save_data()
 
     elif not game_over and not paused:
-        if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+        if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
             succi.update(keys, dt, dt_ms, current_level.platform_group, config.ANIMATION_LOOPS)
 
             if succi.x > current_level.level_end_x - 100:
                 succi.x = current_level.level_end_x - 100
 
-            if (succi.attacking and
-                    succi.current_frame == (8 if succi.current_anim == "attack" else 4) and
-                    not succi.fireball_spawned):
+            # Fireball projectile creation
+            fire_condition = (succi.attacking and not succi.fireball_spawned)
+            if succi.is_flying_level:
+                fire_trigger = (succi.current_frame in [7, 8])
+            else:
+                fire_trigger = (succi.current_frame == (8 if succi.current_anim == "attack" else 4))
 
+            if fire_condition and fire_trigger:
                 spawn_x = succi.x + (90 if succi.facing_right else -90)
+
+                # Height-adjusted spawn based on aiming angle in flight
+                if succi.is_flying_level:
+                    if getattr(succi, 'cast_aim_dir_y', 0.0) < 0:
+                        spawn_y = succi.y - 50  # Aiming Up
+                    elif getattr(succi, 'cast_aim_dir_y', 0.0) > 0:
+                        spawn_y = succi.y + 10  # Aiming Down
+                    else:
+                        spawn_y = succi.y - 25  # Straight
+                else:
+                    spawn_y = succi.y - 180
+
                 spell_type = getattr(succi, 'current_spell_type', 'normal')
 
                 if spell_type == "purple":
@@ -526,9 +572,10 @@ while run:
                 else:
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = fireball_img, explode_img, 0.28, 0.28, 0, 1
 
+                # Uses locked-in cast_aim_dir_y captured upon clicking!
                 projectile_group.add(
-                    Projectile(spawn_x, succi.y - 180, 1 if succi.facing_right else -1, active_fireball, active_explode,
-                               f_scale, e_scale, e_offset, proj_dmg)
+                    Projectile(spawn_x, spawn_y, 1 if succi.facing_right else -1, active_fireball, active_explode,
+                               f_scale, e_scale, e_offset, proj_dmg, dir_y=getattr(succi, 'cast_aim_dir_y', 0.0))
                 )
                 succi.fireball_spawned = True
                 try:
@@ -604,7 +651,7 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                if is_level_7_merchant:
+                if is_level_8_merchant or is_level_7_merchant:
                     active_merchant_audio = merchant_greet_lvl_7_fx
                 elif is_level_6_merchant:
                     active_merchant_audio = merchant_greet_lvl_6_fx
@@ -668,8 +715,11 @@ while run:
                                 player_has_blue_magic = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "blue"
+
                             elif bought_item == "Wings Potion":
                                 rem -= 200
+                                player_has_wings = True
+
                             elif bought_item == "Purple Potion":
                                 rem -= 50
                                 player_has_purple_magic = True
@@ -681,20 +731,17 @@ while run:
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "rainbow"
 
-                            # UNLOCK DOUBLE JUMP (Mysterious Potion updated to 50 REM)
                             elif bought_item == "Mysterious Potion":
                                 rem -= 50
                                 player_has_double_jump = True
                                 succi.has_double_jump = True
 
-                            # UNLOCK SHADOW DASH (Dash Potion set to 50 REM)
                             elif bought_item == "Dash Potion":
                                 rem -= 50
                                 player_has_dash = True
                                 succi.has_dash = True
                                 succi.dash_charges = getattr(config, 'PLAYER_DASH_MAX_CHARGES', 2)
 
-                            # PET LOGIC
                             elif bought_item == "Royal Potion":
                                 rem -= 50
                                 if "tinera" not in owned_pets: owned_pets.append("tinera")
@@ -759,13 +806,24 @@ while run:
                                 if cutscene_screen is None:
                                     cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                                      "mats/cut_scenes/6a-cut.mp4")
+
                             elif last_completed_level == "LEVEL_7":
+                                if player_has_wings:
+                                    current_state, current_level, checkpoint = "LEVEL_8", Level_08(SCREEN_WIDTH,
+                                                                                                   SCREEN_HEIGHT), 8
+                                else:
+                                    current_state, current_level, checkpoint = "LEVEL_7", Level_07(SCREEN_WIDTH,
+                                                                                                   SCREEN_HEIGHT), 7
+
+                            elif last_completed_level == "LEVEL_8":
                                 current_state, current_level, checkpoint = "LEVEL_1", Level_01(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 1
 
                             succi.x = 400.0
+                            succi.y = 400.0 if current_state == "LEVEL_8" else current_level.y_ground
                             succi.has_double_jump = player_has_double_jump
                             succi.has_dash = player_has_dash
+                            succi.is_flying_level = (current_state == "LEVEL_8")
                             camera_x = 0.0
                             exiting_merchant = False
                             merchant_npc = None
@@ -776,6 +834,7 @@ while run:
                             is_level_5_merchant = False
                             is_level_6_merchant = False
                             is_level_7_merchant = False
+                            is_level_8_merchant = False
 
                             if current_state == "LEVEL_6_CUTSCENE":
                                 pygame.mixer.music.stop()
@@ -785,7 +844,11 @@ while run:
                                 lvl_num = int(current_state.split("_")[1])
                                 current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
-                                if current_state == "LEVEL_7":
+                                if current_state == "LEVEL_8":
+                                    pygame.mixer.music.load(
+                                        "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
+                                    pygame.mixer.music.set_volume(0.23)
+                                elif current_state == "LEVEL_7":
                                     pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                                     pygame.mixer.music.set_volume(0.23)
                                 elif current_state == "LEVEL_6":
@@ -818,6 +881,7 @@ while run:
 
                 succi.has_double_jump = player_has_double_jump
                 succi.has_dash = player_has_dash
+                succi.is_flying_level = False
 
                 pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                 pygame.mixer.music.set_volume(0.23)
@@ -840,7 +904,8 @@ while run:
 
     else:
         if not game_over:
-            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7",
+                                 "LEVEL_8"]:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
@@ -851,7 +916,7 @@ while run:
 
                     stable_screen_x = succi.x - camera_x
                     stable_screen_y = succi.y
-                    active_companion.update(stable_screen_x, stable_screen_y, succi.facing_right)
+                    active_companion.update(stable_screen_x, stable_screen_y, succi.facing_right, succi.is_flying_level)
                     active_companion.draw(screen)
 
                 if abs(succi.x - current_level.door_world_x) < 150:
@@ -865,12 +930,13 @@ while run:
                         is_level_5_merchant = (last_completed_level == "LEVEL_5")
                         is_level_6_merchant = (last_completed_level == "LEVEL_6")
                         is_level_7_merchant = (last_completed_level == "LEVEL_7")
+                        is_level_8_merchant = (last_completed_level == "LEVEL_8")
                         current_state = "MERCHANT"
                         pygame.mixer.music.stop()
 
                         current_banner = None
 
-                        if is_level_7_merchant:
+                        if is_level_8_merchant or is_level_7_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_7.png", columns=10,
                                                     rows=8, target_duration=9500)
@@ -901,6 +967,7 @@ while run:
 
                         merchant_ui = Merchant_UI(SCREEN_WIDTH, SCREEN_HEIGHT, global_merchant_sold_out)
                         succi.x = 400.0
+                        succi.is_flying_level = False
 
                 for proj in projectile_group:
                     if -200 < (px := proj.rect.x - camera_x) < SCREEN_WIDTH + 200:
@@ -989,7 +1056,8 @@ while run:
                 hud.draw(screen, SCREEN_WIDTH, succi.health, succi.max_health, rem, succi.spell_left_click,
                          succi.spell_right_click)
 
-            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+            if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7",
+                                 "LEVEL_8"]:
                 if current_banner:
                     is_banner_active = current_banner.update_and_draw(screen)
                     if not is_banner_active:
@@ -1030,7 +1098,7 @@ while run:
             restart_action = None
             if pygame.key.get_pressed()[pygame.K_SPACE]:
                 restart_action = checkpoint
-            elif checkpoint in [2, 3, 4, 5, 6, 7] and pygame.key.get_pressed()[pygame.K_1]:
+            elif checkpoint in [2, 3, 4, 5, 6, 7, 8] and pygame.key.get_pressed()[pygame.K_1]:
                 restart_action = 1
 
             if restart_action is not None:
@@ -1044,11 +1112,17 @@ while run:
                 old_active_pet = active_pet
                 old_has_double_jump = player_has_double_jump
                 old_has_dash = player_has_dash
+                old_has_wings = player_has_wings
 
                 target_state = f"LEVEL_{restart_action}"
                 if current_state != target_state:
                     current_state = target_state
-                    if restart_action == 7:
+                    if restart_action == 8:
+                        pygame.mixer.music.load(
+                            "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
+                        pygame.mixer.music.set_volume(0.23)
+                        current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
+                    elif restart_action == 7:
                         pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
                         pygame.mixer.music.set_volume(0.23)
                         current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -1071,12 +1145,9 @@ while run:
                     elif restart_action == 2:
                         pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
                         pygame.mixer.music.set_volume(0.2)
-                        current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
                     else:
                         pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
                         pygame.mixer.music.set_volume(0.2)
-                        pygame.mixer.music.play(-1, 0.0)
-                        current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 
                 if restart_action == 1:
                     old_max_health = 1
@@ -1088,12 +1159,15 @@ while run:
                     player_has_double_jump = False
                     old_has_dash = False
                     player_has_dash = False
+                    old_has_wings = False
+                    player_has_wings = False
 
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
 
                 current_level.reset()
                 merchant_npc, merchant_ui = None, None
-                succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+                succi = Player(400.0, 400.0 if restart_action == 8 else current_level.y_ground, animations,
+                               config.ANIMATION_SPEEDS,
                                config.ANIMATION_SCALE_CORRECTIONS,
                                jump_fx, cast_fx)
                 succi.max_health = old_max_health
@@ -1104,6 +1178,8 @@ while run:
 
                 succi.has_double_jump = old_has_double_jump
                 succi.has_dash = old_has_dash
+                player_has_wings = old_has_wings
+                succi.is_flying_level = (restart_action == 8)
 
                 owned_pets = old_owned_pets
                 active_pet = old_active_pet

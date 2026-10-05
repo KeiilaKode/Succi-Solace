@@ -16,7 +16,6 @@ def trim_black_side_borders(surface, threshold=15):
     w, h = surface.get_size()
     left, right, top, bottom = 0, w, 0, h
 
-    # Trim Left
     for x in range(w // 4):
         has_content = any(
             surface.get_at((x, y)).r > threshold or
@@ -28,7 +27,6 @@ def trim_black_side_borders(surface, threshold=15):
             left = x
             break
 
-    # Trim Right
     for x in range(w - 1, w - 1 - (w // 4), -1):
         has_content = any(
             surface.get_at((x, y)).r > threshold or
@@ -40,7 +38,6 @@ def trim_black_side_borders(surface, threshold=15):
             right = x + 1
             break
 
-    # Trim Top
     for y in range(h // 4):
         has_content = any(
             surface.get_at((x, y)).r > threshold or
@@ -52,7 +49,6 @@ def trim_black_side_borders(surface, threshold=15):
             top = y
             break
 
-    # Trim Bottom
     for y in range(h - 1, h - 1 - (h // 4), -1):
         has_content = any(
             surface.get_at((x, y)).r > threshold or
@@ -120,10 +116,8 @@ class Level_01:
         self.platform_group = pygame.sprite.Group()
         self.enemy_group = pygame.sprite.Group()
 
-        # Master list for OOP enemy group handling across all levels
         self.active_enemy_groups = []
 
-        # --- LEVEL 1 SPECIFIC GROUPS ---
         self.cecil_group = pygame.sprite.Group()
         self.margret_group = pygame.sprite.Group()
         self.lashly_group = pygame.sprite.Group()
@@ -132,7 +126,6 @@ class Level_01:
         self.last_spawned_bg_index = -1
         self.load_assets()
 
-        # Register Level 1 groups into the master list
         self.active_enemy_groups = [self.cecil_group, self.margret_group, self.lashly_group, self.hellguard_group]
 
         self.level_end_x = self.max_backgrounds * self.bg_w
@@ -202,7 +195,6 @@ class Level_01:
         self.hg_walk_r, self.hg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/hellguard_walk_ss.png", 8, 0.7)
         self.hg_attack_r, self.hg_attack_l = load_enemy_frames("spritesheets/enemies/lvl_1_enemies/hellguard_attack_ss.png", 12, 0.7)
 
-        # --- LEVEL 1 AUDIO FX ---
         try:
             self.cecil_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/cecil.mp3")
             self.margret_fx = pygame.mixer.Sound("mats/audio/lvl_1_enemy_audio/margret.mp3")
@@ -248,11 +240,11 @@ class Level_01:
                     Platform(p_x, random.randint(self.plat_min_y, self.plat_max_y),
                              random.randint(self.plat_min_w, self.plat_max_w), chosen_plat_img,
                              self.platform_offset_ratio))
-            # Where I can adjust how many flyers are on the screen #
+
             if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 60) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(200, 480), self.bird_sheet_img, 0.31,
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(180, 480), self.bird_sheet_img, 0.31,
                                                        forced_direction=1 if side == "left" else -1))
 
         current_bg_index = int(player_x // self.bg_w)
@@ -268,8 +260,6 @@ class Level_01:
                 e_start = p_start + (i * segment_width)
                 e_end = e_start + segment_width
                 spawn_x = random.randint(e_start + 110, e_end - 110)
-
-                # Polymorphic spawn hook handled by individual level classes
                 self.spawn_level_enemies(spawn_x, e_start, e_end)
 
             self.last_spawned_bg_index = current_bg_index
@@ -279,7 +269,6 @@ class Level_01:
             group.update(camera_x, player_x, player_y)
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        # Level 1 specific spawn distribution
         spawn_choice = random.randint(1, 4)
         if spawn_choice == 1:
             self.cecil_group.add(Cecil(spawn_x, self.y_ground, e_start, e_end, self.cecil_walk_r, self.cecil_walk_l, self.cecil_attack_r, self.cecil_attack_l, self.cecil_fx))
@@ -309,7 +298,6 @@ class Level_01:
         for enemy in self.enemy_group:
             if -200 < (ex := enemy.rect.x - camera_x) < self.screen_width + 200: screen.blit(enemy.image, (ex, enemy.rect.y))
 
-        # Polymorphic draw loop for all active enemy groups
         for group in self.active_enemy_groups:
             for enemy in group:
                 if -200 < (ex := enemy.rect.x - camera_x) < self.screen_width + 200:
@@ -356,7 +344,6 @@ class Level_02(Level_01):
         self.plat_max_y = 625
         self.start_plat_widths = [180, 200, 160]
 
-        # Level 2 Specific Enemy Groups
         self.helldog_group = pygame.sprite.Group()
         self.mau_group = pygame.sprite.Group()
         self.pkgrim_group = pygame.sprite.Group()
@@ -420,7 +407,6 @@ class Level_02(Level_01):
         self.cg_walk_r, self.cg_walk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_walk_ss.png", 8, cg_scale)
         self.cg_atk_r, self.cg_atk_l = load_enemy_frames("spritesheets/enemies/lvl_2_enemies/castleguard_attack_ss.png", 12, cg_scale)
 
-        # --- LEVEL 2 AUDIO FX ---
         try:
             self.hd_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/helldog.mp3")
             self.mau_fx = pygame.mixer.Sound("mats/audio/lvl_2_enemy_audio/mau.mp3")
@@ -523,7 +509,6 @@ class Level_03(Level_01):
         self.dem_idle_r, self.dem_idle_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_idle_ss.png", 9, demented_scale)
         self.dem_atk_r, self.dem_atk_l = load_enemy_frames("spritesheets/enemies/lvl_3_enemies/demented_attack_ss.png", 10, demented_scale)
 
-        # --- LEVEL 3 AUDIO FX ---
         try:
             self.azule_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/azule.mp3")
             self.titus_fx = pygame.mixer.Sound("mats/audio/lvl_3_enemy_audio/titus.mp3")
@@ -634,7 +619,6 @@ class Level_04(Level_01):
         self.z2_walk_r, self.z2_walk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_walk_ss.png", 8, z2_scale)
         self.z2_atk_r, self.z2_atk_l = load_enemy_frames("spritesheets/enemies/lvl_4_enemies/zombie2_attack_ss.png", 13, z2_scale)
 
-        # --- LEVEL 4 AUDIO FX ---
         try:
             self.elaine_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/elaine.mp3")
             self.gk_fx = pygame.mixer.Sound("mats/audio/lvl_4_enemy_audio/groundskeeper.mp3")
@@ -736,7 +720,6 @@ class Level_05(Level_01):
         self.deadlight_walk_r, self.deadlight_walk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_walk_ss.png", 8, scale)
         self.deadlight_atk_r, self.deadlight_atk_l = load_enemy_frames("spritesheets/enemies/lvl_5_enemies/deadlight_attack_ss.png", 10, scale)
 
-        # --- LEVEL 5 AUDIO FX ---
         try:
             self.priestly_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/priestly.mp3")
             self.realmwalker_fx = pygame.mixer.Sound("mats/audio/lvl_5_enemy_audio/realmwalker.mp3")
@@ -838,7 +821,6 @@ class Level_06(Level_01):
         self.thad_walk_r, self.thad_walk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_walk_ss.png", 8, vic_scale)
         self.thad_atk_r, self.thad_atk_l = load_enemy_frames("spritesheets/enemies/lvl_6_enemies/thad_attack_ss.png", 12, vic_scale)
 
-        # --- LEVEL 6 AUDIO FX ---
         try:
             self.vic_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/victoria.mp3")
             self.kali_fx = pygame.mixer.Sound("mats/audio/lvl_6_enemy_audio/kali.mp3")
@@ -947,7 +929,6 @@ class Level_07(Level_01):
         self.voss_walk_r, self.voss_walk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_walk_ss.png", 8, base_scale)
         self.voss_atk_r, self.voss_atk_l = load_enemy_frames("spritesheets/enemies/lvl_7_enemies/voss_attack_ss.png", 12, base_scale)
 
-        # --- LEVEL 7 AUDIO FX ---
         try:
             self.molly_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/molly.mp3")
             self.skelter_fx = pygame.mixer.Sound("mats/audio/lvl_7_enemy_audio/skelter.mp3")
@@ -976,3 +957,77 @@ class Level_07(Level_01):
             self.volgrim_group.add(Volgrim(spawn_x, self.y_ground, e_start, e_end, self.volgrim_walk_r, self.volgrim_walk_l, self.volgrim_atk_r, self.volgrim_atk_l, self.volgrim_fx))
         else:
             self.voss_group.add(Voss(spawn_x, self.y_ground, e_start, e_end, self.voss_walk_r, self.voss_walk_l, self.voss_atk_r, self.voss_atk_l, self.voss_fx))
+
+
+# ==============================================================================
+# --- LEVEL 08: THE 100% FLIGHT REALM (THE HELLSTORM SKY) ---
+# ==============================================================================
+class Level_08(Level_01):
+    def __init__(self, screen_width, screen_height):
+        # Explicit initialization bypassing Level_01's starter platform spawner
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        self.y_ground = 730.0
+        self.platform_offset_ratio = 0.0
+        self.floor_y_offset = 0
+
+        # Safe empty containers (No ground platforms or ground enemies in Level 8!)
+        self.platform_group = pygame.sprite.Group()
+        self.enemy_group = pygame.sprite.Group()
+        self.active_enemy_groups = []
+        self.platform_images = []
+        self.platform_image = None
+
+        self.last_spawned_bg_index = -1
+        self.load_assets()
+
+        self.level_end_x = self.max_backgrounds * self.bg_w
+        self.door_world_x = self.level_end_x - 200
+
+    def load_assets(self):
+        full_bg_filenames = [f"backgrounds/lvl_8_bgs/{i}bg.png" for i in range(1, 19)]
+        self.max_backgrounds = len(full_bg_filenames)
+
+        first_raw = pygame.image.load(full_bg_filenames[0]).convert()
+        first_trimmed = trim_black_side_borders(first_raw)
+        bg_scale_ratio = self.screen_height / first_trimmed.get_height()
+        self.bg_w = int(first_trimmed.get_width() * bg_scale_ratio) - 1
+
+        self.bg_list = [pygame.transform.smoothscale(trim_black_side_borders(pygame.image.load(f).convert()),
+                                                     (self.bg_w, self.screen_height)) for f in full_bg_filenames]
+
+        # No ground floor surfaces in flight mode!
+        self.floor_img = None
+        self.floor_flip_img = None
+
+        self.bird_sheet_img = pygame.image.load(
+            "spritesheets/enemies/lvl_1_enemies/gargoyle_grey_fly_ss.png").convert_alpha()
+
+    def reset(self):
+        self.platform_group.empty()
+        self.enemy_group.empty()
+        self.last_spawned_bg_index = -1
+
+    def spawn_level_enemies(self, spawn_x, e_start, e_end):
+        pass
+
+    def update(self, dt, camera_x, player_x, player_y, is_banner_active=False):
+        if camera_x + self.screen_width < self.level_end_x - 500:
+            if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 50) == 1:
+                side = random.choice(["left", "right"])
+                ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
+                # FULL AIRSPACE GENERATION: 120 to 680
+                self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(120, 680), self.bird_sheet_img, 0.31,
+                                                       forced_direction=1 if side == "left" else -1))
+
+        self.enemy_group.update(camera_x, self.screen_width)
+
+    def draw(self, screen, camera_x):
+        s_bg = int(camera_x // self.bg_w)
+        for i in range(s_bg, s_bg + (self.screen_width // self.bg_w) + 2):
+            if i < self.max_backgrounds:
+                screen.blit(self.bg_list[i], ((i * self.bg_w) - camera_x, 0))
+
+        for enemy in self.enemy_group:
+            if -200 < (ex := enemy.rect.x - camera_x) < self.screen_width + 200:
+                screen.blit(enemy.image, (ex, enemy.rect.y))

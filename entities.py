@@ -1,7 +1,9 @@
-#-entities-#
+# -entities-#
 
 import pygame
 import sys
+import math
+
 
 class SpriteSheet:
     def __init__(self, image):
@@ -14,28 +16,50 @@ class SpriteSheet:
         image.set_colorkey(colour)
         return image
 
+
 class Projectile(pygame.sprite.Sprite):
-    # --- ADDED exp_offset=0 HERE ---
-    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0, damage=1):
+    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0,
+                 damage=1, dir_y=0.0):
         super().__init__()
-        self.direction, self.speed, self.state = direction, 800.0, "fly"
+        self.direction = direction
+        self.dir_y = dir_y
+        self.speed = 800.0
+        self.state = "fly"
         self.frame_index, self.update_time = 0, pygame.time.get_ticks()
 
-        # Save the offset and damage to use later
         self.exp_offset = exp_offset
         self.damage = damage
 
+        rotation_angle = 0
+        if dir_y < 0:
+            rotation_angle = 35 if direction == 1 else -35
+        elif dir_y > 0:
+            rotation_angle = -35 if direction == 1 else 35
+
         fw, fh = fireball_img.get_width() // 6, fireball_img.get_height()
-        self.fly_frames = [pygame.transform.flip(
-            pygame.transform.smoothscale(fireball_img.subsurface((i * fw, 0, fw, fh)),
-                                         (int(fw * fly_scale), int(fh * fly_scale))), direction == -1, False) for i in
-            range(6)]
+        raw_fly_frames = [
+            pygame.transform.flip(
+                pygame.transform.smoothscale(
+                    fireball_img.subsurface((i * fw, 0, fw, fh)),
+                    (int(fw * fly_scale), int(fh * fly_scale))
+                ), direction == -1, False
+            ) for i in range(6)
+        ]
+
+        if rotation_angle != 0:
+            self.fly_frames = [pygame.transform.rotate(f, rotation_angle) for f in raw_fly_frames]
+        else:
+            self.fly_frames = raw_fly_frames
 
         ew, eh = explode_img.get_width() // 8, explode_img.get_height()
-        self.exp_frames = [pygame.transform.flip(
-            pygame.transform.smoothscale(explode_img.subsurface((i * ew, 0, ew, eh)),
-                                         (int(ew * exp_scale), int(eh * exp_scale))),
-            direction == -1, False) for i in range(8)]
+        self.exp_frames = [
+            pygame.transform.flip(
+                pygame.transform.smoothscale(
+                    explode_img.subsurface((i * ew, 0, ew, eh)),
+                    (int(ew * exp_scale), int(eh * exp_scale))
+                ), direction == -1, False
+            ) for i in range(8)
+        ]
 
         self.image = self.fly_frames[0]
         self.rect = self.image.get_rect(center=(x, y))
@@ -59,19 +83,22 @@ class Projectile(pygame.sprite.Sprite):
             self.rect = self.image.get_rect(center=old_center)
 
         if self.state == "fly":
-            self.rect.x += self.direction * self.speed * dt
+            norm_x = 0.707 if self.dir_y != 0 else 1.0
+            norm_y = 0.707 if self.dir_y != 0 else 0.0
+
+            self.rect.x += self.direction * self.speed * norm_x * dt
+            self.rect.y += self.dir_y * self.speed * norm_y * dt
+
             if getattr(self, "last_image", None) != self.image:
                 self.mask = pygame.mask.from_surface(self.image)
                 self.last_image = self.image
 
-            if self.rect.right < camera_x - 500 or self.rect.left > camera_x + screen_width + 500:
+            if self.rect.right < camera_x - 500 or self.rect.left > camera_x + screen_width + 500 or self.rect.bottom < -200 or self.rect.top > 1000:
                 self.kill()
 
     def explode(self):
         if self.state != "explode":
             self.state, self.frame_index, self.update_time = "explode", 0, pygame.time.get_ticks()
-
-            # --- USE THE CUSTOM OFFSET HERE ---
             self.rect.x += self.direction * self.exp_offset
 
 
@@ -151,12 +178,10 @@ class Companion(pygame.sprite.Sprite):
         self.frame_index = 0
         self.last_update = pygame.time.get_ticks()
 
-        # Set initial image and rect
         self.image = self.frames[self.frame_index]
         self.rect = self.image.get_rect()
 
-    def update(self, target_x, target_y, target_facing_right):
-        # 1. Handle Animation
+    def update(self, target_x, target_y, target_facing_right, is_flying=False):
         current_time = pygame.time.get_ticks()
         if current_time - self.last_update > self.anim_speed:
             self.frame_index = (self.frame_index + 1) % len(self.frames)
@@ -164,14 +189,17 @@ class Companion(pygame.sprite.Sprite):
 
         self.image = self.frames[self.frame_index]
 
-        # 2. Handle Direction Flipping
         if not target_facing_right:
             self.image = pygame.transform.flip(self.image, True, False)
 
-        # 3. Handle Following Position
-        # target_y is now anchored to Succi's feet, so we use a larger negative number to push Tinera UP to shoulder height.
         offset_x = -90 if target_facing_right else 90
-        offset_y = -265
+
+        # ======================================================================
+        # --- PET Y-OFFSET CORRECTION ---
+        # When flying, Succi's anchor is her center, so offset is -75px.
+        # On the ground, Succi's anchor is her feet, so offset is -265px.
+        # ======================================================================
+        offset_y = -145 if is_flying else -265
 
         self.rect.centerx = target_x + offset_x
         self.rect.centery = target_y + offset_y
