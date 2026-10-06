@@ -27,11 +27,13 @@ import config
 
 # OOP Imports
 from player import Player
+from enemies import GreyGargoyleFlyer
 from entities import Projectile, Merchant, Companion
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Level_08, Merchant_Room
 
 # Isolated UI components
-from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner, CutsceneScreen
+from ui import MainMenu, Merchant_UI, PauseMenu, DeathScreen, HUD, draw_text, LevelBanner, CutsceneScreen, \
+    GrimoireScreen
 
 # SAVE FILE CREATION #
 
@@ -64,6 +66,9 @@ def save_game(slot, save_name):
         "owned_pets": owned_pets,
         "active_pet": active_pet,
 
+        # Master Lifetime Stats Persistence
+        "life_stats": life_stats,
+
         "spell_left": succi.spell_left_click,
         "spell_right": succi.spell_right_click,
         "merchant_inventory": global_merchant_sold_out
@@ -78,7 +83,7 @@ def load_game(slot):
     global current_state, checkpoint, rem
     global player_has_melee, player_has_purple_magic, player_has_blue_magic
     global player_has_rainbow_dance, player_has_double_jump, player_has_dash, player_has_wings
-    global owned_pets, active_pet
+    global owned_pets, active_pet, life_stats
     global succi, current_level
     global global_merchant_sold_out
 
@@ -107,6 +112,10 @@ def load_game(slot):
     else:
         owned_pets = ["tinera"] if data.get("player_has_tinera", False) else []
         active_pet = "tinera" if data.get("tinera_active", False) else None
+
+    # Load Lifetime Stats
+    if "life_stats" in data:
+        life_stats = data["life_stats"]
 
     global_merchant_sold_out = data["merchant_inventory"]
 
@@ -173,30 +182,22 @@ try:
     cast_fx.set_volume(0.28)
     explode_fx = pygame.mixer.Sound("mats/audio/explode.mp3")
     explode_fx.set_volume(0.18)
-    # --- LEVEL 1 --- #
     merchant_voice_fx = pygame.mixer.Sound("mats/audio/merchant entrance.mp3")
     merchant_voice_fx.set_volume(0.6)
     laugh_fx = pygame.mixer.Sound("mats/audio/laugh_bb.mp3")
     laugh_fx.set_volume(0.6)
-    # --- ALL LEVELS --- #
     departure_fx = pygame.mixer.Sound("mats/audio/merchant_departure.mp3")
     departure_fx.set_volume(0.6)
-    # --- LEVEL 2 --- #
     merchant_greet_lvl_2_fx = pygame.mixer.Sound("mats/audio/merchant greet lvl 2.mp3")
     merchant_greet_lvl_2_fx.set_volume(0.6)
-    # --- LEVEL 3 --- #
     merchant_greet_lvl_3_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl3.mp3")
     merchant_greet_lvl_3_fx.set_volume(0.6)
-    # --- LEVEL 4 --- #
     merchant_greet_lvl_4_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl4.mp3")
     merchant_greet_lvl_4_fx.set_volume(0.6)
-    # --- LEVEL 5 --- #
     merchant_greet_lvl_5_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl5.mp3")
     merchant_greet_lvl_5_fx.set_volume(0.6)
-    # --- LEVEL 6 --- #
     merchant_greet_lvl_6_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl6.mp3")
     merchant_greet_lvl_6_fx.set_volume(0.6)
-    # --- LEVEL 7 & 8 --- #
     merchant_greet_lvl_7_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl7.mp3")
     merchant_greet_lvl_7_fx.set_volume(0.6)
 
@@ -236,7 +237,6 @@ animations = {
     "kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_KICK_NB.png"),
     "jump_kick": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYINGKICK_NB.png"),
 
-    # Flight animations
     "idle_fly": get_sprites_from_sheet("spritesheets/succi's sheets/S_IDLE_FLY_NB.png"),
     "idle_fly_shot": get_sprites_from_sheet("spritesheets/succi's sheets/S_IDLE_FLY_SHOT_NB.png"),
     "flying": get_sprites_from_sheet("spritesheets/succi's sheets/S_FLYING_NB.png"),
@@ -278,6 +278,23 @@ for p in pet_names:
         pet_frames[p] = []
 
 # ==========================================
+# MASTER LIFETIME STATS DOSSIER
+# ==========================================
+life_stats = {
+    "deaths": 0,
+    "enemies_killed": 0,
+    "gargoyles_killed": 0,
+    "damage_dealt": 0,
+    "damage_taken": 0,
+    "spells_cast": 0,
+    "spell_counts": {"normal": 0, "purple": 0, "blue": 0, "rainbow": 0},
+    "potions_bought": ["Health Potion"],
+    "rem_harvested": 0,
+    "rem_spent": 0,
+    "total_time_ms": 0
+}
+
+# ==========================================
 # GAME STATE & UI SETUP
 # ==========================================
 current_state = "INTRO"
@@ -295,6 +312,9 @@ is_level_7_merchant = False
 is_level_8_merchant = False
 
 current_banner = None
+
+# Grimoire State Flag
+grimoire_open = False
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -319,6 +339,7 @@ hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
+grimoire_screen = GrimoireScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 intro_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/intro_cut.mp4")
 loading_screen = None
@@ -346,6 +367,9 @@ while run:
     dt = dt_ms / 1000.0
     keys = pygame.key.get_pressed()
 
+    # Accumulate continuous playtime
+    life_stats["total_time_ms"] += dt_ms
+
     mouse_click = False
     mouse_pos = pygame.mouse.get_pos()
 
@@ -354,80 +378,87 @@ while run:
             run = False
 
         if event.type == pygame.KEYDOWN:
-            if paused and pause_menu.save_state == "TYPE":
-                if event.key == pygame.K_RETURN:
-                    custom_name = pause_menu.save_input_text.strip() or f"Save_0{pause_menu.selected_save_slot}"
-                    save_game(pause_menu.selected_save_slot, custom_name)
-                    pause_menu.save_state = None
-                elif event.key == pygame.K_ESCAPE:
-                    pause_menu.save_state = None
-                elif event.key == pygame.K_BACKSPACE:
-                    pause_menu.save_input_text = pause_menu.save_input_text[:-1]
+            # Grimoire Toggle on 'G'
+            if event.key == pygame.K_g:
+                if not game_over and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6",
+                                                       "LEVEL_7", "LEVEL_8"]:
+                    grimoire_open = not grimoire_open
+                    paused = False
+
+            elif event.key == pygame.K_ESCAPE and grimoire_open:
+                grimoire_open = False
+
+            elif not grimoire_open:
+                if paused and pause_menu.save_state == "TYPE":
+                    if event.key == pygame.K_RETURN:
+                        custom_name = pause_menu.save_input_text.strip() or f"Save_0{pause_menu.selected_save_slot}"
+                        save_game(pause_menu.selected_save_slot, custom_name)
+                        pause_menu.save_state = None
+                    elif event.key == pygame.K_ESCAPE:
+                        pause_menu.save_state = None
+                    elif event.key == pygame.K_BACKSPACE:
+                        pause_menu.save_input_text = pause_menu.save_input_text[:-1]
+                    else:
+                        if len(pause_menu.save_input_text) < 20:
+                            pause_menu.save_input_text += event.unicode
                 else:
-                    if len(pause_menu.save_input_text) < 20:
-                        pause_menu.save_input_text += event.unicode
-            else:
-                if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
-                    if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7",
-                                         "LEVEL_8"]:
-                        if not game_over:
-                            paused = not paused
-                            if not paused:
-                                pause_menu.save_state = None
+                    if event.key == pygame.K_p or event.key == pygame.K_ESCAPE:
+                        if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6",
+                                             "LEVEL_7", "LEVEL_8"]:
+                            if not game_over:
+                                paused = not paused
+                                if not paused:
+                                    pause_menu.save_state = None
 
-                elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
-                    succi.x = current_level.door_world_x
-                    camera_x = current_level.level_end_x - SCREEN_WIDTH
-                elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8",
-                                                                   "LEVEL_6_CUTSCENE",
-                                                                   "INTRO", "LOADING"]:
+                    elif event.key == pygame.K_m and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                       "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
+                        succi.x = current_level.door_world_x
+                        camera_x = current_level.level_end_x - SCREEN_WIDTH
+                    elif event.key == pygame.K_n and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                       "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8",
+                                                                       "LEVEL_6_CUTSCENE",
+                                                                       "INTRO", "LOADING"]:
 
-                    if current_state == "LEVEL_6_CUTSCENE" and cutscene_screen:
-                        cutscene_screen.stop()
-                    elif current_state == "INTRO" and intro_screen:
-                        intro_screen.stop()
-                    elif current_state == "LOADING" and loading_screen:
-                        loading_screen.stop()
+                        if current_state == "LEVEL_6_CUTSCENE" and cutscene_screen:
+                            cutscene_screen.stop()
+                        elif current_state == "INTRO" and intro_screen:
+                            intro_screen.stop()
+                        elif current_state == "LOADING" and loading_screen:
+                            loading_screen.stop()
 
-                    current_state = "LEVEL_8"
-                    checkpoint = 8
-                    current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    current_banner = LevelBanner(8, SCREEN_WIDTH)
+                        current_state = "LEVEL_8"
+                        checkpoint = 8
+                        current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
+                        current_banner = LevelBanner(8, SCREEN_WIDTH)
 
-                    player_has_wings = True
-                    succi = Player(400.0, 400.0, animations, config.ANIMATION_SPEEDS,
-                                   config.ANIMATION_SCALE_CORRECTIONS,
-                                   jump_fx, cast_fx)
-                    succi.max_health = 1
-                    succi.health = 1
-                    succi.has_double_jump = player_has_double_jump
-                    succi.has_dash = player_has_dash
-                    succi.is_flying_level = True
-                    camera_x = 0.0
-                    projectile_group.empty()
-                    pygame.mixer.music.load(
-                        "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
-                    pygame.mixer.music.set_volume(0.23)
-                    pygame.mixer.music.play(-1, 0.0)
+                        player_has_wings = True
+                        succi = Player(400.0, 400.0, animations, config.ANIMATION_SPEEDS,
+                                       config.ANIMATION_SCALE_CORRECTIONS,
+                                       jump_fx, cast_fx)
+                        succi.max_health = 1
+                        succi.health = 1
+                        succi.has_double_jump = player_has_double_jump
+                        succi.has_dash = player_has_dash
+                        succi.is_flying_level = True
+                        camera_x = 0.0
+                        projectile_group.empty()
+                        pygame.mixer.music.load(
+                            "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
+                        pygame.mixer.music.set_volume(0.23)
+                        pygame.mixer.music.play(-1, 0.0)
 
-                elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                   "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
-                    if player_has_melee and not paused and not game_over:
-                        succi.trigger_kick()
+                    elif event.key == pygame.K_3 and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
+                                                                       "LEVEL_5", "LEVEL_6", "LEVEL_7"]:
+                        if player_has_melee and not paused and not game_over:
+                            succi.trigger_kick()
 
-        # ======================================================================
-        # --- INSTANT REAL-TIME SHOOTING INPUT TRIGGER ---
-        # ======================================================================
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.type == pygame.MOUSEBUTTONDOWN and not grimoire_open:
             if event.button in [1, 3]:
                 mouse_click = (event.button == 1)
 
                 if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
                                                                       "LEVEL_5",
                                                                       "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
-                    # Direct live query of currently held keys at the exact moment of mouse click
                     live_k = pygame.key.get_pressed()
                     is_moving = live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[
                         pygame.K_d] or (
@@ -533,14 +564,13 @@ while run:
                     pass
                 main_menu._load_save_data()
 
-    elif not game_over and not paused:
+    elif not game_over and not paused and not grimoire_open:
         if current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
             succi.update(keys, dt, dt_ms, current_level.platform_group, config.ANIMATION_LOOPS)
 
             if succi.x > current_level.level_end_x - 100:
                 succi.x = current_level.level_end_x - 100
 
-            # Fireball projectile creation
             fire_condition = (succi.attacking and not succi.fireball_spawned)
             if succi.is_flying_level:
                 fire_trigger = (succi.current_frame in [7, 8])
@@ -550,18 +580,22 @@ while run:
             if fire_condition and fire_trigger:
                 spawn_x = succi.x + (90 if succi.facing_right else -90)
 
-                # Height-adjusted spawn based on aiming angle in flight
                 if succi.is_flying_level:
                     if getattr(succi, 'cast_aim_dir_y', 0.0) < 0:
-                        spawn_y = succi.y - 50  # Aiming Up
+                        spawn_y = succi.y - 50
                     elif getattr(succi, 'cast_aim_dir_y', 0.0) > 0:
-                        spawn_y = succi.y + 10  # Aiming Down
+                        spawn_y = succi.y + 10
                     else:
-                        spawn_y = succi.y - 25  # Straight
+                        spawn_y = succi.y - 25
                 else:
                     spawn_y = succi.y - 180
 
                 spell_type = getattr(succi, 'current_spell_type', 'normal')
+
+                # Track Lifetime Spells
+                life_stats["spells_cast"] += 1
+                if spell_type in life_stats["spell_counts"]:
+                    life_stats["spell_counts"][spell_type] += 1
 
                 if spell_type == "purple":
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0, 1
@@ -572,7 +606,6 @@ while run:
                 else:
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = fireball_img, explode_img, 0.28, 0.28, 0, 1
 
-                # Uses locked-in cast_aim_dir_y captured upon clicking!
                 projectile_group.add(
                     Projectile(spawn_x, spawn_y, 1 if succi.facing_right else -1, active_fireball, active_explode,
                                f_scale, e_scale, e_offset, proj_dmg, dir_y=getattr(succi, 'cast_aim_dir_y', 0.0))
@@ -634,12 +667,23 @@ while run:
                             ty = target.rect.top if hasattr(target, 'state') else target.rect.y
                             if proj.mask.overlap(target.mask, (target.rect.x - proj.rect.x, ty - proj.rect.y)):
                                 proj.explode()
+                                life_stats["damage_dealt"] += proj.damage
                                 if hasattr(target, 'take_damage'):
                                     if target.take_damage(proj.damage):
                                         rem += target.rem_value
+                                        life_stats["rem_harvested"] += target.rem_value
+                                        if isinstance(target, GreyGargoyleFlyer):
+                                            life_stats["gargoyles_killed"] += 1
+                                        else:
+                                            life_stats["enemies_killed"] += 1
                                         target.kill()
                                 else:
                                     rem += target.rem_value
+                                    life_stats["rem_harvested"] += target.rem_value
+                                    if isinstance(target, GreyGargoyleFlyer):
+                                        life_stats["gargoyles_killed"] += 1
+                                    else:
+                                        life_stats["enemies_killed"] += 1
                                     target.kill()
                                 try:
                                     explode_fx.play()
@@ -689,89 +733,113 @@ while run:
 
                             merchant_ui.selected_item = None
 
+                            # Track Unique Potions Imbibed
+                            if bought_item not in life_stats["potions_bought"]:
+                                life_stats["potions_bought"].append(bought_item)
+
                             if bought_item == "Health Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 succi.max_health = 3
                                 succi.health = 3
                             elif bought_item == "Teal Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 succi.health = min(succi.health + 3, succi.max_health)
                             elif bought_item == "Emerald Potion":
                                 rem -= 150
+                                life_stats["rem_spent"] += 150
                                 succi.max_health += 2
                                 succi.health = succi.max_health
                             elif bought_item == "Pink Potion":
                                 rem -= 100
+                                life_stats["rem_spent"] += 100
                                 succi.health = min(succi.health + 5, succi.max_health)
                             elif bought_item == "Gold Potion":
                                 rem -= 250
+                                life_stats["rem_spent"] += 250
                                 succi.max_health += 1
                                 succi.health = succi.max_health
                             elif bought_item == "Silver Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_melee = True
                             elif bought_item == "Blue Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_blue_magic = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "blue"
 
                             elif bought_item == "Wings Potion":
                                 rem -= 200
+                                life_stats["rem_spent"] += 200
                                 player_has_wings = True
 
                             elif bought_item == "Purple Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_purple_magic = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "purple"
                             elif bought_item == "Rainbow Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_rainbow_dance = True
                                 if succi.spell_right_click is None:
                                     succi.spell_right_click = "rainbow"
 
                             elif bought_item == "Mysterious Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_double_jump = True
                                 succi.has_double_jump = True
 
                             elif bought_item == "Dash Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 player_has_dash = True
                                 succi.has_dash = True
                                 succi.dash_charges = getattr(config, 'PLAYER_DASH_MAX_CHARGES', 2)
 
                             elif bought_item == "Royal Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "tinera" not in owned_pets: owned_pets.append("tinera")
                                 active_pet = "tinera"
                             elif bought_item == "Crowley Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "crowley" not in owned_pets: owned_pets.append("crowley")
                                 active_pet = "crowley"
                             elif bought_item == "Gloom Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "gloom" not in owned_pets: owned_pets.append("gloom")
                                 active_pet = "gloom"
                             elif bought_item == "Losslyn Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "losslyn" not in owned_pets: owned_pets.append("losslyn")
                                 active_pet = "losslyn"
                             elif bought_item == "Opal Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "opal" not in owned_pets: owned_pets.append("opal")
                                 active_pet = "opal"
                             elif bought_item == "Saphy Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "saphy" not in owned_pets: owned_pets.append("saphy")
                                 active_pet = "saphy"
                             elif bought_item == "Trinity Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "trinity" not in owned_pets: owned_pets.append("trinity")
                                 active_pet = "trinity"
                             elif bought_item == "Whisper Potion":
                                 rem -= 50
+                                life_stats["rem_spent"] += 50
                                 if "whisper" not in owned_pets: owned_pets.append("whisper")
                                 active_pet = "whisper"
 
@@ -801,7 +869,7 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_6", Level_06(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 6
                             elif last_completed_level == "LEVEL_6":
-                                current_state = "LEVEL_6_CUTSCENE"
+                                current_state, current_level, checkpoint = "LEVEL_6_CUTSCENE"
                                 checkpoint = 7
                                 if cutscene_screen is None:
                                     cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -1020,13 +1088,24 @@ while run:
                                 if is_kicking and is_in_front:
                                     if target not in succi.enemies_hit:
                                         succi.enemies_hit.append(target)
+                                        life_stats["damage_dealt"] += 1
 
                                         if hasattr(target, 'take_damage'):
                                             if target.take_damage():
                                                 rem += target.rem_value
+                                                life_stats["rem_harvested"] += target.rem_value
+                                                if isinstance(target, GreyGargoyleFlyer):
+                                                    life_stats["gargoyles_killed"] += 1
+                                                else:
+                                                    life_stats["enemies_killed"] += 1
                                                 target.kill()
                                         else:
                                             rem += target.rem_value
+                                            life_stats["rem_harvested"] += target.rem_value
+                                            if isinstance(target, GreyGargoyleFlyer):
+                                                life_stats["gargoyles_killed"] += 1
+                                            else:
+                                                life_stats["enemies_killed"] += 1
                                             target.kill()
 
                                         try:
@@ -1035,7 +1114,10 @@ while run:
                                             pass
 
                                 else:
+                                    # Damage taken tracking
+                                    life_stats["damage_taken"] += 1
                                     if succi.take_damage():
+                                        life_stats["deaths"] += 1
                                         game_over = True
                                         try:
                                             death_fx.play()
@@ -1090,7 +1172,12 @@ while run:
                         elif "tinera" in owned_pets:
                             active_pet = "tinera"
 
-                pause_menu.draw(screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons)
+                pause_menu.draw(screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons,
+                                life_stats=life_stats)
+
+            # Draw Standalone Grimoire Overlay when 'G' is active
+            if grimoire_open:
+                grimoire_screen.draw(screen)
 
         else:
             death_screen.draw(screen, current_state, checkpoint)
@@ -1145,6 +1232,7 @@ while run:
                     elif restart_action == 2:
                         pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
                         pygame.mixer.music.set_volume(0.2)
+                        current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
                     else:
                         pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
                         pygame.mixer.music.set_volume(0.2)

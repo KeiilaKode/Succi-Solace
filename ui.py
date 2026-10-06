@@ -25,6 +25,8 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 PINK = (253, 117, 234)
 LIGHT_GRAY = (180, 180, 180)
+GOLD = (218, 165, 32)
+CYAN = (80, 230, 255)
 
 
 def draw_text(screen, text, font, text_col, x, y):
@@ -154,35 +156,80 @@ class LevelBanner:
         return pygame.time.get_ticks() - self.start_time > self.duration
 
 
+# ==============================================================================
+# --- PAUSE MENU (PAGE 1 & PAGE 2 ARCHITECTURE) ---
+# ==============================================================================
 class PauseMenu:
     def __init__(self, w, h):
         self.w = w
         self.h = h
+        self.current_page = 1  # 1 = Inventory/Save/Controls, 2 = Life Stats/Pets
+
         self.font_big = pygame.font.SysFont("Lucida Sans", 48)
-        self.font_med = pygame.font.SysFont("Lucida Sans", 32)
-        self.font_small = pygame.font.SysFont("Lucida Sans", 20)
+        self.font_med = pygame.font.SysFont("Lucida Sans", 24)
+        self.font_small = pygame.font.SysFont("Lucida Sans", 18)
+        self.font_stat_label = pygame.font.SysFont("Lucida Sans", 13, bold=True)
+        self.font_stat_val = pygame.font.SysFont("Lucida Sans", 13, bold=True)
+
+        # 1. Load Backgrounds
+        try:
+            p1_raw = pygame.image.load("mats/ui/pause_screen1.png").convert()
+            self.bg_page1 = pygame.transform.smoothscale(p1_raw, (self.w, self.h))
+        except pygame.error:
+            self.bg_page1 = None
 
         try:
-            pause_bg_raw = pygame.image.load("mats/ui/pause_screen1.png").convert()
-            self.bg = pygame.transform.smoothscale(pause_bg_raw, (self.w, self.h))
+            p2_raw = pygame.image.load("mats/ui/pause_screen2.png").convert()
+            self.bg_page2 = pygame.transform.smoothscale(p2_raw, (self.w, self.h))
         except pygame.error:
-            self.bg = None
+            self.bg_page2 = None
 
+        # 2. Load Save Button (Page 1 Center)
         try:
             raw_save = pygame.image.load("mats/ui/save_hud1.png").convert_alpha()
             self.save_b = pygame.transform.smoothscale(raw_save, (335, 230))
             self.save_h = pygame.transform.smoothscale(raw_save, (366, 245))
+            self.save_rect = self.save_b.get_rect(center=(self.w // 2 + 15, self.h // 2 + 180))
         except pygame.error:
             self.save_b = self.save_h = None
-
-        self.left_cx = self.w // 2 - 370
-        self.right_cx = self.w // 2 + 370
-
-        if self.save_b:
-            self.save_rect = self.save_b.get_rect(center=(self.w // 2 + 15, self.h // 2 + 180))
-        else:
             self.save_rect = pygame.Rect(self.w // 2 - 167, self.h // 2 + 65, 335, 230)
 
+        # 3. Load Winged Navigation Arrow Buttons
+        # ======================================================================
+        # --- PAGE 1 "STATS" BUTTON COORDINATES (ADJUST BELOW) ---
+        # ======================================================================
+        try:
+            raw_stats_btn = pygame.image.load("mats/ui/stats_button.png").convert_alpha()
+            btn_w, btn_h = 340, 118
+            self.stats_btn = pygame.transform.smoothscale(raw_stats_btn, (btn_w, btn_h))
+            self.stats_btn_h = pygame.transform.smoothscale(raw_stats_btn, (int(btn_w * 1.10), int(btn_h * 1.10)))
+
+            # SHIFTED RIGHT: self.w // 2 + 415 centers squarely under the Controls arch
+            self.stats_btn_x = self.w // 2 + 455
+            self.stats_btn_y = self.h - 65
+            self.stats_btn_rect = self.stats_btn.get_rect(center=(self.stats_btn_x, self.stats_btn_y))
+        except pygame.error:
+            self.stats_btn = self.stats_btn_h = None
+            self.stats_btn_rect = pygame.Rect(self.w // 2 + 265, self.h - 117, 340, 118)
+
+        # ======================================================================
+        # --- PAGE 2 "BACK" BUTTON COORDINATES (ADJUST BELOW) ---
+        # ======================================================================
+        try:
+            raw_back_btn = pygame.image.load("mats/ui/back_button.png").convert_alpha()
+            btn_w, btn_h = 340, 118
+            self.back_btn = pygame.transform.smoothscale(raw_back_btn, (btn_w, btn_h))
+            self.back_btn_h = pygame.transform.smoothscale(raw_back_btn, (int(btn_w * 1.10), int(btn_h * 1.10)))
+
+            # Centered squarely under the left arch
+            self.back_btn_x = self.w // 2 - 370
+            self.back_btn_y = self.h - 65
+            self.back_btn_rect = self.back_btn.get_rect(center=(self.back_btn_x, self.back_btn_y))
+        except pygame.error:
+            self.back_btn = self.back_btn_h = None
+            self.back_btn_rect = pygame.Rect(self.w // 2 - 520, self.h - 117, 340, 118)
+
+        # Spell Icons
         try:
             self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(), (55, 55))
             self.icon_purple = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
@@ -191,13 +238,15 @@ class PauseMenu:
         except pygame.error:
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
+        # Multi-Slot Save Variables
         self.save_state = None
         self.selected_save_slot = None
         self.save_slots = []
         self.save_input_text = ""
 
+        # Page 1 Inventory Grid (Left mirror)
         self.grid_rects = []
-        start_x = self.left_cx - 200
+        start_x = self.w // 2 - 570
         start_y = self.h // 2 + 5
         for row in range(3):
             for col in range(3):
@@ -208,24 +257,50 @@ class PauseMenu:
         self.popup_rect_left = pygame.Rect(0, 0, 120, 35)
         self.popup_rect_right = pygame.Rect(0, 0, 120, 35)
 
+        # ======================================================================
+        # Page 2 Pet Grid (3 Rows x 4 Columns = 12 Slots Total)
+        # Dropped down (y = 395) & centered horizontally (x = 905) inside right frame
+        # ======================================================================
+        self.pet_grid_rects = []
+        p_start_x = self.w // 2 + 227   # x = 905
+        p_start_y = 395                 # Clears upper gothic arch
+        box_size = 66
+        spacing_x = 84
+        spacing_y = 80
+        for row in range(3):
+            for col in range(4):
+                self.pet_grid_rects.append(
+                    pygame.Rect(p_start_x + col * spacing_x, p_start_y + row * spacing_y, box_size, box_size)
+                )
+
+        self.selected_pet_lore = None
+
+        # Pet Lore Bios
+        self.pet_lore_data = {
+            "tinera": {"title": "Tinera - The Bone Familiar", "desc": ["Succi's primordial companion.", "Woven from bone and purple scales,", "she feeds on ambient soul energy."]},
+            "crowley": {"title": "Crowley - The Iron Raven", "desc": ["Chained in cold iron.", "Screaming souls line his wings,", "guiding Succi through dark skies."]},
+            "gloom": {"title": "Gloom - The Rot Eye", "desc": ["Sprouted in the haunted marshes.", "Venomous mushrooms and alchemical", "spores drift around his gaze."]},
+            "losslyn": {"title": "Losslyn - The Forgotten", "desc": ["Formed from ancient grief.", "His jagged crystal wings reflect", "the sorrow of lost souls."]},
+            "opal": {"title": "Opal - The Shrouded One", "desc": ["Wrapped in sacred ofuda talismans.", "A silent watcher from the eastern", "shores of the spirit realm."]},
+            "saphy": {"title": "Saphy - The Arcane Orb", "desc": ["An alchemical distillation of", "sapphire mana, carrying floating", "reagent vials across the void."]},
+            "trinity": {"title": "Trinity - The Heart Engine", "desc": ["Forged in the succubus foundry.", "A clockwork heart and angelic wings", "beating with mechanical life."]},
+            "whisper": {"title": "Whisper - The Multi-Eyed", "desc": ["A nightmare shadow entity.", "Endless shifting eyes watch", "all timelines simultaneously."]}
+        }
+
     def _load_save_data(self):
         self.save_slots = []
-
         if getattr(sys, 'frozen', False):
             save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
         else:
             save_dir = os.path.abspath("saves")
 
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir, exist_ok=True)
-
+        os.makedirs(save_dir, exist_ok=True)
         y_offset = self.h // 2 - 150
         center_x = self.w // 2
 
         for i in range(1, 6):
             file_path = os.path.join(save_dir, f"save{i}.json")
             rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
-
             if os.path.exists(file_path):
                 try:
                     with open(file_path, "r") as f:
@@ -241,132 +316,295 @@ class PauseMenu:
     def update(self, mouse_pos, mouse_click, owned_spells, owned_pets, active_pet):
         result = None
         if mouse_click:
-            if self.save_state == "TYPE":
+            if self.selected_pet_lore:
+                self.selected_pet_lore = None
                 return None
 
-            if self.save_state == "SELECT":
-                clicked_inside = False
-                for slot in self.save_slots:
-                    if slot["rect"].collidepoint(mouse_pos):
-                        self.selected_save_slot = slot["slot"]
-                        self.save_input_text = f"Save_0{slot['slot']}" if slot["empty"] else slot["name"]
-                        self.save_state = "TYPE"
-                        clicked_inside = True
-                        break
-                if not clicked_inside:
-                    self.save_state = None
+            # --- PAGE NAVIGATION LOGIC ---
+            if self.current_page == 1 and self.stats_btn_rect.collidepoint(mouse_pos):
+                self.current_page = 2
+                self.popup_active = False
+                return None
+            elif self.current_page == 2 and self.back_btn_rect.collidepoint(mouse_pos):
+                self.current_page = 1
                 return None
 
-            if self.save_rect.collidepoint(mouse_pos):
-                self._load_save_data()
-                self.save_state = "SELECT"
-                return None
+            # ==================================================================
+            # --- PAGE 1: INVENTORY, SAVING, CONTROLS ---
+            # ==================================================================
+            if self.current_page == 1:
+                if self.save_state == "TYPE":
+                    return None
 
-            if self.popup_active:
-                if self.popup_rect_left.collidepoint(mouse_pos):
-                    result = {"action": "EQUIP", "slot": "left", "spell": self.selected_spell}
-                    self.popup_active = False
-                elif self.popup_rect_right.collidepoint(mouse_pos):
-                    result = {"action": "EQUIP", "slot": "right", "spell": self.selected_spell}
-                    self.popup_active = False
-                else:
-                    self.popup_active = False
-            else:
-                for i, spell in enumerate(owned_spells):
-                    if i < len(self.grid_rects) and self.grid_rects[i].collidepoint(mouse_pos):
-                        self.selected_spell = spell
-                        self.popup_active = True
-                        self.popup_rect_left.topleft = (mouse_pos[0] + 10, mouse_pos[1] - 20)
-                        self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
-                        return result
+                if self.save_state == "SELECT":
+                    clicked_inside = False
+                    for slot in self.save_slots:
+                        if slot["rect"].collidepoint(mouse_pos):
+                            self.selected_save_slot = slot["slot"]
+                            self.save_input_text = f"Save_0{slot['slot']}" if slot["empty"] else slot["name"]
+                            self.save_state = "TYPE"
+                            clicked_inside = True
+                            break
+                    if not clicked_inside:
+                        self.save_state = None
+                    return None
 
-                if len(owned_pets) > 0 and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
-                    if active_pet is None:
-                        return {"action": "EQUIP_PET", "pet": owned_pets[0]}
+                if self.save_rect.collidepoint(mouse_pos):
+                    self._load_save_data()
+                    self.save_state = "SELECT"
+                    return None
+
+                if self.popup_active:
+                    if self.popup_rect_left.collidepoint(mouse_pos):
+                        result = {"action": "EQUIP", "slot": "left", "spell": self.selected_spell}
+                        self.popup_active = False
+                    elif self.popup_rect_right.collidepoint(mouse_pos):
+                        result = {"action": "EQUIP", "slot": "right", "spell": self.selected_spell}
+                        self.popup_active = False
                     else:
-                        try:
-                            current_idx = owned_pets.index(active_pet)
-                            if current_idx + 1 < len(owned_pets):
-                                return {"action": "EQUIP_PET", "pet": owned_pets[current_idx + 1]}
-                            else:
+                        self.popup_active = False
+                else:
+                    for i, spell in enumerate(owned_spells):
+                        if i < len(self.grid_rects) and self.grid_rects[i].collidepoint(mouse_pos):
+                            self.selected_spell = spell
+                            self.popup_active = True
+                            self.popup_rect_left.topleft = (mouse_pos[0] + 10, mouse_pos[1] - 20)
+                            self.popup_rect_right.topleft = (mouse_pos[0] + 10, mouse_pos[1] + 20)
+                            return result
+
+                    # SLOT 4 PET CYCLING LOGIC
+                    if len(owned_pets) > 0 and len(self.grid_rects) > 4 and self.grid_rects[4].collidepoint(mouse_pos):
+                        if active_pet is None:
+                            return {"action": "EQUIP_PET", "pet": owned_pets[0]}
+                        else:
+                            try:
+                                current_idx = owned_pets.index(active_pet)
+                                if current_idx + 1 < len(owned_pets):
+                                    return {"action": "EQUIP_PET", "pet": owned_pets[current_idx + 1]}
+                                else:
+                                    return {"action": "UNEQUIP_PET"}
+                            except ValueError:
                                 return {"action": "UNEQUIP_PET"}
-                        except ValueError:
-                            return {"action": "UNEQUIP_PET"}
+
+            # ==================================================================
+            # --- PAGE 2: LIFE STATS & PET MINI-GRIMOIRE ---
+            # ==================================================================
+            elif self.current_page == 2:
+                pet_keys = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
+                for i, rect in enumerate(self.pet_grid_rects):
+                    if rect.collidepoint(mouse_pos) and i < len(pet_keys):
+                        p_name = pet_keys[i]
+                        if p_name in owned_pets and p_name in self.pet_lore_data:
+                            self.selected_pet_lore = self.pet_lore_data[p_name]
+                            return None
 
         return result
 
-    def draw(self, screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons):
-        if self.bg:
-            screen.blit(self.bg, (0, 0))
-        else:
-            overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
-            screen.blit(overlay, (0, 0))
-
+    def draw(self, screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons, life_stats=None):
         center_x = self.w // 2
 
-        draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
-
-        if self.save_b and self.save_h:
-            if self.save_rect.collidepoint(mouse_pos):
-                hover_rect = self.save_h.get_rect(center=self.save_rect.center)
-                screen.blit(self.save_h, hover_rect)
+        # ======================================================================
+        # --- RENDER PAGE 1 (INVENTORY & SAVE ALTAR) ---
+        # ======================================================================
+        if self.current_page == 1:
+            if self.bg_page1:
+                screen.blit(self.bg_page1, (0, 0))
             else:
-                screen.blit(self.save_b, self.save_rect)
+                overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 200))
+                screen.blit(overlay, (0, 0))
 
-        for i, rect in enumerate(self.grid_rects):
-            pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
+            draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
 
-            if i < len(owned_spells):
-                spell = owned_spells[i]
-                if spell == "normal" and self.icon_pink:
-                    screen.blit(self.icon_pink, self.icon_pink.get_rect(center=rect.center))
-                elif spell == "purple" and self.icon_purple:
-                    screen.blit(self.icon_purple, self.icon_purple.get_rect(center=rect.center))
-                elif spell == "blue" and self.icon_blue:
-                    screen.blit(self.icon_blue, self.icon_blue.get_rect(center=rect.center))
-                elif spell == "rainbow" and self.icon_rainbow:
-                    screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
+            # Draw Save Button
+            if self.save_b and self.save_h:
+                if self.save_rect.collidepoint(mouse_pos):
+                    hover_rect = self.save_h.get_rect(center=self.save_rect.center)
+                    screen.blit(self.save_h, hover_rect)
+                else:
+                    screen.blit(self.save_b, self.save_rect)
 
-            elif i == 4 and len(owned_pets) > 0:
-                display_pet = active_pet if active_pet else owned_pets[0]
-                active_icon = pet_icons.get(display_pet)
+            # Draw "STATS ->" Navigation Button
+            if self.stats_btn and self.stats_btn_h:
+                if self.stats_btn_rect.collidepoint(mouse_pos):
+                    h_rect = self.stats_btn_h.get_rect(center=self.stats_btn_rect.center)
+                    screen.blit(self.stats_btn_h, h_rect)
+                else:
+                    screen.blit(self.stats_btn, self.stats_btn_rect)
 
-                if active_icon:
-                    if not active_pet:
-                        dim_icon = active_icon.copy()
-                        dim_icon.fill((100, 100, 100), special_flags=pygame.BLEND_RGB_MULT)
-                        screen.blit(dim_icon, dim_icon.get_rect(center=rect.center))
+            # Draw Inventory Grid
+            for i, rect in enumerate(self.grid_rects):
+                pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
+
+                if i < len(owned_spells):
+                    spell = owned_spells[i]
+                    if spell == "normal" and self.icon_pink:
+                        screen.blit(self.icon_pink, self.icon_pink.get_rect(center=rect.center))
+                    elif spell == "purple" and self.icon_purple:
+                        screen.blit(self.icon_purple, self.icon_purple.get_rect(center=rect.center))
+                    elif spell == "blue" and self.icon_blue:
+                        screen.blit(self.icon_blue, self.icon_blue.get_rect(center=rect.center))
+                    elif spell == "rainbow" and self.icon_rainbow:
+                        screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
+
+                # SLOT 4 PET ICON RENDERING
+                elif i == 4 and len(owned_pets) > 0:
+                    display_pet = active_pet if active_pet else owned_pets[0]
+                    active_icon = pet_icons.get(display_pet)
+                    if active_icon:
+                        if not active_pet:
+                            dim_icon = active_icon.copy()
+                            dim_icon.fill((100, 100, 100), special_flags=pygame.BLEND_RGB_MULT)
+                            screen.blit(dim_icon, dim_icon.get_rect(center=rect.center))
+                        else:
+                            screen.blit(active_icon, active_icon.get_rect(center=rect.center))
+
+                if rect.collidepoint(mouse_pos) and not self.popup_active:
+                    pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
+
+            # Controls Guide Text
+            ctrl_y = self.h // 2 + 5
+            ctrl_x = self.w // 2 + 315
+
+            draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
+            draw_text(screen, "Shift      : Run / Fast Flight", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 30)
+            draw_text(screen, "Space      : Jump & Double Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 60)
+            draw_text(screen, "W Key      : Ground Dash (Space in Flight)", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 90)
+            draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 120)
+            draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 150)
+            draw_text(screen, "3 / MMB    : Melee Kick", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
+            draw_text(screen, "G Key      : Demonology Grimoire", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
+            draw_text(screen, "P / ESC    : Resume", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 240)
+
+            if self.popup_active:
+                pygame.draw.rect(screen, BLACK, self.popup_rect_left)
+                col_l = PINK if self.popup_rect_left.collidepoint(mouse_pos) else WHITE
+                pygame.draw.rect(screen, col_l, self.popup_rect_left, 2)
+                draw_text(screen, "Equip Left", self.font_small, col_l, self.popup_rect_left.x + 10, self.popup_rect_left.y + 8)
+
+                pygame.draw.rect(screen, BLACK, self.popup_rect_right)
+                col_r = PINK if self.popup_rect_right.collidepoint(mouse_pos) else WHITE
+                pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
+                draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5, self.popup_rect_right.y + 8)
+
+        # ======================================================================
+        # --- RENDER PAGE 2 (LIFE STATS & PET FAMILIAR CODEX) ---
+        # ======================================================================
+        elif self.current_page == 2:
+            if self.bg_page2:
+                screen.blit(self.bg_page2, (0, 0))
+            else:
+                overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 200))
+                screen.blit(overlay, (0, 0))
+
+            draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
+
+            # Draw "<- BACK" Navigation Button
+            if self.back_btn and self.back_btn_h:
+                if self.back_btn_rect.collidepoint(mouse_pos):
+                    h_rect = self.back_btn_h.get_rect(center=self.back_btn_rect.center)
+                    screen.blit(self.back_btn_h, h_rect)
+                else:
+                    screen.blit(self.back_btn, self.back_btn_rect)
+
+            # ==================================================================
+            # --- 1. RENDER 12 LIFETIME STATS (2 EQUAL COLUMNS OF 6 ROWS) ---
+            # Dropped down to y = 395 to clear the upper gothic archway
+            # ==================================================================
+            if life_stats:
+                total_sec = int(life_stats.get("total_time_ms", 0) // 1000)
+                hh = total_sec // 3600
+                mm = (total_sec % 3600) // 60
+                ss = total_sec % 60
+                time_str = f"{hh:02d}:{mm:02d}:{ss:02d}"
+
+                s_counts = life_stats.get("spell_counts", {})
+                fav_elem = max(s_counts, key=s_counts.get, default="None").capitalize() if s_counts else "None"
+
+                # Column 1 (Left 6 stats)
+                col1_rows = [
+                    ("Deaths:", f"{life_stats.get('deaths', 0)}", PINK),
+                    ("Enemies Slain:", f"{life_stats.get('enemies_killed', 0)}", CYAN),
+                    ("Gargoyles:", f"{life_stats.get('gargoyles_killed', 0)}", CYAN),
+                    ("Damage Dealt:", f"{life_stats.get('damage_dealt', 0)} HP", WHITE),
+                    ("Damage Taken:", f"{life_stats.get('damage_taken', 0)} HP", (255, 100, 100)),
+                    ("Spells Cast:", f"{life_stats.get('spells_cast', 0)}", CYAN)
+                ]
+
+                # Column 2 (Right 6 stats)
+                col2_rows = [
+                    ("Favored Magic:", f"{fav_elem}", PINK),
+                    ("Potions Drank:", f"{len(life_stats.get('potions_bought', []))} / 20", GOLD),
+                    ("REM Earned:", f"{life_stats.get('rem_harvested', 0)}", GOLD),
+                    ("REM Spent:", f"{life_stats.get('rem_spent', 0)}", GOLD),
+                    ("Familiars:", f"{len(owned_pets)} / 8", PINK),
+                    ("Time in Hell:", f"{time_str}", WHITE)
+                ]
+
+                # Placed beneath the hanging arch, 38px row spacing
+                start_y = 415
+                row_spacing = 38
+
+                # Render Left Column
+                c1_x = center_x - 525
+                c1_val_x = center_x - 420 #420
+                y = start_y
+                for label, val, val_col in col1_rows:
+                    screen.blit(self.font_stat_label.render(label, True, LIGHT_GRAY), (c1_x, y))
+                    screen.blit(self.font_stat_val.render(val, True, val_col), (c1_val_x, y))
+                    y += row_spacing
+
+                # Render Right Column
+                c2_x = center_x - 345
+                c2_val_x = center_x - 235 #235
+                y = start_y
+                for label, val, val_col in col2_rows:
+                    screen.blit(self.font_stat_label.render(label, True, LIGHT_GRAY), (c2_x, y))
+                    screen.blit(self.font_stat_val.render(val, True, val_col), (c2_val_x, y))
+                    y += row_spacing
+
+            # ==================================================================
+            # --- 2. RENDER PET GRID (3 ROWS OF 4 = 12 SLOTS TOTAL) ---
+            # Placed inside the open black space below the upper archway
+            # ==================================================================
+            pet_keys = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
+            for i, rect in enumerate(self.pet_grid_rects):
+                if i < len(pet_keys):
+                    p_name = pet_keys[i]
+                    is_owned = p_name in owned_pets
+                    b_color = GOLD if is_owned else (60, 50, 70)
+                    pygame.draw.rect(screen, b_color, rect, 2, border_radius=6)
+
+                    if is_owned and pet_icons.get(p_name):
+                        screen.blit(pet_icons[p_name], pet_icons[p_name].get_rect(center=rect.center))
                     else:
-                        screen.blit(active_icon, active_icon.get_rect(center=rect.center))
+                        q_text = self.font_med.render("?", True, (80, 70, 90))
+                        screen.blit(q_text, q_text.get_rect(center=rect.center))
 
-            if rect.collidepoint(mouse_pos) and not self.popup_active:
-                pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
+                    if rect.collidepoint(mouse_pos) and is_owned:
+                        pygame.draw.rect(screen, WHITE, rect, 3, border_radius=6)
+                else:
+                    # Extra slots 9-12 (Locked future slots)
+                    pygame.draw.rect(screen, (40, 30, 50), rect, 2, border_radius=6)
+                    q_text = self.font_med.render("-", True, (60, 50, 70))
+                    screen.blit(q_text, q_text.get_rect(center=rect.center))
 
-        ctrl_y = self.h // 2 + 5
-        ctrl_x = self.right_cx - 55
+            # Pet Lore Popup Card
+            if self.selected_pet_lore:
+                card_rect = pygame.Rect(center_x - 220, self.h // 2 - 120, 440, 240)
+                pygame.draw.rect(screen, (20, 10, 30), card_rect, border_radius=12)
+                pygame.draw.rect(screen, GOLD, card_rect, 3, border_radius=12)
 
-        draw_text(screen, "WASD / Arrows : Move & Duck", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y)
-        draw_text(screen, "Shift      : Run", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 30)
-        draw_text(screen, "Space      : Jump & Double Jump", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 60)
-        draw_text(screen, "W Key      : Shadow Dash", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 90)
-        draw_text(screen, "Left Click : Use Left Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 120)
-        draw_text(screen, "Right Click: Use Right Spell", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 150)
-        draw_text(screen, "3 / MMB    : Melee Kick", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 180)
-        draw_text(screen, "E Key      : Enter/Exit", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 210)
-        draw_text(screen, "P / ESC    : Pause", self.font_small, pygame.Color("blue1"), ctrl_x, ctrl_y + 240)
+                draw_text(screen, self.selected_pet_lore["title"], self.font_small, GOLD, card_rect.x + 20, card_rect.y + 25)
+                y_off = card_rect.y + 70
+                for line in self.selected_pet_lore["desc"]:
+                    draw_text(screen, line, self.font_small, WHITE, card_rect.x + 20, y_off)
+                    y_off += 28
 
-        if self.popup_active:
-            pygame.draw.rect(screen, BLACK, self.popup_rect_left)
-            col_l = PINK if self.popup_rect_left.collidepoint(mouse_pos) else WHITE
-            pygame.draw.rect(screen, col_l, self.popup_rect_left, 2)
-            draw_text(screen, "Equip Left", self.font_small, col_l, self.popup_rect_left.x + 10, self.popup_rect_left.y + 8)
+                draw_text(screen, "(Click anywhere to close)", self.font_small, LIGHT_GRAY, card_rect.x + 120, card_rect.bottom - 35)
 
-            pygame.draw.rect(screen, BLACK, self.popup_rect_right)
-            col_r = PINK if self.popup_rect_right.collidepoint(mouse_pos) else WHITE
-            pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
-            draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5, self.popup_rect_right.y + 8)
-
+        # Multi-Slot Save Screen Overlays (Only active on Page 1)
         if self.save_state == "SELECT":
             dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
             dark_overlay.fill((0, 0, 0, 220))
@@ -398,6 +636,68 @@ class PauseMenu:
 
             draw_text(screen, self.save_input_text + "|", self.font_med, PINK, input_box_rect.x + 15, input_box_rect.y + 8)
             draw_text(screen, "Press ENTER to Save | ESC to Cancel", self.font_small, LIGHT_GRAY, dialog_rect.x + 75, dialog_rect.y + 135)
+
+
+# ==============================================================================
+# --- STANDALONE GRIMOIRE SCREEN (THE DEMONOLOGY CODEX) ---
+# ==============================================================================
+class GrimoireScreen:
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+        self.font_title = pygame.font.SysFont("Lucida Sans", 38, bold=True)
+        self.font_serif = pygame.font.SysFont("Georgia", 24)
+        self.font_small = pygame.font.SysFont("Lucida Sans", 18)
+
+    def draw(self, screen):
+        overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 220))
+        screen.blit(overlay, (0, 0))
+
+        tome_w, tome_h = 1200, 680
+        tome_rect = pygame.Rect(self.w // 2 - tome_w // 2, self.h // 2 - tome_h // 2 - 10, tome_w, tome_h)
+
+        pygame.draw.rect(screen, (30, 15, 20), tome_rect, border_radius=16)
+        pygame.draw.rect(screen, GOLD, tome_rect, 4, border_radius=16)
+
+        center_divider_x = self.w // 2
+        pygame.draw.line(screen, (80, 60, 50), (center_divider_x, tome_rect.top + 20), (center_divider_x, tome_rect.bottom - 20), 4)
+
+        left_page_cx = (tome_rect.left + center_divider_x) // 2
+        art_box = pygame.Rect(left_page_cx - 200, tome_rect.top + 100, 400, 460)
+        pygame.draw.rect(screen, (15, 8, 12), art_box, border_radius=8)
+        pygame.draw.rect(screen, (120, 80, 100), art_box, 2, border_radius=8)
+
+        text_art = self.font_small.render("[ HIGH-RESOLUTION DEMON CONCEPT ART ]", True, LIGHT_GRAY)
+        screen.blit(text_art, text_art.get_rect(center=art_box.center))
+
+        right_page_x = center_divider_x + 50
+        text_title = self.font_title.render("THE DEMONOLOGY CODEX", True, GOLD)
+        screen.blit(text_title, (right_page_x, tome_rect.top + 60))
+
+        lore_lines = [
+            ("TRUE NAME:", "Molly, The Brood Mother", PINK),
+            ("THREAT RANK:", "Apex Aberration", (255, 100, 100)),
+            ("REGION:", "Level 7 - The Desolate Killing Grounds", CYAN),
+            ("BEHAVIOR:", "Vomits pressurized acidic venom;", WHITE),
+            ("", "slithers across fallen angelic battlefields.", WHITE),
+            ("", "", WHITE),
+            ("CODEX EXCERPT:", "", GOLD),
+            ("A bloated entity of pure necrotic body horror.", "", LIGHT_GRAY),
+            ("Bearing a child-like skull upon a writhing", "", LIGHT_GRAY),
+            ("centipede trunk, it consumes the souls of", "", LIGHT_GRAY),
+            ("the impaled sentinels left in the outlands.", "", LIGHT_GRAY)
+        ]
+
+        text_y = tome_rect.top + 140
+        for label, val, col in lore_lines:
+            if label:
+                screen.blit(self.font_small.render(label, True, col), (right_page_x, text_y))
+            if val:
+                screen.blit(self.font_small.render(val, True, col), (right_page_x + 140, text_y))
+            text_y += 28
+
+        draw_text(screen, "Press 'G' or 'ESC' to Close the Grimoire", self.font_small, PINK, self.w // 2 - 160, self.h - 35)
 
 
 class DeathScreen:
@@ -475,7 +775,7 @@ class DeathScreen:
         self.draw_centered_scaled_text(screen, f"{current_state.replace('_', ' ')}", self.font_big,
                                        pygame.Color("turquoise1"), center_x, level_y_pos, 0.45)
 
-        if checkpoint in [2, 3, 4, 5, 6, 7]:
+        if checkpoint in [2, 3, 4, 5, 6, 7, 8]:
             self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART AT LEVEL 1", self.font_small,
                                            pygame.Color("plum1"), center_x, restart_y_pos, 0.9)
 
@@ -519,8 +819,7 @@ class MainMenu:
         else:
             save_dir = os.path.abspath("saves")
 
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir, exist_ok=True)
+        os.makedirs(save_dir, exist_ok=True)
 
         y_offset = self.bg.get_height() // 2 - 150
         center_x = self.bg.get_width() // 2
@@ -620,12 +919,13 @@ class MainMenu:
             lines = [
                 ("CONTROLS", PINK),
                 ("WASD / Arrows : Move & Duck", (100, 200, 255)),
-                ("Shift : Run", (100, 200, 255)),
+                ("Shift : Run / Fast Flight", (100, 200, 255)),
                 ("Space : Jump & Double Jump", (100, 200, 255)),
-                ("W Key : Shadow Dash", (100, 200, 255)),
+                ("W Key : Ground Dash (Space in Flight)", (100, 200, 255)),
                 ("Left Mouse : Cast Red Fireball", (100, 200, 255)),
                 ("Right Mouse : Cast Purple Magic", (100, 200, 255)),
                 ("3 / MMB : Melee Kick", (100, 200, 255)),
+                ("G Key : Demonology Grimoire", (100, 200, 255)),
                 ("E Key : Enter / Exit Merchant", (100, 200, 255)),
                 ("P / ESC : Pause", PINK),
                 ("", BLACK),
@@ -656,50 +956,33 @@ class Merchant_UI:
                 self.exit_hud_hover = None
                 self.exit_rect = None
 
-            self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(),
-                                                         (110, 150))
-            self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mana_p.png").convert_alpha(),
-                                                       (110, 150))
-            self.purple_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/purple_p.png").convert_alpha(),
-                                                         (110, 150))
-            self.rainbow_p = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/secret_potion.png").convert_alpha(), (110, 150))
+            self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(), (110, 150))
+            self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mana_p.png").convert_alpha(), (110, 150))
+            self.purple_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/purple_p.png").convert_alpha(), (110, 150))
+            self.rainbow_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/secret_potion.png").convert_alpha(), (110, 150))
 
             wings_raw = pygame.image.load("mats/ui/wings_p_ss.png").convert_alpha()
             ww, wh = wings_raw.get_size()
-            self.wings_p = pygame.transform.smoothscale(wings_raw.subsurface((0, int(wh * 0.15), ww, int(wh * 0.70))),
-                                                        (110, 150))
+            self.wings_p = pygame.transform.smoothscale(wings_raw.subsurface((0, int(wh * 0.15), ww, int(wh * 0.70))), (110, 150))
 
-            self.teal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/teal potion.png").convert_alpha(),
-                                                       (110, 150))
-            self.emerald_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/emerald_hup.png").convert_alpha(),
-                                                          (110, 150))
-            self.pink_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/pink potion.png").convert_alpha(),
-                                                       (110, 150))
-            self.mysterious_p = pygame.transform.smoothscale(
-                pygame.image.load("mats/ui/mysterious potion.png").convert_alpha(), (110, 150))
-            self.silver_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/silver potion.png").convert_alpha(),
-                                                         (110, 150))
-            self.royal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/royal potion.png").convert_alpha(),
-                                                        (110, 150))
-            self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/gold potion.png").convert_alpha(),
-                                                       (110, 150))
+            self.teal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/teal potion.png").convert_alpha(), (110, 150))
+            self.emerald_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/emerald_hup.png").convert_alpha(), (110, 150))
+            self.pink_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/pink potion.png").convert_alpha(), (110, 150))
+            self.mysterious_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mysterious potion.png").convert_alpha(), (110, 150))
+            self.silver_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/silver potion.png").convert_alpha(), (110, 150))
+            self.royal_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/royal potion.png").convert_alpha(), (110, 150))
+            self.gold_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/gold potion.png").convert_alpha(), (110, 150))
 
-            # --- LOAD DASH POTION ---
             try:
-                self.dash_p = pygame.transform.smoothscale(
-                    pygame.image.load("mats/ui/dash potion.png").convert_alpha(), (110, 150))
+                self.dash_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/dash potion.png").convert_alpha(), (110, 150))
             except pygame.error:
                 self.dash_p = pygame.Surface((110, 150), pygame.SRCALPHA)
 
-            # --- LOAD PET POTIONS ---
             def load_pet_potion(name):
                 try:
-                    return pygame.transform.smoothscale(
-                        pygame.image.load(f"mats/ui/potions/{name}.png").convert_alpha(), (110, 150))
+                    return pygame.transform.smoothscale(pygame.image.load(f"mats/ui/potions/{name}.png").convert_alpha(), (110, 150))
                 except pygame.error:
-                    surf = pygame.Surface((110, 150), pygame.SRCALPHA)
-                    return surf
+                    return pygame.Surface((110, 150), pygame.SRCALPHA)
 
             self.crowley_p = load_pet_potion("crowley potion")
             self.gloom_p = load_pet_potion("gloom potion")
@@ -719,7 +1002,6 @@ class Merchant_UI:
             self.right_arrow_hover = pygame.transform.smoothscale(raw_right, (hover_w, hover_h))
         except pygame.error as e:
             print(f"Error loading UI: {e}")
-            import sys;
             sys.exit()
 
         self.grid_rects = [
@@ -731,11 +1013,8 @@ class Merchant_UI:
         self.left_arrow_rect = self.left_arrow_img.get_rect(midright=(self.buy_rect.left - 15, self.buy_rect.centery))
         self.right_arrow_rect = self.right_arrow_img.get_rect(midleft=(self.buy_rect.right + 15, self.buy_rect.centery))
 
-        # ==============================================================================
-        # --- REORGANIZED INVENTORY (DASH ON PAGE 1, WINGS & RAINBOW ON PAGE 2 TOP) ---
-        # ==============================================================================
         self.inventory = [
-            # --- PAGE 1: CORE COMBAT, HEALTH & MOVEMENT (Slots 0 - 8) ---
+            # PAGE 1: CORE UPGRADES & DASH (Slots 0 - 8)
             {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."],
              "cost": 50, "color": (50, 255, 50)},
             {"id": "Teal Potion", "img": self.teal_p, "title": "Minor Heal", "desc": ["Restores up to 3 Health."],
@@ -755,7 +1034,7 @@ class Merchant_UI:
             {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"],
              "cost": 50, "color": (50, 50, 255)},
 
-            # --- PAGE 2: ELITE ARSENAL (TOP ROW) & PETS START ON ROW 2 (Slots 9 - 17) ---
+            # PAGE 2: ELITE TIER TOP ROW & PETS START ON ROW 2 (Slots 9 - 17)
             {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],
              "cost": 200, "color": (255, 200, 50)},
             {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."],
@@ -775,14 +1054,13 @@ class Merchant_UI:
             {"id": "Saphy Potion", "img": self.saphy_p, "title": "Saphy Potion", "desc": ["Summons Saphy..."],
              "cost": 50, "color": (50, 100, 255)},
 
-            # --- PAGE 3: REMAINING PETS & FUTURE EXPANSIONS (Slots 18 - 19) ---
+            # PAGE 3: REMAINING PETS (Slots 18 - 19)
             {"id": "Trinity Potion", "img": self.trinity_p, "title": "Trinity Potion", "desc": ["Summons Trinity..."],
              "cost": 50, "color": (255, 100, 100)},
             {"id": "Whisper Potion", "img": self.whisper_p, "title": "Whisper Potion", "desc": ["Summons Whisper..."],
              "cost": 50, "color": (200, 150, 255)}
         ]
 
-        # Set of item IDs that represent cosmetic companion pets
         self.pet_item_ids = {
             "Royal Potion", "Crowley Potion", "Gloom Potion", "Losslyn Potion",
             "Opal Potion", "Saphy Potion", "Trinity Potion", "Whisper Potion"
@@ -843,9 +1121,8 @@ class Merchant_UI:
                 slot = self.grid_rects[i]
                 screen.blit(item["img"], (slot.x + 10, slot.y - 10))
 
-                # --- DRAW ELEGANT THIN GOLD BORDER FOR PET POTION SLOTS ---
                 if item["id"] in self.pet_item_ids:
-                    pygame.draw.rect(screen, (218, 165, 32), slot, 2, border_radius=4)
+                    pygame.draw.rect(screen, GOLD, slot, 2, border_radius=4)
 
                 if slot.collidepoint(mouse_pos) or (
                         self.selected_item_data and self.selected_item_data["id"] == item["id"]):
