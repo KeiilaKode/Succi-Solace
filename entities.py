@@ -1,9 +1,8 @@
-# -entities-#
+#-entities-#
 
 import pygame
 import sys
 import math
-
 
 class SpriteSheet:
     def __init__(self, image):
@@ -17,9 +16,88 @@ class SpriteSheet:
         return image
 
 
+# ==============================================================================
+# --- MID-LEVEL CHECKPOINT SHRINE (THE WEEPING SERAPH STATUE) ---
+# ==============================================================================
+class CheckpointShrine(pygame.sprite.Sprite):
+    def __init__(self, x, y_ground, scale=1.20, y_offset=300):
+        super().__init__()
+        self.x = x
+        self.y_ground = y_ground
+        self.scale = scale
+        self.y_offset = y_offset
+
+        # Load 4 rows x 7 columns grid sheet (28 frames total)
+        try:
+            raw_sheet = pygame.image.load("spritesheets/check point/check_point_sheet.png").convert_alpha()
+            cols, rows = 7, 4
+            sw, sh = raw_sheet.get_size()
+            fw, fh = sw // cols, sh // rows
+            self.frames = []
+            for r in range(rows):
+                for c in range(cols):
+                    sub = raw_sheet.subsurface((c * fw, r * fh, fw, fh))
+                    self.frames.append(pygame.transform.smoothscale(sub, (int(fw * scale), int(fh * scale))))
+        except pygame.error as e:
+            print(f"Error loading checkpoint shrine sheet: {e}")
+            self.frames = [pygame.Surface((120, 180), pygame.SRCALPHA)]
+
+        self.frame_index = 0
+        self.activated = False
+        self.update_time = pygame.time.get_ticks()
+        self.anim_speed = 70  # ms per frame
+
+        self.image = self.frames[0]
+        # Pushed down by y_offset so the stone pedestal firmly touches the walking surface
+        self.rect = self.image.get_rect(midbottom=(self.x, self.y_ground + self.y_offset))
+
+        try:
+            self.fx = pygame.mixer.Sound("mats/audio/check_point.mp3")
+            self.fx.set_volume(0.40)
+        except pygame.error:
+            self.fx = None
+
+    def trigger(self):
+        """Activates the shrine when Succi crosses its coordinates."""
+        if not self.activated:
+            self.activated = True
+            self.frame_index = 1
+            self.update_time = pygame.time.get_ticks()
+            if self.fx:
+                try:
+                    self.fx.play()
+                except Exception:
+                    pass
+
+    def update(self, dt_ms):
+        if not self.activated:
+            # Stays as sleeping weeping stone statue (Frame 0)
+            self.image = self.frames[0]
+        else:
+            # Awakening animation sequence
+            now = pygame.time.get_ticks()
+            if now - self.update_time > self.anim_speed:
+                self.update_time = now
+                if self.frame_index < 22:
+                    # Sequential stand-up and ignite animation (Frames 1 to 21)
+                    self.frame_index += 1
+                else:
+                    # Loop the last 6 frames continuously on purple fire (Frames 22 to 27)
+                    self.frame_index = 22 + ((self.frame_index - 22 + 1) % 6)
+
+            self.image = self.frames[min(self.frame_index, len(self.frames) - 1)]
+
+        # Lock the pedestal base firmly to the floor across all frames
+        old_midbottom = self.rect.midbottom
+        self.rect = self.image.get_rect()
+        self.rect.midbottom = old_midbottom
+
+    def draw(self, screen, camera_x):
+        screen.blit(self.image, (self.rect.x - camera_x, self.rect.y))
+
+
 class Projectile(pygame.sprite.Sprite):
-    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0,
-                 damage=1, dir_y=0.0):
+    def __init__(self, x, y, direction, fireball_img, explode_img, fly_scale=0.45, exp_scale=0.45, exp_offset=0, damage=1, dir_y=0.0):
         super().__init__()
         self.direction = direction
         self.dir_y = dir_y
@@ -192,14 +270,8 @@ class Companion(pygame.sprite.Sprite):
         if not target_facing_right:
             self.image = pygame.transform.flip(self.image, True, False)
 
-        offset_x = -90 if target_facing_right else 90
-
-        # ======================================================================
-        # --- PET Y-OFFSET CORRECTION ---
-        # When flying, Succi's anchor is her center, so offset is -75px.
-        # On the ground, Succi's anchor is her feet, so offset is -265px.
-        # ======================================================================
-        offset_y = -145 if is_flying else -265
+        offset_x = -160 if target_facing_right else 160
+        offset_y = -135 if is_flying else -265
 
         self.rect.centerx = target_x + offset_x
         self.rect.centery = target_y + offset_y

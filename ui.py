@@ -40,12 +40,10 @@ class HUD:
         self.font_rem = pygame.font.SysFont("Lucida Sans", 24, bold=True)
 
         try:
-            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(),
-                                                          (48, 48))
+            self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(), (48, 48))
             self.icon_purple = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (46, 46))
-            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(),
-                                                          (47, 47))
+            self.icon_blue = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_blue.png").convert_alpha(), (47, 47))
             self.icon_rainbow = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/icon_rainbow.png").convert_alpha(), (47, 47))
         except pygame.error as e:
@@ -55,18 +53,14 @@ class HUD:
         try:
             self.succi_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/succi_hud.png").convert_alpha(), (450, 150))
-
             self.rems_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/rems_hud.png").convert_alpha(), (300, 60))
-
             self.spells_hud_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/succi_spells_hud.png").convert_alpha(), (200, 138))
-
             self.health_cell_img = pygame.transform.smoothscale(
                 pygame.image.load("mats/ui/health_cell.png").convert_alpha(), (36, 44))
-
         except pygame.error as e:
-            print(f"Error loading new Gothic HUD frames: {e}")
+            print(f"Error loading Gothic HUD frames: {e}")
             self.succi_hud_img = self.rems_hud_img = self.spells_hud_img = self.health_cell_img = None
 
     def draw(self, screen, screen_width, health, max_health, rem, left_spell, right_spell):
@@ -117,6 +111,9 @@ class HUD:
                 screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=right_icon_center))
 
 
+# ==============================================================================
+# --- DYNAMIC LEVEL BANNERS (LEVELS 1 - 13 SUPPORT) ---
+# ==============================================================================
 class LevelBanner:
     def __init__(self, level_num, screen_width):
         self.duration = 3500
@@ -127,7 +124,7 @@ class LevelBanner:
             raw_img = pygame.image.load(img_path).convert_alpha()
             self.image = pygame.transform.smoothscale(raw_img, (1225, 448))
         except pygame.error as e:
-            print(f"Error loading level banner for level {level_num}: {e}")
+            print(f"Warning: Level banner for level {level_num} not found: {e}")
             self.image = pygame.Surface((1225, 448), pygame.SRCALPHA)
             self.image.fill((0, 0, 0, 0))
 
@@ -157,13 +154,157 @@ class LevelBanner:
 
 
 # ==============================================================================
+# --- GRIMOIRE OF BANISH (TWO-PAGE CODEX & LEVEL TABS) ---
+# ==============================================================================
+class GrimoireScreen:
+    def __init__(self, w, h):
+        self.w = w
+        self.h = h
+        self.page = 1
+        self.selected_level_tab = None
+        self.selected_monster = None
+
+        self.font_title = pygame.font.SysFont("Lucida Sans", 38, bold=True)
+        self.font_med = pygame.font.SysFont("Lucida Sans", 24)
+        self.font_small = pygame.font.SysFont("Lucida Sans", 17)
+
+        # 1. Load Backgrounds
+        try:
+            p1_raw = pygame.image.load("mats/grimoire mats/grimoire_page1.png").convert()
+            self.bg_page1 = pygame.transform.smoothscale(p1_raw, (self.w, self.h))
+        except pygame.error:
+            self.bg_page1 = None
+
+        try:
+            p2_raw = pygame.image.load("mats/grimoire mats/grimoire_page2.png").convert()
+            self.bg_page2 = pygame.transform.smoothscale(p2_raw, (self.w, self.h))
+        except pygame.error:
+            self.bg_page2 = None
+
+        # 2. Load 13 Level Pop-Up Tab Cards
+        self.tab_cards = {}
+        for i in range(1, 14):
+            try:
+                card_raw = pygame.image.load(f"mats/grimoire mats/lvl{i}_tab.png").convert_alpha()
+                self.tab_cards[i] = pygame.transform.smoothscale(card_raw, (860, 480))
+            except pygame.error:
+                self.tab_cards[i] = None
+
+        # 3. Load Back Arrow Button for Page 2 (Enlarged mats/ui/left.png)
+        try:
+            raw_arrow = pygame.image.load("mats/ui/left.png").convert_alpha()
+            btn_w, btn_h = 330, 160
+            self.back_arrow_b = pygame.transform.smoothscale(raw_arrow, (btn_w, btn_h))
+            self.back_arrow_h = pygame.transform.smoothscale(raw_arrow, (int(btn_w * 1.10), int(btn_h * 1.10)))
+            self.back_arrow_rect = self.back_arrow_b.get_rect(center=(self.w // 2 - 370, self.h - 85))
+        except pygame.error:
+            self.back_arrow_b = self.back_arrow_h = None
+            self.back_arrow_rect = pygame.Rect(self.w // 2 - 510, self.h - 140, 330, 160)
+
+        # ======================================================================
+        # 4. PRECISELY ALIGNED 13 BOTTOM LEVEL TABS (Edge-to-Edge Geometry)
+        # ======================================================================
+        self.tab_rects = []
+        t_start_x = 18
+        t_w = 104.6
+        t_y = self.h - 95
+        t_h = 88
+        for i in range(13):
+            self.tab_rects.append(
+                pygame.Rect(int(t_start_x + (i * t_w)), t_y, int(t_w), t_h)
+            )
+
+    def update(self, mouse_pos, mouse_click):
+        if mouse_click:
+            if self.page == 1:
+                # Check clicks on bottom 13 level tabs
+                for i, rect in enumerate(self.tab_rects):
+                    if rect.collidepoint(mouse_pos):
+                        lvl_num = i + 1
+                        if self.selected_level_tab == lvl_num:
+                            self.selected_level_tab = None
+                        else:
+                            self.selected_level_tab = lvl_num
+                        return None
+
+                # Clicking the card itself jumps into Page 2 (Monster Dossier)
+                if self.selected_level_tab:
+                    card_rect = pygame.Rect(self.w // 2 - 430, self.h // 2 - 275, 860, 480)
+                    if card_rect.collidepoint(mouse_pos):
+                        self.page = 2
+                        return None
+                    else:
+                        self.selected_level_tab = None
+                        return None
+
+            elif self.page == 2:
+                # Back button returns to Page 1
+                if self.back_arrow_rect.collidepoint(mouse_pos):
+                    self.page = 1
+                    self.selected_level_tab = None
+                    return None
+
+        return None
+
+    def draw(self, screen, mouse_pos=None):
+        if mouse_pos is None:
+            mouse_pos = pygame.mouse.get_pos()
+
+        # ======================================================================
+        # --- PAGE 1: MASTER 84-GRID & LEVEL TABS ---
+        # ======================================================================
+        if self.page == 1:
+            if self.bg_page1:
+                screen.blit(self.bg_page1, (0, 0))
+            else:
+                overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 220))
+                screen.blit(overlay, (0, 0))
+
+            # Highlight hovered or active level tab with glowing border
+            for i, rect in enumerate(self.tab_rects):
+                lvl_num = i + 1
+                if self.selected_level_tab == lvl_num:
+                    pygame.draw.rect(screen, (253, 117, 234), rect, 3, border_radius=6)
+                elif rect.collidepoint(mouse_pos):
+                    pygame.draw.rect(screen, CYAN, rect, 2, border_radius=6)
+
+            # Draw the Level Card Pop-Up in the center if a tab is active
+            if self.selected_level_tab and self.tab_cards.get(self.selected_level_tab):
+                card_img = self.tab_cards[self.selected_level_tab]
+                card_rect = card_img.get_rect(center=(self.w // 2, self.h // 2 - 35))
+                screen.blit(card_img, card_rect)
+
+        # ======================================================================
+        # --- PAGE 2: TWO-PAGE MONSTER DOSSIER ---
+        # ======================================================================
+        elif self.page == 2:
+            if self.bg_page2:
+                screen.blit(self.bg_page2, (0, 0))
+            else:
+                overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 220))
+                screen.blit(overlay, (0, 0))
+
+            # Draw Back Arrow Button under the left concept art frame
+            if self.back_arrow_b and self.back_arrow_h:
+                if self.back_arrow_rect.collidepoint(mouse_pos):
+                    h_rect = self.back_arrow_h.get_rect(center=self.back_arrow_rect.center)
+                    screen.blit(self.back_arrow_h, h_rect)
+                else:
+                    screen.blit(self.back_arrow_b, self.back_arrow_rect)
+
+        draw_text(screen, "Press 'G' or 'ESC' to Close", self.font_small, PINK, self.w // 2 - 110, self.h - 30)
+
+
+# ==============================================================================
 # --- PAUSE MENU (PAGE 1 & PAGE 2 ARCHITECTURE) ---
 # ==============================================================================
 class PauseMenu:
     def __init__(self, w, h):
         self.w = w
         self.h = h
-        self.current_page = 1  # 1 = Inventory/Save/Controls, 2 = Life Stats/Pets
+        self.current_page = 1
 
         self.font_big = pygame.font.SysFont("Lucida Sans", 48)
         self.font_med = pygame.font.SysFont("Lucida Sans", 24)
@@ -171,7 +312,6 @@ class PauseMenu:
         self.font_stat_label = pygame.font.SysFont("Lucida Sans", 13, bold=True)
         self.font_stat_val = pygame.font.SysFont("Lucida Sans", 13, bold=True)
 
-        # 1. Load Backgrounds
         try:
             p1_raw = pygame.image.load("mats/ui/pause_screen1.png").convert()
             self.bg_page1 = pygame.transform.smoothscale(p1_raw, (self.w, self.h))
@@ -184,7 +324,6 @@ class PauseMenu:
         except pygame.error:
             self.bg_page2 = None
 
-        # 2. Load Save Button (Page 1 Center)
         try:
             raw_save = pygame.image.load("mats/ui/save_hud1.png").convert_alpha()
             self.save_b = pygame.transform.smoothscale(raw_save, (335, 230))
@@ -194,17 +333,14 @@ class PauseMenu:
             self.save_b = self.save_h = None
             self.save_rect = pygame.Rect(self.w // 2 - 167, self.h // 2 + 65, 335, 230)
 
-        # 3. Load Winged Navigation Arrow Buttons
         # ======================================================================
-        # --- PAGE 1 "STATS" BUTTON COORDINATES (ADJUST BELOW) ---
+        # --- PAGE 1 "STATS" BUTTON COORDINATES (CENTERED UNDER CONTROLS ARCH) ---
         # ======================================================================
         try:
             raw_stats_btn = pygame.image.load("mats/ui/stats_button.png").convert_alpha()
             btn_w, btn_h = 340, 118
             self.stats_btn = pygame.transform.smoothscale(raw_stats_btn, (btn_w, btn_h))
             self.stats_btn_h = pygame.transform.smoothscale(raw_stats_btn, (int(btn_w * 1.10), int(btn_h * 1.10)))
-
-            # SHIFTED RIGHT: self.w // 2 + 415 centers squarely under the Controls arch
             self.stats_btn_x = self.w // 2 + 455
             self.stats_btn_y = self.h - 65
             self.stats_btn_rect = self.stats_btn.get_rect(center=(self.stats_btn_x, self.stats_btn_y))
@@ -213,15 +349,13 @@ class PauseMenu:
             self.stats_btn_rect = pygame.Rect(self.w // 2 + 265, self.h - 117, 340, 118)
 
         # ======================================================================
-        # --- PAGE 2 "BACK" BUTTON COORDINATES (ADJUST BELOW) ---
+        # --- PAGE 2 "BACK" BUTTON COORDINATES (CENTERED UNDER LEFT ARCH) ---
         # ======================================================================
         try:
             raw_back_btn = pygame.image.load("mats/ui/back_button.png").convert_alpha()
             btn_w, btn_h = 340, 118
             self.back_btn = pygame.transform.smoothscale(raw_back_btn, (btn_w, btn_h))
             self.back_btn_h = pygame.transform.smoothscale(raw_back_btn, (int(btn_w * 1.10), int(btn_h * 1.10)))
-
-            # Centered squarely under the left arch
             self.back_btn_x = self.w // 2 - 370
             self.back_btn_y = self.h - 65
             self.back_btn_rect = self.back_btn.get_rect(center=(self.back_btn_x, self.back_btn_y))
@@ -229,7 +363,6 @@ class PauseMenu:
             self.back_btn = self.back_btn_h = None
             self.back_btn_rect = pygame.Rect(self.w // 2 - 520, self.h - 117, 340, 118)
 
-        # Spell Icons
         try:
             self.icon_pink = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_pink.png").convert_alpha(), (55, 55))
             self.icon_purple = pygame.transform.smoothscale(pygame.image.load("mats/ui/icon_purple.png").convert_alpha(), (55, 55))
@@ -238,13 +371,11 @@ class PauseMenu:
         except pygame.error:
             self.icon_pink = self.icon_purple = self.icon_blue = self.icon_rainbow = None
 
-        # Multi-Slot Save Variables
         self.save_state = None
         self.selected_save_slot = None
         self.save_slots = []
         self.save_input_text = ""
 
-        # Page 1 Inventory Grid (Left mirror)
         self.grid_rects = []
         start_x = self.w // 2 - 570
         start_y = self.h // 2 + 5
@@ -259,11 +390,11 @@ class PauseMenu:
 
         # ======================================================================
         # Page 2 Pet Grid (3 Rows x 4 Columns = 12 Slots Total)
-        # Dropped down (y = 395) & centered horizontally (x = 905) inside right frame
+        # Dropped down to y = 395 and centered horizontally inside the right frame
         # ======================================================================
         self.pet_grid_rects = []
-        p_start_x = self.w // 2 + 227   # x = 905
-        p_start_y = 395                 # Clears upper gothic arch
+        p_start_x = self.w // 2 + 227
+        p_start_y = 395
         box_size = 66
         spacing_x = 84
         spacing_y = 80
@@ -275,7 +406,6 @@ class PauseMenu:
 
         self.selected_pet_lore = None
 
-        # Pet Lore Bios
         self.pet_lore_data = {
             "tinera": {"title": "Tinera - The Bone Familiar", "desc": ["Succi's primordial companion.", "Woven from bone and purple scales,", "she feeds on ambient soul energy."]},
             "crowley": {"title": "Crowley - The Iron Raven", "desc": ["Chained in cold iron.", "Screaming souls line his wings,", "guiding Succi through dark skies."]},
@@ -320,7 +450,6 @@ class PauseMenu:
                 self.selected_pet_lore = None
                 return None
 
-            # --- PAGE NAVIGATION LOGIC ---
             if self.current_page == 1 and self.stats_btn_rect.collidepoint(mouse_pos):
                 self.current_page = 2
                 self.popup_active = False
@@ -329,9 +458,6 @@ class PauseMenu:
                 self.current_page = 1
                 return None
 
-            # ==================================================================
-            # --- PAGE 1: INVENTORY, SAVING, CONTROLS ---
-            # ==================================================================
             if self.current_page == 1:
                 if self.save_state == "TYPE":
                     return None
@@ -386,9 +512,6 @@ class PauseMenu:
                             except ValueError:
                                 return {"action": "UNEQUIP_PET"}
 
-            # ==================================================================
-            # --- PAGE 2: LIFE STATS & PET MINI-GRIMOIRE ---
-            # ==================================================================
             elif self.current_page == 2:
                 pet_keys = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
                 for i, rect in enumerate(self.pet_grid_rects):
@@ -403,9 +526,6 @@ class PauseMenu:
     def draw(self, screen, owned_spells, mouse_pos, owned_pets, active_pet, pet_icons, life_stats=None):
         center_x = self.w // 2
 
-        # ======================================================================
-        # --- RENDER PAGE 1 (INVENTORY & SAVE ALTAR) ---
-        # ======================================================================
         if self.current_page == 1:
             if self.bg_page1:
                 screen.blit(self.bg_page1, (0, 0))
@@ -416,7 +536,6 @@ class PauseMenu:
 
             draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
 
-            # Draw Save Button
             if self.save_b and self.save_h:
                 if self.save_rect.collidepoint(mouse_pos):
                     hover_rect = self.save_h.get_rect(center=self.save_rect.center)
@@ -424,7 +543,6 @@ class PauseMenu:
                 else:
                     screen.blit(self.save_b, self.save_rect)
 
-            # Draw "STATS ->" Navigation Button
             if self.stats_btn and self.stats_btn_h:
                 if self.stats_btn_rect.collidepoint(mouse_pos):
                     h_rect = self.stats_btn_h.get_rect(center=self.stats_btn_rect.center)
@@ -432,7 +550,6 @@ class PauseMenu:
                 else:
                     screen.blit(self.stats_btn, self.stats_btn_rect)
 
-            # Draw Inventory Grid
             for i, rect in enumerate(self.grid_rects):
                 pygame.draw.rect(screen, LIGHT_GRAY, rect, 2, border_radius=5)
 
@@ -447,7 +564,6 @@ class PauseMenu:
                     elif spell == "rainbow" and self.icon_rainbow:
                         screen.blit(self.icon_rainbow, self.icon_rainbow.get_rect(center=rect.center))
 
-                # SLOT 4 PET ICON RENDERING
                 elif i == 4 and len(owned_pets) > 0:
                     display_pet = active_pet if active_pet else owned_pets[0]
                     active_icon = pet_icons.get(display_pet)
@@ -462,7 +578,6 @@ class PauseMenu:
                 if rect.collidepoint(mouse_pos) and not self.popup_active:
                     pygame.draw.rect(screen, WHITE, rect, 3, border_radius=5)
 
-            # Controls Guide Text
             ctrl_y = self.h // 2 + 5
             ctrl_x = self.w // 2 + 315
 
@@ -487,9 +602,6 @@ class PauseMenu:
                 pygame.draw.rect(screen, col_r, self.popup_rect_right, 2)
                 draw_text(screen, "Equip Right", self.font_small, col_r, self.popup_rect_right.x + 5, self.popup_rect_right.y + 8)
 
-        # ======================================================================
-        # --- RENDER PAGE 2 (LIFE STATS & PET FAMILIAR CODEX) ---
-        # ======================================================================
         elif self.current_page == 2:
             if self.bg_page2:
                 screen.blit(self.bg_page2, (0, 0))
@@ -500,7 +612,6 @@ class PauseMenu:
 
             draw_text(screen, "Press 'P' or 'ESC' to Resume", self.font_small, PINK, center_x - 135, self.h - 40)
 
-            # Draw "<- BACK" Navigation Button
             if self.back_btn and self.back_btn_h:
                 if self.back_btn_rect.collidepoint(mouse_pos):
                     h_rect = self.back_btn_h.get_rect(center=self.back_btn_rect.center)
@@ -509,8 +620,7 @@ class PauseMenu:
                     screen.blit(self.back_btn, self.back_btn_rect)
 
             # ==================================================================
-            # --- 1. RENDER 12 LIFETIME STATS (2 EQUAL COLUMNS OF 6 ROWS) ---
-            # Dropped down to y = 395 to clear the upper gothic archway
+            # --- RENDER 12 LIFETIME STATS (DROPPED DOWN BENEATH ARCH) ---
             # ==================================================================
             if life_stats:
                 total_sec = int(life_stats.get("total_time_ms", 0) // 1000)
@@ -522,7 +632,6 @@ class PauseMenu:
                 s_counts = life_stats.get("spell_counts", {})
                 fav_elem = max(s_counts, key=s_counts.get, default="None").capitalize() if s_counts else "None"
 
-                # Column 1 (Left 6 stats)
                 col1_rows = [
                     ("Deaths:", f"{life_stats.get('deaths', 0)}", PINK),
                     ("Enemies Slain:", f"{life_stats.get('enemies_killed', 0)}", CYAN),
@@ -532,7 +641,6 @@ class PauseMenu:
                     ("Spells Cast:", f"{life_stats.get('spells_cast', 0)}", CYAN)
                 ]
 
-                # Column 2 (Right 6 stats)
                 col2_rows = [
                     ("Favored Magic:", f"{fav_elem}", PINK),
                     ("Potions Drank:", f"{len(life_stats.get('potions_bought', []))} / 20", GOLD),
@@ -542,22 +650,20 @@ class PauseMenu:
                     ("Time in Hell:", f"{time_str}", WHITE)
                 ]
 
-                # Placed beneath the hanging arch, 38px row spacing
-                start_y = 415
+                # Positioned neatly inside the open black rectangle below the arch
+                start_y = 395
                 row_spacing = 38
 
-                # Render Left Column
                 c1_x = center_x - 525
-                c1_val_x = center_x - 420 #420
+                c1_val_x = center_x - 420
                 y = start_y
                 for label, val, val_col in col1_rows:
                     screen.blit(self.font_stat_label.render(label, True, LIGHT_GRAY), (c1_x, y))
                     screen.blit(self.font_stat_val.render(val, True, val_col), (c1_val_x, y))
                     y += row_spacing
 
-                # Render Right Column
                 c2_x = center_x - 345
-                c2_val_x = center_x - 235 #235
+                c2_val_x = center_x - 235
                 y = start_y
                 for label, val, val_col in col2_rows:
                     screen.blit(self.font_stat_label.render(label, True, LIGHT_GRAY), (c2_x, y))
@@ -565,8 +671,7 @@ class PauseMenu:
                     y += row_spacing
 
             # ==================================================================
-            # --- 2. RENDER PET GRID (3 ROWS OF 4 = 12 SLOTS TOTAL) ---
-            # Placed inside the open black space below the upper archway
+            # --- RENDER PET GRID (12 SLOTS CENTERED IN RIGHT ARCH) ---
             # ==================================================================
             pet_keys = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
             for i, rect in enumerate(self.pet_grid_rects):
@@ -585,12 +690,10 @@ class PauseMenu:
                     if rect.collidepoint(mouse_pos) and is_owned:
                         pygame.draw.rect(screen, WHITE, rect, 3, border_radius=6)
                 else:
-                    # Extra slots 9-12 (Locked future slots)
                     pygame.draw.rect(screen, (40, 30, 50), rect, 2, border_radius=6)
                     q_text = self.font_med.render("-", True, (60, 50, 70))
                     screen.blit(q_text, q_text.get_rect(center=rect.center))
 
-            # Pet Lore Popup Card
             if self.selected_pet_lore:
                 card_rect = pygame.Rect(center_x - 220, self.h // 2 - 120, 440, 240)
                 pygame.draw.rect(screen, (20, 10, 30), card_rect, border_radius=12)
@@ -604,7 +707,6 @@ class PauseMenu:
 
                 draw_text(screen, "(Click anywhere to close)", self.font_small, LIGHT_GRAY, card_rect.x + 120, card_rect.bottom - 35)
 
-        # Multi-Slot Save Screen Overlays (Only active on Page 1)
         if self.save_state == "SELECT":
             dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
             dark_overlay.fill((0, 0, 0, 220))
@@ -639,67 +741,8 @@ class PauseMenu:
 
 
 # ==============================================================================
-# --- STANDALONE GRIMOIRE SCREEN (THE DEMONOLOGY CODEX) ---
+# --- DEATH SCREEN (CHECKPOINT RECOVERY INTEGRATION) ---
 # ==============================================================================
-class GrimoireScreen:
-    def __init__(self, w, h):
-        self.w = w
-        self.h = h
-        self.font_title = pygame.font.SysFont("Lucida Sans", 38, bold=True)
-        self.font_serif = pygame.font.SysFont("Georgia", 24)
-        self.font_small = pygame.font.SysFont("Lucida Sans", 18)
-
-    def draw(self, screen):
-        overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-        overlay.fill((0, 0, 0, 220))
-        screen.blit(overlay, (0, 0))
-
-        tome_w, tome_h = 1200, 680
-        tome_rect = pygame.Rect(self.w // 2 - tome_w // 2, self.h // 2 - tome_h // 2 - 10, tome_w, tome_h)
-
-        pygame.draw.rect(screen, (30, 15, 20), tome_rect, border_radius=16)
-        pygame.draw.rect(screen, GOLD, tome_rect, 4, border_radius=16)
-
-        center_divider_x = self.w // 2
-        pygame.draw.line(screen, (80, 60, 50), (center_divider_x, tome_rect.top + 20), (center_divider_x, tome_rect.bottom - 20), 4)
-
-        left_page_cx = (tome_rect.left + center_divider_x) // 2
-        art_box = pygame.Rect(left_page_cx - 200, tome_rect.top + 100, 400, 460)
-        pygame.draw.rect(screen, (15, 8, 12), art_box, border_radius=8)
-        pygame.draw.rect(screen, (120, 80, 100), art_box, 2, border_radius=8)
-
-        text_art = self.font_small.render("[ HIGH-RESOLUTION DEMON CONCEPT ART ]", True, LIGHT_GRAY)
-        screen.blit(text_art, text_art.get_rect(center=art_box.center))
-
-        right_page_x = center_divider_x + 50
-        text_title = self.font_title.render("THE DEMONOLOGY CODEX", True, GOLD)
-        screen.blit(text_title, (right_page_x, tome_rect.top + 60))
-
-        lore_lines = [
-            ("TRUE NAME:", "Molly, The Brood Mother", PINK),
-            ("THREAT RANK:", "Apex Aberration", (255, 100, 100)),
-            ("REGION:", "Level 7 - The Desolate Killing Grounds", CYAN),
-            ("BEHAVIOR:", "Vomits pressurized acidic venom;", WHITE),
-            ("", "slithers across fallen angelic battlefields.", WHITE),
-            ("", "", WHITE),
-            ("CODEX EXCERPT:", "", GOLD),
-            ("A bloated entity of pure necrotic body horror.", "", LIGHT_GRAY),
-            ("Bearing a child-like skull upon a writhing", "", LIGHT_GRAY),
-            ("centipede trunk, it consumes the souls of", "", LIGHT_GRAY),
-            ("the impaled sentinels left in the outlands.", "", LIGHT_GRAY)
-        ]
-
-        text_y = tome_rect.top + 140
-        for label, val, col in lore_lines:
-            if label:
-                screen.blit(self.font_small.render(label, True, col), (right_page_x, text_y))
-            if val:
-                screen.blit(self.font_small.render(val, True, col), (right_page_x + 140, text_y))
-            text_y += 28
-
-        draw_text(screen, "Press 'G' or 'ESC' to Close the Grimoire", self.font_small, PINK, self.w // 2 - 160, self.h - 35)
-
-
 class DeathScreen:
     def __init__(self, w, h):
         self.w = w
@@ -707,9 +750,7 @@ class DeathScreen:
         self.font_big = pygame.font.SysFont("Lucida Sans", 48)
         self.font_small = pygame.font.SysFont("Lucida Sans", 20)
         try:
-            self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/death_screen.png").convert_alpha(),
-                                                   (w, h))
-
+            self.bg = pygame.transform.smoothscale(pygame.image.load("mats/ui/death_screen.png").convert_alpha(), (w, h))
             center_raw = pygame.image.load("mats/ui/center_death_hud.png").convert_alpha()
             c_raw_w, c_raw_h = center_raw.get_size()
             c_ratio = self.h / c_raw_h
@@ -732,14 +773,10 @@ class DeathScreen:
             a_target_h = int(self.h * 0.95)
             a_ratio = a_target_h / a_raw_h
             self.adelaide_img = pygame.transform.smoothscale(adelaide_raw, (int(a_raw_w * a_ratio), a_target_h))
-
         except pygame.error as e:
             print(f"Error loading DeathScreen assets: {e}")
             self.bg = pygame.Surface((w, h))
-            self.overlay = None
-            self.frame_img = None
-            self.succi_img = None
-            self.adelaide_img = None
+            self.overlay = self.frame_img = self.succi_img = self.adelaide_img = None
 
     def draw_centered_scaled_text(self, screen, text, font, color, center_x, y_pos, scale):
         raw_text = font.render(text, True, color)
@@ -749,7 +786,7 @@ class DeathScreen:
         text_rect = scaled_text.get_rect(center=(center_x, y_pos))
         screen.blit(scaled_text, text_rect)
 
-    def draw(self, screen, current_state, checkpoint):
+    def draw(self, screen, current_state, checkpoint_active):
         screen.blit(self.bg, (0, 0))
 
         if self.frame_img:
@@ -770,14 +807,22 @@ class DeathScreen:
 
         center_x = self.w // 2 - 10
         level_y_pos = self.h // 2 + 120
-        restart_y_pos = self.h - 160
+        restart_y_pos = self.h - 170
 
         self.draw_centered_scaled_text(screen, f"{current_state.replace('_', ' ')}", self.font_big,
                                        pygame.Color("turquoise1"), center_x, level_y_pos, 0.45)
 
-        if checkpoint in [2, 3, 4, 5, 6, 7, 8]:
-            self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART AT LEVEL 1", self.font_small,
-                                           pygame.Color("plum1"), center_x, restart_y_pos, 0.9)
+        # ======================================================================
+        # --- CHECKPOINT AWARE DEATH INSTRUCTIONS ---
+        # ======================================================================
+        if checkpoint_active:
+            self.draw_centered_scaled_text(screen, "PRESS SPACE TO RESPAWN AT CHECKPOINT", self.font_small,
+                                           pygame.Color("plum1"), center_x, restart_y_pos, 0.95)
+            self.draw_centered_scaled_text(screen, "PRESS '1' TO RESTART LEVEL", self.font_small,
+                                           LIGHT_GRAY, center_x, restart_y_pos + 30, 0.85)
+        else:
+            self.draw_centered_scaled_text(screen, "PRESS SPACE TO RESTART LEVEL", self.font_small,
+                                           pygame.Color("plum1"), center_x, restart_y_pos, 0.95)
 
 
 class MainMenu:
@@ -800,7 +845,6 @@ class MainMenu:
             self.ctrl_rect = self.ctrl_b.get_rect(center=(223, h // 2 + 140))
             self.play_rect = self.play_b.get_rect(center=(w // 2 + 3, h // 2 + 130))
             self.load_rect = self.load_b.get_rect(center=(w - 220, h // 2 + 140))
-
         except pygame.error as e:
             print(f"Menu Asset Error: {e}")
             self.bg = pygame.Surface((w, h))
@@ -813,14 +857,12 @@ class MainMenu:
 
     def _load_save_data(self):
         self.save_slots = []
-
         if getattr(sys, 'frozen', False):
             save_dir = os.path.join(os.path.dirname(sys.executable), "saves")
         else:
             save_dir = os.path.abspath("saves")
 
         os.makedirs(save_dir, exist_ok=True)
-
         y_offset = self.bg.get_height() // 2 - 150
         center_x = self.bg.get_width() // 2
 
@@ -838,8 +880,7 @@ class MainMenu:
                     name = f"Save {i} (Corrupt)"
                 self.save_slots.append({"rect": rect, "del_rect": del_rect, "name": name, "slot": i, "empty": False})
             else:
-                self.save_slots.append(
-                    {"rect": rect, "del_rect": None, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
+                self.save_slots.append({"rect": rect, "del_rect": None, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
             y_offset += 65
 
     def update(self, mouse_pos, mouse_click):
@@ -934,8 +975,7 @@ class MainMenu:
 
             for i, (line, color) in enumerate(lines):
                 text = self.font_text.render(line, True, color)
-                screen.blit(text,
-                            text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 - 150 + (i * 40))))
+                screen.blit(text, text.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2 - 150 + (i * 40))))
 
 
 class Merchant_UI:
@@ -952,9 +992,7 @@ class Merchant_UI:
                 self.exit_rect = self.exit_hud_img.get_rect(topleft=(880, 5))
             except pygame.error as e:
                 print(f"Error loading exit HUD: {e}")
-                self.exit_hud_img = None
-                self.exit_hud_hover = None
-                self.exit_rect = None
+                self.exit_hud_img = self.exit_hud_hover = self.exit_rect = None
 
             self.health_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/health_p.png").convert_alpha(), (110, 150))
             self.mana_p = pygame.transform.smoothscale(pygame.image.load("mats/ui/mana_p.png").convert_alpha(), (110, 150))
@@ -1014,51 +1052,28 @@ class Merchant_UI:
         self.right_arrow_rect = self.right_arrow_img.get_rect(midleft=(self.buy_rect.right + 15, self.buy_rect.centery))
 
         self.inventory = [
-            # PAGE 1: CORE UPGRADES & DASH (Slots 0 - 8)
-            {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."],
-             "cost": 50, "color": (50, 255, 50)},
-            {"id": "Teal Potion", "img": self.teal_p, "title": "Minor Heal", "desc": ["Restores up to 3 Health."],
-             "cost": 60, "color": (50, 200, 255)},
-            {"id": "Emerald Potion", "img": self.emerald_p, "title": "Advanced Health", "desc": ["Adds +2 Max Health."],
-             "cost": 150, "color": (100, 255, 100)},
-            {"id": "Pink Potion", "img": self.pink_p, "title": "Major Heal", "desc": ["Restores up to 5 Health."],
-             "cost": 100, "color": (255, 100, 200)},
-            {"id": "Mysterious Potion", "img": self.mysterious_p, "title": "Mysterious Potion",
-             "desc": ["Unlocks Double Jump."], "cost": 50, "color": (150, 50, 255)},
-            {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."],
-             "cost": 50, "color": (220, 220, 220)},
-            {"id": "Dash Potion", "img": self.dash_p, "title": "Shadow Dash", "desc": ["Unlocks the Shadow Dash.", "Tap 'W' to burst forward."],
-             "cost": 50, "color": (200, 50, 255)},
-            {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion", "desc": ["Unlocks Void-ball."],
-             "cost": 50, "color": (180, 50, 255)},
-            {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"],
-             "cost": 50, "color": (50, 50, 255)},
+            {"id": "Health Potion", "img": self.health_p, "title": "Base Health", "desc": ["Unlocks +3 Max Health."], "cost": 50, "color": (50, 255, 50)},
+            {"id": "Teal Potion", "img": self.teal_p, "title": "Minor Heal", "desc": ["Restores up to 3 Health."], "cost": 60, "color": (50, 200, 255)},
+            {"id": "Emerald Potion", "img": self.emerald_p, "title": "Advanced Health", "desc": ["Adds +2 Max Health."], "cost": 150, "color": (100, 255, 100)},
+            {"id": "Pink Potion", "img": self.pink_p, "title": "Major Heal", "desc": ["Restores up to 5 Health."], "cost": 100, "color": (255, 100, 200)},
+            {"id": "Mysterious Potion", "img": self.mysterious_p, "title": "Mysterious Potion", "desc": ["Unlocks Double Jump."], "cost": 50, "color": (150, 50, 255)},
+            {"id": "Silver Potion", "img": self.silver_p, "title": "Silver Potion", "desc": ["Unlocks Melee Attack."], "cost": 50, "color": (220, 220, 220)},
+            {"id": "Dash Potion", "img": self.dash_p, "title": "Shadow Dash", "desc": ["Unlocks the Shadow Dash.", "Tap 'W' to burst forward."], "cost": 50, "color": (200, 50, 255)},
+            {"id": "Purple Potion", "img": self.purple_p, "title": "Purple Potion", "desc": ["Unlocks Void-ball."], "cost": 50, "color": (180, 50, 255)},
+            {"id": "Blue Potion", "img": self.mana_p, "title": "Blue Potion", "desc": ["Unlocks Sapphire-ball"], "cost": 50, "color": (50, 50, 255)},
 
-            # PAGE 2: ELITE TIER TOP ROW & PETS START ON ROW 2 (Slots 9 - 17)
-            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."],
-             "cost": 200, "color": (255, 200, 50)},
-            {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."],
-             "cost": 50, "color": (255, 100, 255)},
-            {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."],
-             "cost": 250, "color": (255, 220, 50)},
-            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons Tinera..."],
-             "cost": 50, "color": (255, 180, 50)},
-            {"id": "Crowley Potion", "img": self.crowley_p, "title": "Crowley Potion", "desc": ["Summons Crowley..."],
-             "cost": 50, "color": (180, 180, 180)},
-            {"id": "Gloom Potion", "img": self.gloom_p, "title": "Gloom Potion", "desc": ["Summons Gloom..."],
-             "cost": 50, "color": (150, 100, 150)},
-            {"id": "Losslyn Potion", "img": self.losslyn_p, "title": "Losslyn Potion", "desc": ["Summons Losslyn..."],
-             "cost": 50, "color": (100, 150, 200)},
-            {"id": "Opal Potion", "img": self.opal_p, "title": "Opal Potion", "desc": ["Summons Opal..."], "cost": 50,
-             "color": (200, 200, 255)},
-            {"id": "Saphy Potion", "img": self.saphy_p, "title": "Saphy Potion", "desc": ["Summons Saphy..."],
-             "cost": 50, "color": (50, 100, 255)},
+            {"id": "Wings Potion", "img": self.wings_p, "title": "Wings Potion", "desc": ["Unlocks her Wings."], "cost": 200, "color": (255, 200, 50)},
+            {"id": "Rainbow Potion", "img": self.rainbow_p, "title": "Rainbow Potion", "desc": ["Unlocks Rain-ball."], "cost": 50, "color": (255, 100, 255)},
+            {"id": "Gold Potion", "img": self.gold_p, "title": "Gold Potion", "desc": ["Adds +1 Max Health."], "cost": 250, "color": (255, 220, 50)},
+            {"id": "Royal Potion", "img": self.royal_p, "title": "Royal Potion", "desc": ["Summons Tinera..."], "cost": 50, "color": (255, 180, 50)},
+            {"id": "Crowley Potion", "img": self.crowley_p, "title": "Crowley Potion", "desc": ["Summons Crowley..."], "cost": 50, "color": (180, 180, 180)},
+            {"id": "Gloom Potion", "img": self.gloom_p, "title": "Gloom Potion", "desc": ["Summons Gloom..."], "cost": 50, "color": (150, 100, 150)},
+            {"id": "Losslyn Potion", "img": self.losslyn_p, "title": "Losslyn Potion", "desc": ["Summons Losslyn..."], "cost": 50, "color": (100, 150, 200)},
+            {"id": "Opal Potion", "img": self.opal_p, "title": "Opal Potion", "desc": ["Summons Opal..."], "cost": 50, "color": (200, 200, 255)},
+            {"id": "Saphy Potion", "img": self.saphy_p, "title": "Saphy Potion", "desc": ["Summons Saphy..."], "cost": 50, "color": (50, 100, 255)},
 
-            # PAGE 3: REMAINING PETS (Slots 18 - 19)
-            {"id": "Trinity Potion", "img": self.trinity_p, "title": "Trinity Potion", "desc": ["Summons Trinity..."],
-             "cost": 50, "color": (255, 100, 100)},
-            {"id": "Whisper Potion", "img": self.whisper_p, "title": "Whisper Potion", "desc": ["Summons Whisper..."],
-             "cost": 50, "color": (200, 150, 255)}
+            {"id": "Trinity Potion", "img": self.trinity_p, "title": "Trinity Potion", "desc": ["Summons Trinity..."], "cost": 50, "color": (255, 100, 100)},
+            {"id": "Whisper Potion", "img": self.whisper_p, "title": "Whisper Potion", "desc": ["Summons Whisper..."], "cost": 50, "color": (200, 150, 255)}
         ]
 
         self.pet_item_ids = {

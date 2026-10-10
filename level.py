@@ -4,7 +4,7 @@
 import pygame
 import random
 import sys
-from entities import Platform
+from entities import Platform, CheckpointShrine
 from enemies import Enemy, GargoyleFlyer, GreyGargoyleFlyer, Demon, Skeleton, Helldog, Mau, Pkgrim, Azule, \
     Titus, Lionel, Demented, Elaine, \
     Groundskeeper, RoyalHH, RoyalZombie, Zombie1, Zombie2, Priestly, Realmwalker, Pursuer, Braid, Deadlight, Victoria, \
@@ -130,6 +130,13 @@ class Level_01:
 
         self.level_end_x = self.max_backgrounds * self.bg_w
         self.door_world_x = self.level_end_x - 200
+
+        # ======================================================================
+        # --- MID-LEVEL CHECKPOINT SHRINE (HALFWAY MARK) ---
+        # ======================================================================
+        self.checkpoint_x = self.level_end_x // 2
+        self.checkpoint_shrine = CheckpointShrine(self.checkpoint_x, self.y_ground + self.floor_y_offset, scale=1.20, y_offset=300)
+        # ======================================================================
 
         if not hasattr(self, 'platform_images') or not self.platform_images:
             self.platform_images = [self.platform_image]
@@ -264,6 +271,12 @@ class Level_01:
 
             self.last_spawned_bg_index = current_bg_index
 
+        # Update Checkpoint Shrine
+        if hasattr(self, 'checkpoint_shrine') and self.checkpoint_shrine:
+            if player_x >= self.checkpoint_shrine.rect.centerx:
+                self.checkpoint_shrine.trigger()
+            self.checkpoint_shrine.update(int(dt * 1000))
+
         self.enemy_group.update(camera_x, self.screen_width)
         for group in self.active_enemy_groups:
             group.update(camera_x, player_x, player_y)
@@ -291,6 +304,11 @@ class Level_01:
                 screen.blit(self.floor_img if i % 2 == 0 else self.floor_flip_img,
                             ((i * self.floor_w) - camera_x,
                              self.screen_height - self.target_floor_h + self.floor_y_offset))
+
+        # Render Checkpoint Shrine
+        if hasattr(self, 'checkpoint_shrine') and self.checkpoint_shrine:
+            if -300 < (self.checkpoint_shrine.rect.x - camera_x) < self.screen_width + 300:
+                self.checkpoint_shrine.draw(screen, camera_x)
 
         for p in self.platform_group:
             if -200 < (px := p.rect.x - camera_x) < self.screen_width + 200: screen.blit(p.image, (px, p.rect.y))
@@ -964,14 +982,12 @@ class Level_07(Level_01):
 # ==============================================================================
 class Level_08(Level_01):
     def __init__(self, screen_width, screen_height):
-        # Explicit initialization bypassing Level_01's starter platform spawner
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.y_ground = 730.0
         self.platform_offset_ratio = 0.0
         self.floor_y_offset = 0
 
-        # Safe empty containers (No ground platforms or ground enemies in Level 8!)
         self.platform_group = pygame.sprite.Group()
         self.enemy_group = pygame.sprite.Group()
         self.active_enemy_groups = []
@@ -983,6 +999,11 @@ class Level_08(Level_01):
 
         self.level_end_x = self.max_backgrounds * self.bg_w
         self.door_world_x = self.level_end_x - 200
+
+        # Mid-air checkpoint shrine hovering at halfway mark
+        # Positioned at the exact same ground/floor height baseline as all other levels
+        self.checkpoint_x = self.level_end_x // 2
+        self.checkpoint_shrine = CheckpointShrine(self.checkpoint_x, self.y_ground + self.floor_y_offset, scale=1.20, y_offset=300)
 
     def load_assets(self):
         full_bg_filenames = [f"backgrounds/lvl_8_bgs/{i}bg.png" for i in range(1, 19)]
@@ -996,7 +1017,6 @@ class Level_08(Level_01):
         self.bg_list = [pygame.transform.smoothscale(trim_black_side_borders(pygame.image.load(f).convert()),
                                                      (self.bg_w, self.screen_height)) for f in full_bg_filenames]
 
-        # No ground floor surfaces in flight mode!
         self.floor_img = None
         self.floor_flip_img = None
 
@@ -1016,9 +1036,13 @@ class Level_08(Level_01):
             if not is_banner_active and len(self.enemy_group) < 3 and random.randint(1, 50) == 1:
                 side = random.choice(["left", "right"])
                 ex = (camera_x - 150) if side == "left" else (camera_x + self.screen_width + 150)
-                # FULL AIRSPACE GENERATION: 120 to 680
                 self.enemy_group.add(GreyGargoyleFlyer(ex, random.randint(120, 680), self.bird_sheet_img, 0.31,
                                                        forced_direction=1 if side == "left" else -1))
+
+        if hasattr(self, 'checkpoint_shrine') and self.checkpoint_shrine:
+            if player_x >= self.checkpoint_shrine.rect.centerx:
+                self.checkpoint_shrine.trigger()
+            self.checkpoint_shrine.update(int(dt * 1000))
 
         self.enemy_group.update(camera_x, self.screen_width)
 
@@ -1027,6 +1051,10 @@ class Level_08(Level_01):
         for i in range(s_bg, s_bg + (self.screen_width // self.bg_w) + 2):
             if i < self.max_backgrounds:
                 screen.blit(self.bg_list[i], ((i * self.bg_w) - camera_x, 0))
+
+        if hasattr(self, 'checkpoint_shrine') and self.checkpoint_shrine:
+            if -300 < (self.checkpoint_shrine.rect.x - camera_x) < self.screen_width + 300:
+                self.checkpoint_shrine.draw(screen, camera_x)
 
         for enemy in self.enemy_group:
             if -200 < (ex := enemy.rect.x - camera_x) < self.screen_width + 200:

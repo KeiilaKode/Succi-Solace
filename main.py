@@ -28,7 +28,7 @@ import config
 # OOP Imports
 from player import Player
 from enemies import GreyGargoyleFlyer
-from entities import Projectile, Merchant, Companion
+from entities import Projectile, Merchant, Companion, CheckpointShrine
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Level_08, Merchant_Room
 
 # Isolated UI components
@@ -46,10 +46,16 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 
 
 def save_game(slot, save_name):
+    # Check if mid-level checkpoint shrine is currently active
+    shrine_active = (current_level.checkpoint_shrine.activated
+                     if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
+                     else False)
+
     data = {
         "save_name": save_name,
         "level": current_state,
         "checkpoint": checkpoint,
+        "checkpoint_shrine_activated": shrine_active,
         "rem": rem,
         "health": succi.health,
         "max_health": succi.max_health,
@@ -136,7 +142,18 @@ def load_game(slot):
     else:
         current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
 
-    succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
+    # Spawn player at checkpoint if it was active when saved
+    spawn_x = 400.0
+    spawn_y = 400.0 if current_state == "LEVEL_8" else current_level.y_ground
+    if data.get("checkpoint_shrine_activated", False) and hasattr(current_level,
+                                                                  'checkpoint_shrine') and current_level.checkpoint_shrine:
+        current_level.checkpoint_shrine.activated = True
+        current_level.checkpoint_shrine.frame_index = 22
+        spawn_x = float(current_level.checkpoint_x)
+        if current_state == "LEVEL_8":
+            spawn_y = 450.0
+
+    succi = Player(spawn_x, spawn_y, animations, config.ANIMATION_SPEEDS,
                    config.ANIMATION_SCALE_CORRECTIONS, jump_fx, cast_fx)
 
     succi.health = data["health"]
@@ -200,6 +217,10 @@ try:
     merchant_greet_lvl_6_fx.set_volume(0.6)
     merchant_greet_lvl_7_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl7.mp3")
     merchant_greet_lvl_7_fx.set_volume(0.6)
+
+    # --- LEVEL 8 MERCHANT AUDIO ---
+    merchant_greet_lvl_8_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl8.mp3")
+    merchant_greet_lvl_8_fx.set_volume(0.6)
 
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
@@ -452,35 +473,42 @@ while run:
                         if player_has_melee and not paused and not game_over:
                             succi.trigger_kick()
 
-        if event.type == pygame.MOUSEBUTTONDOWN and not grimoire_open:
-            if event.button in [1, 3]:
-                mouse_click = (event.button == 1)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_click = True
 
-                if not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4",
-                                                                      "LEVEL_5",
-                                                                      "LEVEL_6", "LEVEL_7", "LEVEL_8"]:
-                    live_k = pygame.key.get_pressed()
-                    is_moving = live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[
-                        pygame.K_d] or (
-                                        succi.is_flying_level and (
-                                            live_k[pygame.K_w] or live_k[pygame.K_s] or live_k[pygame.K_UP] or live_k[
-                                        pygame.K_DOWN])
-                                )
-                    is_running = live_k[pygame.K_LSHIFT] or live_k[pygame.K_RSHIFT]
+            if not grimoire_open and not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3",
+                                                                                        "LEVEL_4",
+                                                                                        "LEVEL_5", "LEVEL_6", "LEVEL_7",
+                                                                                        "LEVEL_8"]:
+                live_k = pygame.key.get_pressed()
+                is_moving = live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[
+                    pygame.K_d] or (
+                                    succi.is_flying_level and (
+                                    live_k[pygame.K_w] or live_k[pygame.K_s] or live_k[pygame.K_UP] or live_k[
+                                pygame.K_DOWN])
+                            )
+                is_running = live_k[pygame.K_LSHIFT] or live_k[pygame.K_RSHIFT]
 
-                    if event.button == 1:
+                if event.button == 1:
+                    succi.trigger_attack(is_running, is_moving)
+                    succi.current_spell_type = succi.spell_left_click
+                elif event.button == 3:
+                    if succi.spell_right_click is not None:
                         succi.trigger_attack(is_running, is_moving)
-                        succi.current_spell_type = succi.spell_left_click
-                    elif event.button == 3:
-                        if succi.spell_right_click is not None:
-                            succi.trigger_attack(is_running, is_moving)
-                            succi.current_spell_type = succi.spell_right_click
+                        succi.current_spell_type = succi.spell_right_click
 
             elif event.button == 2:
-                if player_has_melee and not succi.is_flying_level and not game_over and not paused:
+                if player_has_melee and not succi.is_flying_level and not game_over and not paused and not grimoire_open:
                     succi.trigger_kick()
 
-    if current_state == "INTRO":
+    # ==========================================================================
+    # --- GRIMOIRE INTERACTION DISPATCHER ---
+    # ==========================================================================
+    if grimoire_open:
+        grimoire_screen.update(mouse_pos, mouse_click)
+
+    elif current_state == "INTRO":
         if intro_screen and intro_screen.update(mouse_pos, mouse_click, allow_skip=True):
             current_state = "LOADING"
             intro_screen = None
@@ -502,7 +530,13 @@ while run:
             current_state = "LEVEL_1"
             current_banner = LevelBanner(1, SCREEN_WIDTH)
 
-            current_level.reset()
+            try:
+                current_level.reset(reset_checkpoint=True)
+            except TypeError:
+                current_level.reset()
+                if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine:
+                    current_level.checkpoint_shrine.activated = False
+                    current_level.checkpoint_shrine.frame_index = 0
             succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
                            config.ANIMATION_SCALE_CORRECTIONS,
                            jump_fx, cast_fx)
@@ -523,7 +557,7 @@ while run:
                     lvl_num = int(current_state.split("_")[1])
                     current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
-                    camera_x = 0.0
+                    camera_x = max(0.0, min(succi.x - SCREEN_WIDTH * 0.5, current_level.level_end_x - SCREEN_WIDTH))
                     game_over = False
                     paused = False
                     projectile_group.empty()
@@ -695,7 +729,12 @@ while run:
 
         elif current_state == "MERCHANT":
             if merchant_npc:
-                if is_level_8_merchant or is_level_7_merchant:
+                # ==============================================================
+                # --- LEVEL 8 GREETING AUDIO INTEGRATION ---
+                # ==============================================================
+                if is_level_8_merchant:
+                    active_merchant_audio = merchant_greet_lvl_8_fx
+                elif is_level_7_merchant:
                     active_merchant_audio = merchant_greet_lvl_7_fx
                 elif is_level_6_merchant:
                     active_merchant_audio = merchant_greet_lvl_6_fx
@@ -733,7 +772,6 @@ while run:
 
                             merchant_ui.selected_item = None
 
-                            # Track Unique Potions Imbibed
                             if bought_item not in life_stats["potions_bought"]:
                                 life_stats["potions_bought"].append(bought_item)
 
@@ -1004,7 +1042,14 @@ while run:
 
                         current_banner = None
 
-                        if is_level_8_merchant or is_level_7_merchant:
+                        # ==============================================================
+                        # --- LEVEL 8 MERCHANT SPRITE SHEET (10 COLS x 8 ROWS) ---
+                        # ==============================================================
+                        if is_level_8_merchant:
+                            merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
+                                                    "spritesheets/merchants sheets/merchant_lvl_8.png", columns=10,
+                                                    rows=8, target_duration=9500)
+                        elif is_level_7_merchant:
                             merchant_npc = Merchant(SCREEN_WIDTH, SCREEN_HEIGHT,
                                                     "spritesheets/merchants sheets/merchant_lvl_7.png", columns=10,
                                                     rows=8, target_duration=9500)
@@ -1177,16 +1222,26 @@ while run:
 
             # Draw Standalone Grimoire Overlay when 'G' is active
             if grimoire_open:
-                grimoire_screen.draw(screen)
+                grimoire_screen.draw(screen, mouse_pos)
 
         else:
-            death_screen.draw(screen, current_state, checkpoint)
+            # Check if mid-level checkpoint shrine is currently activated
+            checkpoint_active = (current_level.checkpoint_shrine.activated
+                                 if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
+                                 else False)
+
+            death_screen.draw(screen, current_state, checkpoint_active)
 
             restart_action = None
+            respawn_at_checkpoint = False
+
             if pygame.key.get_pressed()[pygame.K_SPACE]:
-                restart_action = checkpoint
-            elif checkpoint in [2, 3, 4, 5, 6, 7, 8] and pygame.key.get_pressed()[pygame.K_1]:
-                restart_action = 1
+                restart_action = int(current_state.split("_")[1])
+                respawn_at_checkpoint = checkpoint_active
+            elif checkpoint_active and pygame.key.get_pressed()[pygame.K_1]:
+                # Press '1' to restart level from the very beginning
+                restart_action = int(current_state.split("_")[1])
+                respawn_at_checkpoint = False
 
             if restart_action is not None:
                 game_over, paused, camera_x, rem = False, False, 0.0, 0
@@ -1201,60 +1256,30 @@ while run:
                 old_has_dash = player_has_dash
                 old_has_wings = player_has_wings
 
-                target_state = f"LEVEL_{restart_action}"
-                if current_state != target_state:
-                    current_state = target_state
-                    if restart_action == 8:
-                        pygame.mixer.music.load(
-                            "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
-                        pygame.mixer.music.set_volume(0.23)
-                        current_level = Level_08(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 7:
-                        pygame.mixer.music.load("mats/audio/Chopin_-nocturne-in-c-sharp-minor.mp3")
-                        pygame.mixer.music.set_volume(0.23)
-                        current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 6:
-                        pygame.mixer.music.load("mats/audio/Isaac_Albéniz_Suite_Espanola_Op.47_Leyenda.mp3")
-                        pygame.mixer.music.set_volume(0.23)
-                        current_level = Level_06(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 5:
-                        pygame.mixer.music.load("mats/audio/chopin-nocturne-op9-in-b-flat-minor.mp3")
-                        pygame.mixer.music.set_volume(0.23)
-                        current_level = Level_05(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 4:
-                        pygame.mixer.music.load("mats/audio/Polonaise in F sharp minor, Op. 44.mp3")
-                        pygame.mixer.music.set_volume(0.2)
-                        current_level = Level_04(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 3:
-                        pygame.mixer.music.load("mats/audio/Ballade no. 1 in G minor, Op. 23.mp3")
-                        pygame.mixer.music.set_volume(0.23)
-                        current_level = Level_03(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    elif restart_action == 2:
-                        pygame.mixer.music.load("mats/audio/Toccata and Fugue in Dm, BWV 565.mp3")
-                        pygame.mixer.music.set_volume(0.2)
-                        current_level = Level_02(SCREEN_WIDTH, SCREEN_HEIGHT)
-                    else:
-                        pygame.mixer.music.load("mats/audio/Phaneroza-_No-Umbra-No-Penumbra.mp3")
-                        pygame.mixer.music.set_volume(0.2)
+                # Reset level state
+                try:
+                    current_level.reset(reset_checkpoint=not respawn_at_checkpoint)
+                except TypeError:
+                    current_level.reset()
+                    if not respawn_at_checkpoint and hasattr(current_level,
+                                                             'checkpoint_shrine') and current_level.checkpoint_shrine:
+                        current_level.checkpoint_shrine.activated = False
+                        current_level.checkpoint_shrine.frame_index = 0
+                merchant_npc, merchant_ui = None, None
 
-                if restart_action == 1:
-                    old_max_health = 1
-                    old_left_spell = "normal"
-                    old_right_spell = None
-                    old_owned_pets = []
-                    old_active_pet = None
-                    old_has_double_jump = False
-                    player_has_double_jump = False
-                    old_has_dash = False
-                    player_has_dash = False
-                    old_has_wings = False
-                    player_has_wings = False
+                # Determine spawn position
+                if respawn_at_checkpoint:
+                    spawn_x = float(current_level.checkpoint_x)
+                    spawn_y = 450.0 if current_state == "LEVEL_8" else current_level.y_ground
+                    camera_x = max(0.0, min(spawn_x - SCREEN_WIDTH * 0.5, current_level.level_end_x - SCREEN_WIDTH))
+                else:
+                    spawn_x = 400.0
+                    spawn_y = 400.0 if current_state == "LEVEL_8" else current_level.y_ground
+                    camera_x = 0.0
 
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
 
-                current_level.reset()
-                merchant_npc, merchant_ui = None, None
-                succi = Player(400.0, 400.0 if restart_action == 8 else current_level.y_ground, animations,
+                succi = Player(spawn_x, spawn_y, animations,
                                config.ANIMATION_SPEEDS,
                                config.ANIMATION_SCALE_CORRECTIONS,
                                jump_fx, cast_fx)
@@ -1267,7 +1292,7 @@ while run:
                 succi.has_double_jump = old_has_double_jump
                 succi.has_dash = old_has_dash
                 player_has_wings = old_has_wings
-                succi.is_flying_level = (restart_action == 8)
+                succi.is_flying_level = (current_state == "LEVEL_8")
 
                 owned_pets = old_owned_pets
                 active_pet = old_active_pet
