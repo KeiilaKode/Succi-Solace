@@ -1,0 +1,8 @@
+Copyright (c) 2026 Aaron Hawthorne. All rights reserved.
+
+This software, including all source code, art, sprites, audio, animations, 
+and design assets, is the proprietary property of Aaron Hawthorne.
+
+Unauthorized copying, modification, distribution, public display, or commercial 
+use of any part of this repository, via any medium, is strictly prohibited 
+without prior written permission from the copyright holder.
