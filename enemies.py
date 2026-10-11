@@ -29,17 +29,36 @@ class BaseEnemy(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
 
         # ==============================================================
-        # --- HIT FLASH / VISUAL DAMAGE FEEDBACK ---
-        # 140ms duration with 40ms pulse cadence gives 2 crisp white flashes
+        # --- HIT FLASH & VISUAL DAMAGE FEEDBACK ---
         # ==============================================================
         self.flash_timer = 0
-        self.flash_duration = 140
-        self.flash_interval = 40
+        self.flash_duration = 140   # ms
+        self.flash_interval = 40   # ms
 
-    def take_damage(self, amount=1):
+        # ==============================================================
+        # --- HITSTOP & ATTACK COOLDOWN SYSTEM ---
+        # ==============================================================
+        self.hitstop_until = 0
+        self.attack_cooldown_until = 0
+
+    def take_damage(self, amount=1, knockback_dir=0, knockback_force=0.0, hitstop_ms=50, interrupt=False):
         self.health -= amount
-        # Trigger hit flash feedback on damage
-        self.flash_timer = pygame.time.get_ticks()
+        now = pygame.time.get_ticks()
+        self.flash_timer = now
+        self.hitstop_until = now + hitstop_ms
+
+        # Physical Knockback displacement away from attacker # KNOCK BACK #
+        if knockback_force > 0 and knockback_dir != 0:
+            self.rect.x += int(knockback_dir * knockback_force)
+            # Clamp to patrol bounds to prevent clipping through walls
+            self.rect.x = max(self.patrol_start_x - 80, min(self.patrol_end_x + 80, self.rect.x))
+
+        # Melee Kick Attack Interrupt: Cancels active swing and forces walk recovery
+        if interrupt:
+            self.state = "walk"
+            self.frame_index = 0
+            self.attack_cooldown_until = now + 1000  # 1.0s cooldown after interrupt
+
         return self.health <= 0
 
     def apply_hit_flash(self):
@@ -56,16 +75,24 @@ class BaseEnemy(pygame.sprite.Sprite):
         screen.blit(self.image, (ex, ey))
 
     def update(self, camera_x, player_x=None, player_y=None):
-        # Aggro Logic
+        now = pygame.time.get_ticks()
+
+        # Hitstop: Freeze enemy entirely on impact frame
+        if now < self.hitstop_until:
+            self.apply_hit_flash()
+            return
+
+        # Aggro Logic with 1.0s Attack Cooldown (Fixes Infinite Whiff Loop)
         if player_x and player_y and abs(player_y - self.rect.centery) < 350:
             if abs(player_x - self.rect.centerx) < 310 and self.state != "attack":
-                self.state, self.frame_index, self.update_time = "attack", 0, pygame.time.get_ticks()
-                self.direction = 1 if player_x > self.rect.centerx else -1
-                if self.attack_fx:
-                    try:
-                        self.attack_fx.play()
-                    except pygame.error:
-                        pass
+                if now >= self.attack_cooldown_until:
+                    self.state, self.frame_index, self.update_time = "attack", 0, now
+                    self.direction = 1 if player_x > self.rect.centerx else -1
+                    if self.attack_fx:
+                        try:
+                            self.attack_fx.play()
+                        except pygame.error:
+                            pass
 
         # Walk State
         if self.state == "walk":
@@ -75,19 +102,24 @@ class BaseEnemy(pygame.sprite.Sprite):
             elif self.rect.x <= self.patrol_start_x:
                 self.rect.x, self.direction = self.patrol_start_x, 1
 
-            if pygame.time.get_ticks() - self.update_time > self.anim_speed:
-                self.update_time, self.frame_index = pygame.time.get_ticks(), (self.frame_index + 1) % len(
+            if now - self.update_time > self.anim_speed:
+                self.update_time, self.frame_index = now, (self.frame_index + 1) % len(
                     self.walk_frames_right)
 
             self.image = self.walk_frames_right[self.frame_index] if self.direction == 1 else self.walk_frames_left[
                 self.frame_index]
 
-        # Attack State
+        # Attack State with Attacking Momentum (Forward Step Lurch)
         elif self.state == "attack":
-            if pygame.time.get_ticks() - self.update_time > 70:
-                self.update_time, self.frame_index = pygame.time.get_ticks(), self.frame_index + 1
+            # Attacking momentum: step forward during active swing frames
+            if 1 <= self.frame_index <= 4:
+                self.rect.x += self.direction * 1.8
+
+            if now - self.update_time > 70:
+                self.update_time, self.frame_index = now, self.frame_index + 1
                 if self.frame_index >= len(self.attack_frames_right):
                     self.state, self.frame_index = "walk", 0
+                    self.attack_cooldown_until = now + 1000  # 1.0s cooldown after attack finishes
 
             if self.state == "attack":
                 self.image = self.attack_frames_right[self.frame_index] if self.direction == 1 else \
@@ -102,7 +134,7 @@ class BaseEnemy(pygame.sprite.Sprite):
             self.mask = pygame.mask.from_surface(self.image)
             self.last_image = self.image
 
-        # Apply hit flash to self.image for direct blitting by level systems
+        # Apply hit flash to self.image for direct blitting
         self.apply_hit_flash()
 
         if self.rect.right < camera_x - 1000:
@@ -118,15 +150,24 @@ class BaseIdleEnemy(BaseEnemy):
         self.idle_frames_left = idle_l
 
     def update(self, camera_x, player_x=None, player_y=None):
+        now = pygame.time.get_ticks()
+
+        # Hitstop: Freeze enemy entirely on impact frame
+        if now < self.hitstop_until:
+            self.apply_hit_flash()
+            return
+
+        # Aggro Logic with 1.0s Attack Cooldown (Fixes Infinite Whiff Loop)
         if player_x and player_y and abs(player_y - self.rect.centery) < 350:
             if abs(player_x - self.rect.centerx) < 300 and self.state != "attack":
-                self.state, self.frame_index, self.update_time = "attack", 0, pygame.time.get_ticks()
-                self.direction = 1 if player_x > self.rect.centerx else -1
-                if self.attack_fx:
-                    try:
-                        self.attack_fx.play()
-                    except pygame.error:
-                        pass
+                if now >= self.attack_cooldown_until:
+                    self.state, self.frame_index, self.update_time = "attack", 0, now
+                    self.direction = 1 if player_x > self.rect.centerx else -1
+                    if self.attack_fx:
+                        try:
+                            self.attack_fx.play()
+                        except pygame.error:
+                            pass
 
         if self.state == "walk":
             self.rect.x += self.direction * self.speed
@@ -135,24 +176,32 @@ class BaseIdleEnemy(BaseEnemy):
                 self.direction *= -1
                 self.state, self.frame_index = "idle", 0
             if self.state == "walk":
-                if pygame.time.get_ticks() - self.update_time > self.anim_speed:
-                    self.update_time, self.frame_index = pygame.time.get_ticks(), (self.frame_index + 1) % len(
+                if now - self.update_time > self.anim_speed:
+                    self.update_time, self.frame_index = now, (self.frame_index + 1) % len(
                         self.walk_frames_right)
                 self.image = self.walk_frames_right[self.frame_index] if self.direction == 1 else self.walk_frames_left[
                     self.frame_index]
 
         if self.state == "idle":
-            if pygame.time.get_ticks() - self.update_time > 120:
-                self.update_time, self.frame_index = pygame.time.get_ticks(), self.frame_index + 1
+            if now - self.update_time > 120:
+                self.update_time, self.frame_index = now, self.frame_index + 1
                 if self.frame_index >= len(self.idle_frames_right): self.state, self.frame_index = "walk", 0
             if self.state == "idle":
                 self.image = self.idle_frames_right[self.frame_index] if self.direction == 1 else self.idle_frames_left[
                     self.frame_index]
 
+        # Attack State with Attacking Momentum (Forward Step Lurch)
         if self.state == "attack":
-            if pygame.time.get_ticks() - self.update_time > 80:
-                self.update_time, self.frame_index = pygame.time.get_ticks(), self.frame_index + 1
-                if self.frame_index >= len(self.attack_frames_right): self.state, self.frame_index = "walk", 0
+            # Attacking momentum: step forward during active swing frames
+            if 1 <= self.frame_index <= 4:
+                self.rect.x += self.direction * 1.8
+
+            if now - self.update_time > 80:
+                self.update_time, self.frame_index = now, self.frame_index + 1
+                if self.frame_index >= len(self.attack_frames_right):
+                    self.state, self.frame_index = "walk", 0
+                    self.attack_cooldown_until = now + 1000  # 1.0s cooldown after attack finishes
+
             if self.state == "attack":
                 self.image = self.attack_frames_right[self.frame_index] if self.direction == 1 else \
                 self.attack_frames_left[self.frame_index]
@@ -165,7 +214,7 @@ class BaseIdleEnemy(BaseEnemy):
             self.mask = pygame.mask.from_surface(self.image)
             self.last_image = self.image
 
-        # Apply hit flash to self.image for direct blitting by level systems
+        # Apply hit flash to self.image for direct blitting
         self.apply_hit_flash()
 
         if self.rect.right < camera_x - 1000: self.kill()
@@ -199,7 +248,7 @@ class Lashly(BaseEnemy):
 class Hellguard(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=8, speed=1.8, anim_speed=90, y_offset=210, attack_fx=attack_fx)
+                         health=3, rem_value=8, speed=1.8, anim_speed=90, y_offset=210, attack_fx=attack_fx)
 
 
 # - - - LEVEL 2 ENEMIES - - - #
@@ -207,7 +256,7 @@ class Hellguard(BaseEnemy):
 class Helldog(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=10, speed=3.5, anim_speed=80, attack_fx=attack_fx)
+                         health=3, rem_value=10, speed=3.5, anim_speed=80, attack_fx=attack_fx)
 
 class Mau(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
@@ -217,7 +266,7 @@ class Mau(BaseEnemy):
 class Pkgrim(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):
         super().__init__(spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l,
-                         health=2, rem_value=8, speed=2.5, anim_speed=90, attack_fx=attack_fx)
+                         health=3, rem_value=8, speed=2.5, anim_speed=90, attack_fx=attack_fx)
 
 class Castleguard(BaseEnemy):
     def __init__(self, spawn_x, y_pos, patrol_start_x, patrol_end_x, walk_r, walk_l, attack_r, attack_l, attack_fx=None):

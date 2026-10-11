@@ -61,6 +61,9 @@ class Player(pygame.sprite.Sprite):
 
         self.enemies_hit = []
 
+        # Hitstop Combat Freeze System
+        self.hitstop_until = 0
+
         # Dual-Wield Spell Inventory Hooks
         self.spell_left_click = "normal"
         self.spell_right_click = None
@@ -412,12 +415,17 @@ class Player(pygame.sprite.Sprite):
                     self.playing = False
                     self.attacking = False
 
+    def apply_hitstop(self, duration_ms=50):
+        """Pauses player updates during impact hitstop"""
+        self.hitstop_until = pygame.time.get_ticks() + duration_ms
+
     def take_damage(self):
         if pygame.time.get_ticks() - self.invulnerable_timer < config.PLAYER_INVULNERABLE_DURATION:
             return False
 
         self.health -= 1
         self.invulnerable_timer = pygame.time.get_ticks()
+        self.apply_hitstop(50)  # 50ms hitstop when taking damage
 
         if self.health <= 0:
             return True
@@ -488,6 +496,10 @@ class Player(pygame.sprite.Sprite):
         })
 
     def update(self, keys, dt, dt_ms, platform_group, loops_dict):
+        # Hitstop: Freeze Succi on impact frame
+        if pygame.time.get_ticks() < self.hitstop_until:
+            return
+
         if self.is_dashing:
             self.dash_timer -= dt_ms
             self.ghost_spawn_timer += dt_ms

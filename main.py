@@ -714,7 +714,13 @@ while run:
                                 proj.explode()
                                 life_stats["damage_dealt"] += proj.damage
                                 if hasattr(target, 'take_damage'):
-                                    if target.take_damage(proj.damage):
+                                    kb_dir = 1 if proj.direction == 1 else -1
+                                    # Fireball deals micro-knockback (7px) and 50ms hitstop without interrupting enemy attacks
+                                    try:  # FOR ADJUSTING KNOCK BACK VALUES #
+                                        dead = target.take_damage(proj.damage, knockback_dir=kb_dir, knockback_force=18.0, hitstop_ms=50, interrupt=False)
+                                    except TypeError:
+                                        dead = target.take_damage(proj.damage)
+                                    if dead:
                                         rem += target.rem_value
                                         life_stats["rem_harvested"] += target.rem_value
                                         if isinstance(target, GreyGargoyleFlyer):
@@ -1042,12 +1048,9 @@ while run:
                     # Aligns text directly above Succi's head in both grounded & flight modes
                     # ==============================================================
                     if succi.is_flying_level:
-                        # In flight, self.y is the character's vertical center.
-                        # Position text ~165px above her center to sit directly above her horns.
                         text_x = int(succi.x - camera_x - 75)
                         text_y = int(succi.y - 165)
                     else:
-                        # In grounded levels, standard offset relative to ground sprite top
                         text_x = succi_blit_x + 20
                         text_y = succi_blit_y - 80
 
@@ -1160,8 +1163,18 @@ while run:
                                         succi.enemies_hit.append(target)
                                         life_stats["damage_dealt"] += 1
 
+                                        # Apply Melee Hitstop to Succi on impact
+                                        succi.apply_hitstop(50)
+
                                         if hasattr(target, 'take_damage'):
-                                            if target.take_damage():
+                                            kb_dir = 1 if succi.facing_right else -1
+                                            # Kick deals heavy knockback used to deal (22px), 60ms hitstop, and interrupts enemy attacks
+                                            # FOR ADJUSTING KNOCK BACK VALUES #
+                                            try:
+                                                dead = target.take_damage(1, knockback_dir=kb_dir, knockback_force=52.0, hitstop_ms=60, interrupt=True)
+                                            except TypeError:
+                                                dead = target.take_damage()
+                                            if dead:
                                                 rem += target.rem_value
                                                 life_stats["rem_harvested"] += target.rem_value
                                                 if isinstance(target, GreyGargoyleFlyer):

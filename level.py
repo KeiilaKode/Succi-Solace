@@ -1,5 +1,3 @@
-#-level-#
-
 # --- level.py ---#
 import pygame
 import random
@@ -282,7 +280,13 @@ class Level_01:
             group.update(camera_x, player_x, player_y)
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 4)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.cecil_group.add(Cecil(spawn_x, self.y_ground, e_start, e_end, self.cecil_walk_r, self.cecil_walk_l, self.cecil_attack_r, self.cecil_attack_l, self.cecil_fx))
         elif spawn_choice == 2:
@@ -319,7 +323,11 @@ class Level_01:
         for group in self.active_enemy_groups:
             for enemy in group:
                 if -200 < (ex := enemy.rect.x - camera_x) < self.screen_width + 200:
-                    screen.blit(enemy.image, (ex, enemy.rect.top))
+                    # Enemy draw call handles visual damage white flash pulses
+                    if hasattr(enemy, "draw"):
+                        enemy.draw(screen, camera_x)
+                    else:
+                        screen.blit(enemy.image, (ex, enemy.rect.top))
 
 
 class Merchant_Room:
@@ -438,7 +446,13 @@ class Level_02(Level_01):
             self.hd_fx = self.mau_fx = self.pk_fx = self.cg_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 4)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.helldog_group.add(Helldog(spawn_x, self.y_ground, e_start, e_end, self.hd_walk_r, self.hd_walk_l, self.hd_atk_r, self.hd_atk_l, self.hd_fx))
         elif spawn_choice == 2:
@@ -540,7 +554,13 @@ class Level_03(Level_01):
             self.azule_fx = self.titus_fx = self.lionel_fx = self.dem_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 4)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.azule_group.add(Azule(spawn_x, self.y_ground, e_start, e_end, self.azule_walk_r, self.azule_walk_l, self.azule_atk_r, self.azule_atk_l, self.azule_fx))
         elif spawn_choice == 2:
@@ -652,7 +672,13 @@ class Level_04(Level_01):
             self.elaine_fx = self.gk_fx = self.rhh_fx = self.rz_fx = self.z1_fx = self.z2_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 6)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4, 5, 6]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.elaine_group.add(Elaine(spawn_x, self.y_ground, e_start, e_end, self.elaine_walk_r, self.elaine_walk_l, self.elaine_atk_r, self.elaine_atk_l, self.elaine_fx))
         elif spawn_choice == 2:
@@ -752,7 +778,13 @@ class Level_05(Level_01):
             self.priestly_fx = self.realmwalker_fx = self.pursuer_fx = self.braid_fx = self.deadlight_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 5)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4, 5]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.priestly_group.add(Priestly(spawn_x, self.y_ground, e_start, e_end, self.priestly_walk_r, self.priestly_walk_l, self.priestly_atk_r, self.priestly_atk_l, self.priestly_fx))
         elif spawn_choice == 2:
@@ -854,7 +886,13 @@ class Level_06(Level_01):
             self.vic_fx = self.kali_fx = self.kimoura_fx = self.cassie_fx = self.silas_fx = self.thad_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 6)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4, 5, 6]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.victoria_group.add(Victoria(spawn_x, self.y_ground, e_start, e_end, self.vic_walk_r, self.vic_walk_l, self.vic_atk_r, self.vic_atk_l, self.vic_fx))
         elif spawn_choice == 2:
@@ -962,7 +1000,13 @@ class Level_07(Level_01):
             self.molly_fx = self.skelter_fx = self.tilde_fx = self.topaz_fx = self.volgrim_fx = self.voss_fx = None
 
     def spawn_level_enemies(self, spawn_x, e_start, e_end):
-        spawn_choice = random.randint(1, 6)
+        # No-Repeat Shuffle Spawner: Prevents identical enemies back-to-back
+        choices = [1, 2, 3, 4, 5, 6]
+        if hasattr(self, 'last_spawn_choice') and self.last_spawn_choice in choices:
+            choices.remove(self.last_spawn_choice)
+        spawn_choice = random.choice(choices)
+        self.last_spawn_choice = spawn_choice
+
         if spawn_choice == 1:
             self.molly_group.add(Molly(spawn_x, self.y_ground, e_start, e_end, self.molly_walk_r, self.molly_walk_l, self.molly_atk_r, self.molly_atk_l, self.molly_fx))
         elif spawn_choice == 2:

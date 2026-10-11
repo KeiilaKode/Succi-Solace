@@ -324,6 +324,21 @@ class PauseMenu:
         except pygame.error:
             self.bg_page2 = None
 
+        # Load Ancient Tome Save Files Background
+        try:
+            save_bg_raw = pygame.image.load("mats/ui/save_bg.png").convert()
+            self.save_bg = pygame.transform.smoothscale(save_bg_raw, (self.w, self.h))
+        except pygame.error:
+            try:
+                save_bg_raw = pygame.image.load("mats/ui/save_files_bg.png").convert()
+                self.save_screen_bg = pygame.transform.smoothscale(save_bg_raw, (self.w, self.h))
+            except pygame.error:
+                try:
+                    save_bg_raw = pygame.image.load("mats/ui/save_bg.png").convert()
+                    self.save_screen_bg = pygame.transform.smoothscale(save_bg_raw, (self.w, self.h))
+                except pygame.error:
+                    self.save_screen_bg = None
+
         try:
             raw_save = pygame.image.load("mats/ui/save_hud1.png").convert_alpha()
             self.save_b = pygame.transform.smoothscale(raw_save, (335, 230))
@@ -394,7 +409,7 @@ class PauseMenu:
         # ======================================================================
         self.pet_grid_rects = []
         p_start_x = self.w // 2 + 227
-        p_start_y = 395
+        p_start_y = 400
         box_size = 66
         spacing_x = 84
         spacing_y = 80
@@ -425,12 +440,13 @@ class PauseMenu:
             save_dir = os.path.abspath("saves")
 
         os.makedirs(save_dir, exist_ok=True)
-        y_offset = self.h // 2 - 150
+        # Positioned cleanly inside the ancient tome parchment pages
+        y_offset = 365
         center_x = self.w // 2
 
         for i in range(1, 6):
             file_path = os.path.join(save_dir, f"save{i}.json")
-            rect = pygame.Rect(center_x - 200, y_offset, 400, 50)
+            rect = pygame.Rect(center_x - 170, y_offset, 340, 46)
             if os.path.exists(file_path):
                 try:
                     with open(file_path, "r") as f:
@@ -441,7 +457,7 @@ class PauseMenu:
                 self.save_slots.append({"rect": rect, "name": name, "slot": i, "empty": False})
             else:
                 self.save_slots.append({"rect": rect, "name": f"Slot {i} - Empty", "slot": i, "empty": True})
-            y_offset += 65
+            y_offset += 62 # 58?
 
     def update(self, mouse_pos, mouse_click, owned_spells, owned_pets, active_pet):
         result = None
@@ -651,7 +667,7 @@ class PauseMenu:
                 ]
 
                 # Positioned neatly inside the open black rectangle below the arch
-                start_y = 395
+                start_y = 415 # was 395
                 row_spacing = 38
 
                 c1_x = center_x - 525
@@ -708,22 +724,31 @@ class PauseMenu:
                 draw_text(screen, "(Click anywhere to close)", self.font_small, LIGHT_GRAY, card_rect.x + 120, card_rect.bottom - 35)
 
         if self.save_state == "SELECT":
-            dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
-            dark_overlay.fill((0, 0, 0, 220))
-            screen.blit(dark_overlay, (0, 0))
+            # Blit ancient tome save background if loaded, else fallback to dark overlay
+            if getattr(self, "save_bg", None):
+                screen.blit(self.save_bg, (0, 0))
+            else:
+                dark_overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+                dark_overlay.fill((0, 0, 0, 220))
+                screen.blit(dark_overlay, (0, 0))
 
-            draw_text(screen, "SELECT A SAVE SLOT", self.font_big, PINK, center_x - 200, 100)
-
+            # Render Save Slots over the parchment tome
             for slot in self.save_slots:
                 rect = slot["rect"]
-                col = PINK if rect.collidepoint(mouse_pos) else LIGHT_GRAY
-                pygame.draw.rect(screen, (20, 10, 30), rect, border_radius=8)
-                pygame.draw.rect(screen, col, rect, 3, border_radius=8)
+                is_hovered = rect.collidepoint(mouse_pos)
 
-                text_surf = self.font_med.render(slot["name"], True, col)
+                # Antique dark obsidian backing over parchment paper
+                bg_col = (45, 25, 45) if is_hovered else (25, 18, 30)
+                border_col = PINK if is_hovered else (160, 125, 60)
+                text_col = PINK if is_hovered else ((235, 215, 160) if not slot["empty"] else (140, 130, 120))
+
+                pygame.draw.rect(screen, bg_col, rect, border_radius=6)
+                pygame.draw.rect(screen, border_col, rect, 2, border_radius=6)
+
+                text_surf = self.font_med.render(slot["name"], True, text_col)
                 screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
-            draw_text(screen, "Click anywhere outside to cancel", self.font_small, LIGHT_GRAY, center_x - 140, self.h - 80)
+            draw_text(screen, "Click anywhere outside to cancel", self.font_small, (200, 180, 150), center_x - 130, self.h - 50)
 
         elif self.save_state == "TYPE":
             dialog_rect = pygame.Rect(center_x - 250, self.h // 2 - 100, 500, 200)
