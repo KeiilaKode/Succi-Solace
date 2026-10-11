@@ -28,9 +28,32 @@ class BaseEnemy(pygame.sprite.Sprite):
         self.rect.bottom = y_pos + y_offset
         self.mask = pygame.mask.from_surface(self.image)
 
+        # ==============================================================
+        # --- HIT FLASH / VISUAL DAMAGE FEEDBACK ---
+        # 140ms duration with 40ms pulse cadence gives 2 crisp white flashes
+        # ==============================================================
+        self.flash_timer = 0
+        self.flash_duration = 140
+        self.flash_interval = 40
+
     def take_damage(self, amount=1):
         self.health -= amount
+        # Trigger hit flash feedback on damage
+        self.flash_timer = pygame.time.get_ticks()
         return self.health <= 0
+
+    def apply_hit_flash(self):
+        # Visual Damage Feedback: Swaps image to white silhouette during flash pulses
+        if pygame.time.get_ticks() - self.flash_timer < self.flash_duration:
+            # Alternates white silhouette pulse (on for 40ms, off for 40ms, on for 40ms)
+            if ((pygame.time.get_ticks() - self.flash_timer) // self.flash_interval) % 2 == 0:
+                self.image = self.mask.to_surface(setcolor=(255, 255, 255, 255), unsetcolor=(0, 0, 0, 0))
+
+    def draw(self, screen, camera_x):
+        ex = self.rect.x - camera_x
+        ey = self.rect.top
+        self.apply_hit_flash()
+        screen.blit(self.image, (ex, ey))
 
     def update(self, camera_x, player_x=None, player_y=None):
         # Aggro Logic
@@ -78,6 +101,9 @@ class BaseEnemy(pygame.sprite.Sprite):
         if getattr(self, "last_image", None) != self.image:
             self.mask = pygame.mask.from_surface(self.image)
             self.last_image = self.image
+
+        # Apply hit flash to self.image for direct blitting by level systems
+        self.apply_hit_flash()
 
         if self.rect.right < camera_x - 1000:
             self.kill()
@@ -138,6 +164,9 @@ class BaseIdleEnemy(BaseEnemy):
         if getattr(self, "last_image", None) != self.image:
             self.mask = pygame.mask.from_surface(self.image)
             self.last_image = self.image
+
+        # Apply hit flash to self.image for direct blitting by level systems
+        self.apply_hit_flash()
 
         if self.rect.right < camera_x - 1000: self.kill()
 

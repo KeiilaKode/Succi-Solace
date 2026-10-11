@@ -1037,8 +1037,22 @@ while run:
                     active_companion.draw(screen)
 
                 if abs(succi.x - current_level.door_world_x) < 150:
-                    draw_text(screen, "Press 'E' to Enter", font_small, Color("turquoise1"), succi_blit_x + 20,
-                              succi_blit_y - 80)
+                    # ==============================================================
+                    # --- DOOR INTERACTION PROMPT PLACEMENT ---
+                    # Aligns text directly above Succi's head in both grounded & flight modes
+                    # ==============================================================
+                    if succi.is_flying_level:
+                        # In flight, self.y is the character's vertical center.
+                        # Position text ~165px above her center to sit directly above her horns.
+                        text_x = int(succi.x - camera_x - 75)
+                        text_y = int(succi.y - 165)
+                    else:
+                        # In grounded levels, standard offset relative to ground sprite top
+                        text_x = succi_blit_x + 20
+                        text_y = succi_blit_y - 80
+
+                    draw_text(screen, "Press 'E' to Enter", font_small, Color("turquoise1"), text_x, text_y)
+
                     if keys[pygame.K_e]:
                         last_completed_level = current_state
                         is_level_2_merchant = (last_completed_level == "LEVEL_2")
