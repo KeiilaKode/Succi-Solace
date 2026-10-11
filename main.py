@@ -473,34 +473,45 @@ while run:
                         if player_has_melee and not paused and not game_over:
                             succi.trigger_kick()
 
+        # ======================================================================
+        # --- MOUSE INPUT EVENT HANDLING ---
+        # ======================================================================
         if event.type == pygame.MOUSEBUTTONDOWN:
+            # 1. Global Left-Click registration for all UI screens (Grimoire, Menus, Pause, Merchant)
             if event.button == 1:
                 mouse_click = True
 
-            if not grimoire_open and not game_over and not paused and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3",
-                                                                                        "LEVEL_4",
-                                                                                        "LEVEL_5", "LEVEL_6", "LEVEL_7",
-                                                                                        "LEVEL_8"]:
-                live_k = pygame.key.get_pressed()
-                is_moving = live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[
-                    pygame.K_d] or (
-                                    succi.is_flying_level and (
-                                    live_k[pygame.K_w] or live_k[pygame.K_s] or live_k[pygame.K_UP] or live_k[
-                                pygame.K_DOWN])
+            # 2. In-Game Combat Actions (strictly during active gameplay; blocked in Grimoire/Menus)
+            if not grimoire_open and not game_over and not paused and current_state in [
+                "LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7", "LEVEL_8"
+            ]:
+                # Spell Attacks: Left Click (Button 1) or Right Click (Button 3)
+                if event.button in [1, 3]:
+                    live_k = pygame.key.get_pressed()
+                    is_moving = (
+                        live_k[pygame.K_LEFT] or live_k[pygame.K_RIGHT] or live_k[pygame.K_a] or live_k[pygame.K_d] or (
+                            succi.is_flying_level and (
+                                live_k[pygame.K_w] or live_k[pygame.K_s] or live_k[pygame.K_UP] or live_k[pygame.K_DOWN]
                             )
-                is_running = live_k[pygame.K_LSHIFT] or live_k[pygame.K_RSHIFT]
+                        )
+                    )
+                    is_running = live_k[pygame.K_LSHIFT] or live_k[pygame.K_RSHIFT]
 
-                if event.button == 1:
-                    succi.trigger_attack(is_running, is_moving)
-                    succi.current_spell_type = succi.spell_left_click
-                elif event.button == 3:
-                    if succi.spell_right_click is not None:
+                    if event.button == 1:
                         succi.trigger_attack(is_running, is_moving)
-                        succi.current_spell_type = succi.spell_right_click
+                        succi.current_spell_type = succi.spell_left_click
+                    elif event.button == 3:
+                        if succi.spell_right_click is not None:
+                            succi.trigger_attack(is_running, is_moving)
+                            succi.current_spell_type = succi.spell_right_click
 
-            elif event.button == 2:
-                if player_has_melee and not succi.is_flying_level and not game_over and not paused and not grimoire_open:
-                    succi.trigger_kick()
+                # Melee Kick: Middle Mouse Button (Button 2) - Only available with melee unlock on ground levels
+                elif event.button == 2:
+                    if player_has_melee and not succi.is_flying_level and current_state in [
+                        "LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6", "LEVEL_7"
+                    ]:
+                        succi.trigger_kick()
+
 
     # ==========================================================================
     # --- GRIMOIRE INTERACTION DISPATCHER ---
