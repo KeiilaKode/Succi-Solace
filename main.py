@@ -28,7 +28,7 @@ import config
 # OOP Imports
 from player import Player
 from enemies import GreyGargoyleFlyer
-from entities import Projectile, Merchant, Companion, CheckpointShrine
+from entities import Projectile, Merchant, Companion, CheckpointShrine, DeathSlit, RemLoot, RemCoin
 from level import Level_01, Level_02, Level_03, Level_04, Level_05, Level_06, Level_07, Level_08, Merchant_Room
 
 # Isolated UI components
@@ -222,6 +222,14 @@ try:
     merchant_greet_lvl_8_fx = pygame.mixer.Sound("mats/audio/merchant_greet_lvl8.mp3")
     merchant_greet_lvl_8_fx.set_volume(0.6)
 
+    # --- DEATH SLIT & REM LOOT DROP AUDIO ---
+    death_slit_fx = pygame.mixer.Sound("mats/audio/death_slit.mp3")
+    death_slit_fx.set_volume(0.35)
+    loot_pile_fx = pygame.mixer.Sound("mats/audio/loot_pile_1.mp3")
+    loot_pile_fx.set_volume(0.25)
+    loot_hand_fx = pygame.mixer.Sound("mats/audio/loot_hand_2.mp3")
+    loot_hand_fx.set_volume(0.40)
+
 except pygame.error as e:
     print(f"Audio Load Warning: {e}")
 
@@ -273,6 +281,12 @@ blueball_img = pygame.image.load("spritesheets/spell sheets/blueball_ss.png").co
 blue_explode_img = pygame.image.load("spritesheets/spell sheets/blueball_explode_ss.png").convert_alpha()
 rainball_img = pygame.image.load("spritesheets/spell sheets/rainball_ss.png").convert_alpha()
 rainbow_explode_img = pygame.image.load("spritesheets/spell sheets/rainball_explode_ss.png").convert_alpha()
+
+# --- DEATH SLIT & CURRENCY REM SPRITE SHEETS ---
+death_slit_sheet = pygame.image.load("spritesheets/enemies/death_slit_sheet.png").convert_alpha()
+loot_pile_sheet = pygame.image.load("spritesheets/currency/loot_pile_1_sheet.png").convert_alpha()
+loot_hand_sheet = pygame.image.load("spritesheets/currency/loot_hand_2_sheet.png").convert_alpha()
+rem_coin_sheet = pygame.image.load("spritesheets/currency/rem_coin_sheet.png").convert_alpha()
 
 pet_frames = {}
 pet_icons = {}
@@ -376,6 +390,8 @@ exit_timer = 0
 succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
                jump_fx, cast_fx)
 projectile_group = pygame.sprite.Group()
+death_slit_group = pygame.sprite.Group()
+rem_drop_group = pygame.sprite.Group()
 
 # ==========================================
 # MAIN GAME LOOP
@@ -463,6 +479,8 @@ while run:
                         succi.is_flying_level = True
                         camera_x = 0.0
                         projectile_group.empty()
+                        death_slit_group.empty()
+                        rem_drop_group.empty()
                         pygame.mixer.music.load(
                             "mats/audio/Beethoven Piano Sonata No. 14 in C-sharp minor, Op. 27, No. 2.mp3")
                         pygame.mixer.music.set_volume(0.23)
@@ -572,6 +590,8 @@ while run:
                     game_over = False
                     paused = False
                     projectile_group.empty()
+                    death_slit_group.empty()
+                    rem_drop_group.empty()
 
                     if current_state == "LEVEL_8":
                         pygame.mixer.music.load(
@@ -675,6 +695,17 @@ while run:
             current_level.update(dt, camera_x, succi.x, succi.y, current_banner is not None)
             projectile_group.update(dt, camera_x, SCREEN_WIDTH)
 
+            # Update Death Slit VFX and Rem Loot Drops
+            death_slit_group.update(dt, camera_x, rem_drop_group)
+            for drop in list(rem_drop_group):
+                if isinstance(drop, RemCoin):
+                    earned = drop.update(dt, camera_x, succi)
+                else:
+                    earned = drop.update(dt, camera_x, succi, current_level.platform_group)
+                if earned > 0:
+                    rem += earned
+                    life_stats["rem_harvested"] += earned
+
             for proj in projectile_group:
                 if proj.state == "fly":
                     enemy_targets = [current_level.enemy_group]
@@ -715,26 +746,35 @@ while run:
                                 life_stats["damage_dealt"] += proj.damage
                                 if hasattr(target, 'take_damage'):
                                     kb_dir = 1 if proj.direction == 1 else -1
-                                    # Fireball deals micro-knockback (7px) and 50ms hitstop without interrupting enemy attacks
+                                    # Fireball deals micro-knockback and 50ms hitstop without interrupting enemy attacks
                                     try:  # FOR ADJUSTING KNOCK BACK VALUES #
                                         dead = target.take_damage(proj.damage, knockback_dir=kb_dir, knockback_force=18.0, hitstop_ms=50, interrupt=False)
                                     except TypeError:
                                         dead = target.take_damage(proj.damage)
                                     if dead:
-                                        rem += target.rem_value
-                                        life_stats["rem_harvested"] += target.rem_value
                                         if isinstance(target, GreyGargoyleFlyer):
                                             life_stats["gargoyles_killed"] += 1
+                                            rem_drop_group.add(RemCoin(target.rect.centerx, target.rect.centery, target.rem_value, rem_coin_sheet))
                                         else:
                                             life_stats["enemies_killed"] += 1
+                                            # Spawn Death Slit VFX, which drops RemLoot upon completion
+                                            death_slit_group.add(DeathSlit(
+                                                target.rect.centerx, target.rect.centery, getattr(target, 'y_ground', current_level.y_ground),
+                                                target.rem_value, death_slit_sheet, death_slit_fx,
+                                                loot_pile_sheet, loot_hand_sheet, loot_pile_fx, loot_hand_fx
+                                            ))
                                         target.kill()
                                 else:
-                                    rem += target.rem_value
-                                    life_stats["rem_harvested"] += target.rem_value
                                     if isinstance(target, GreyGargoyleFlyer):
                                         life_stats["gargoyles_killed"] += 1
+                                        rem_drop_group.add(RemCoin(target.rect.centerx, target.rect.centery, target.rem_value, rem_coin_sheet))
                                     else:
                                         life_stats["enemies_killed"] += 1
+                                        death_slit_group.add(DeathSlit(
+                                            target.rect.centerx, target.rect.centery, getattr(target, 'y_ground', current_level.y_ground),
+                                            target.rem_value, death_slit_sheet, death_slit_fx,
+                                            loot_pile_sheet, loot_hand_sheet, loot_pile_fx, loot_hand_fx
+                                        ))
                                     target.kill()
                                 try:
                                     explode_fx.play()
@@ -924,7 +964,7 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_6", Level_06(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 6
                             elif last_completed_level == "LEVEL_6":
-                                current_state, current_level, checkpoint = "LEVEL_6_CUTSCENE"
+                                current_state = "LEVEL_6_CUTSCENE"  # <--- REMOVED current_level, checkpoint
                                 checkpoint = 7
                                 if cutscene_screen is None:
                                     cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -1114,6 +1154,14 @@ while run:
                     if -200 < (px := proj.rect.x - camera_x) < SCREEN_WIDTH + 200:
                         screen.blit(proj.image, (px, proj.rect.y))
 
+                for slit in death_slit_group:
+                    if -200 < (sx := slit.rect.x - camera_x) < SCREEN_WIDTH + 200:
+                        slit.draw(screen, camera_x)
+
+                for drop in rem_drop_group:
+                    if -200 < (dx := drop.rect.x - camera_x) < SCREEN_WIDTH + 200:
+                        drop.draw(screen, camera_x)
+
                 enemy_groups_to_check = [current_level.enemy_group]
                 if current_state == "LEVEL_1":
                     enemy_groups_to_check.extend(
@@ -1168,27 +1216,35 @@ while run:
 
                                         if hasattr(target, 'take_damage'):
                                             kb_dir = 1 if succi.facing_right else -1
-                                            # Kick deals heavy knockback used to deal (22px), 60ms hitstop, and interrupts enemy attacks
+                                            # Kick deals heavy knockback, 60ms hitstop, and interrupts enemy attacks
                                             # FOR ADJUSTING KNOCK BACK VALUES #
                                             try:
                                                 dead = target.take_damage(1, knockback_dir=kb_dir, knockback_force=52.0, hitstop_ms=60, interrupt=True)
                                             except TypeError:
                                                 dead = target.take_damage()
                                             if dead:
-                                                rem += target.rem_value
-                                                life_stats["rem_harvested"] += target.rem_value
                                                 if isinstance(target, GreyGargoyleFlyer):
                                                     life_stats["gargoyles_killed"] += 1
+                                                    rem_drop_group.add(RemCoin(target.rect.centerx, target.rect.centery, target.rem_value, rem_coin_sheet))
                                                 else:
                                                     life_stats["enemies_killed"] += 1
+                                                    death_slit_group.add(DeathSlit(
+                                                        target.rect.centerx, target.rect.centery, getattr(target, 'y_ground', current_level.y_ground),
+                                                        target.rem_value, death_slit_sheet, death_slit_fx,
+                                                        loot_pile_sheet, loot_hand_sheet, loot_pile_fx, loot_hand_fx
+                                                    ))
                                                 target.kill()
                                         else:
-                                            rem += target.rem_value
-                                            life_stats["rem_harvested"] += target.rem_value
                                             if isinstance(target, GreyGargoyleFlyer):
                                                 life_stats["gargoyles_killed"] += 1
+                                                rem_drop_group.add(RemCoin(target.rect.centerx, target.rect.centery, target.rem_value, rem_coin_sheet))
                                             else:
                                                 life_stats["enemies_killed"] += 1
+                                                death_slit_group.add(DeathSlit(
+                                                    target.rect.centerx, target.rect.centery, getattr(target, 'y_ground', current_level.y_ground),
+                                                    target.rem_value, death_slit_sheet, death_slit_fx,
+                                                    loot_pile_sheet, loot_hand_sheet, loot_pile_fx, loot_hand_fx
+                                                ))
                                             target.kill()
 
                                         try:
@@ -1337,6 +1393,8 @@ while run:
                 active_companion = None
 
                 projectile_group.empty()
+                death_slit_group.empty()
+                rem_drop_group.empty()
 
                 if not pygame.mixer.music.get_busy():
                     pygame.mixer.music.play(-1, 0.0)

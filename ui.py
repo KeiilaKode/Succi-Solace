@@ -867,9 +867,9 @@ class MainMenu:
             self.ctrl_h = pygame.transform.smoothscale(raw_controls, (int(330 * 1.10), int(180 * 1.10)))
             self.load_h = pygame.transform.smoothscale(raw_load, (int(270 * 1.10), int(270 * 1.10)))
 
-            self.ctrl_rect = self.ctrl_b.get_rect(center=(223, h // 2 + 140))
-            self.play_rect = self.play_b.get_rect(center=(w // 2 + 3, h // 2 + 130))
-            self.load_rect = self.load_b.get_rect(center=(w - 220, h // 2 + 140))
+            self.ctrl_rect = self.ctrl_b.get_rect(center=(223, h // 2 + 150))
+            self.play_rect = self.play_b.get_rect(center=(w // 2 - 2, h // 2 + 143))
+            self.load_rect = self.load_b.get_rect(center=(w - 220, h // 2 + 150))
         except pygame.error as e:
             print(f"Menu Asset Error: {e}")
             self.bg = pygame.Surface((w, h))
