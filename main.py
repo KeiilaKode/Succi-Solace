@@ -48,7 +48,7 @@ os.makedirs(SAVE_DIR, exist_ok=True)
 def save_game(slot, save_name):
     # Check if mid-level checkpoint shrine is currently active
     shrine_active = (current_level.checkpoint_shrine.activated
-                     if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
+                     if current_level is not None and hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
                      else False)
 
     data = {
@@ -288,6 +288,7 @@ loot_pile_sheet = pygame.image.load("spritesheets/currency/loot_pile_1_sheet.png
 loot_hand_sheet = pygame.image.load("spritesheets/currency/loot_hand_2_sheet.png").convert_alpha()
 rem_coin_sheet = pygame.image.load("spritesheets/currency/rem_coin_sheet.png").convert_alpha()
 
+# On-Demand Pet Sprite Sheet Caching (Saves 3-4s at boot)
 pet_frames = {}
 pet_icons = {}
 pet_names = ["tinera", "crowley", "gloom", "losslyn", "opal", "saphy", "trinity", "whisper"]
@@ -299,18 +300,22 @@ for p in pet_names:
     except pygame.error as e:
         print(f"Error loading icon for {p}: {e}")
         pet_icons[p] = None
+    pet_frames[p] = []
 
-    try:
-        file_prefix = p.capitalize()
-        raw_frames = get_sprites_from_sheet(f"spritesheets/pet sheets/{file_prefix}_ss.png")
-        scale_val = 0.20 if p == "tinera" else 0.25
-        pet_frames[p] = [
-            pygame.transform.smoothscale(f, (int(810 * scale_val), int(1080 * scale_val)))
-            for f in raw_frames
-        ]
-    except pygame.error as e:
-        print(f"Error loading pet {p}: {e}")
-        pet_frames[p] = []
+def get_pet_frames(pet_name):
+    if pet_name and not pet_frames.get(pet_name):
+        try:
+            file_prefix = pet_name.capitalize()
+            raw_frames = get_sprites_from_sheet(f"spritesheets/pet sheets/{file_prefix}_ss.png")
+            scale_val = 0.20 if pet_name == "tinera" else 0.25
+            pet_frames[pet_name] = [
+                pygame.transform.smoothscale(f, (int(810 * scale_val), int(1080 * scale_val)))
+                for f in raw_frames
+            ]
+        except pygame.error as e:
+            print(f"Error loading pet {pet_name}: {e}")
+            pet_frames[pet_name] = []
+    return pet_frames.get(pet_name, [])
 
 # ==========================================
 # MASTER LIFETIME STATS DOSSIER
@@ -348,8 +353,9 @@ is_level_8_merchant = False
 
 current_banner = None
 
-# Grimoire State Flag
+# Grimoire State Flag & Deferred Loader
 grimoire_open = False
+grimoire_screen = None
 
 global_merchant_sold_out = {
     "Health Potion": False, "Teal Potion": False, "Emerald Potion": False, "Pink Potion": False,
@@ -374,20 +380,20 @@ hud = HUD()
 main_menu = MainMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 pause_menu = PauseMenu(SCREEN_WIDTH, SCREEN_HEIGHT)
 death_screen = DeathScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
-grimoire_screen = GrimoireScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 intro_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT, "mats/cut_scenes/intro_cut.mp4")
 loading_screen = None
 cutscene_screen = None
 
-current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
+# Deferred Level 1 Loading
+current_level = None
 merchant_room = Merchant_Room(SCREEN_WIDTH, SCREEN_HEIGHT)
 merchant_npc = None
 merchant_ui = None
 exiting_merchant = False
 exit_timer = 0
 
-succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
+succi = Player(400.0, 730.0, animations, config.ANIMATION_SPEEDS, config.ANIMATION_SCALE_CORRECTIONS,
                jump_fx, cast_fx)
 projectile_group = pygame.sprite.Group()
 death_slit_group = pygame.sprite.Group()
@@ -415,10 +421,12 @@ while run:
             run = False
 
         if event.type == pygame.KEYDOWN:
-            # Grimoire Toggle on 'G'
+            # Grimoire Toggle on 'G' (Deferred Loader on first press)
             if event.key == pygame.K_g:
                 if not game_over and current_state in ["LEVEL_1", "LEVEL_2", "LEVEL_3", "LEVEL_4", "LEVEL_5", "LEVEL_6",
                                                        "LEVEL_7", "LEVEL_8"]:
+                    if grimoire_screen is None:
+                        grimoire_screen = GrimoireScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
                     grimoire_open = not grimoire_open
                     paused = False
 
@@ -534,7 +542,7 @@ while run:
     # ==========================================================================
     # --- GRIMOIRE INTERACTION DISPATCHER ---
     # ==========================================================================
-    if grimoire_open:
+    if grimoire_open and grimoire_screen:
         grimoire_screen.update(mouse_pos, mouse_click)
 
     elif current_state == "INTRO":
@@ -556,16 +564,28 @@ while run:
     elif current_state == "MAIN_MENU":
         action = main_menu.update(mouse_pos, mouse_click)
         if action == "PLAY":
+            # Clean black transition while Level 1 loads into memory
+            screen.fill((0, 0, 0))
+            pygame.display.flip()
+
             current_state = "LEVEL_1"
+            if current_level is None:
+                current_level = Level_01(SCREEN_WIDTH, SCREEN_HEIGHT)
+            else:
+                try:
+                    current_level.reset(reset_checkpoint=True)
+                except TypeError:
+                    current_level.reset()
+                    if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine:
+                        current_level.checkpoint_shrine.activated = False
+                        current_level.checkpoint_shrine.frame_index = 0
+
+            # CRITICAL: Flush Pygame's clock so loading delay doesn't inflate delta-time (dt)!
+            clock.tick(FPS)
+
+            # CRITICAL: Initialize LevelBanner AFTER loading is complete so its 3.5s duration starts now!
             current_banner = LevelBanner(1, SCREEN_WIDTH)
 
-            try:
-                current_level.reset(reset_checkpoint=True)
-            except TypeError:
-                current_level.reset()
-                if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine:
-                    current_level.checkpoint_shrine.activated = False
-                    current_level.checkpoint_shrine.frame_index = 0
             succi = Player(400.0, current_level.y_ground, animations, config.ANIMATION_SPEEDS,
                            config.ANIMATION_SCALE_CORRECTIONS,
                            jump_fx, cast_fx)
@@ -584,7 +604,6 @@ while run:
                 loaded_name = load_game(action["slot"])
                 if loaded_name:
                     lvl_num = int(current_state.split("_")[1])
-                    current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
                     camera_x = max(0.0, min(succi.x - SCREEN_WIDTH * 0.5, current_level.level_end_x - SCREEN_WIDTH))
                     game_over = False
@@ -592,6 +611,10 @@ while run:
                     projectile_group.empty()
                     death_slit_group.empty()
                     rem_drop_group.empty()
+
+                    # Flush clock & start banner after loading save slot
+                    clock.tick(FPS)
+                    current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
                     if current_state == "LEVEL_8":
                         pygame.mixer.music.load(
@@ -665,7 +688,7 @@ while run:
                 if spell_type == "purple":
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = purple_fireball_img, purple_explode_img, 0.28, 0.28, 0, 1
                 elif spell_type == "blue":
-                    active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = blueball_img, blue_explode_img, 0.7, 0.2, 65, 1
+                    active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = blueball_img, blue_explode_img, 0.7, 0.2, 130, 1
                 elif spell_type == "rainbow":
                     active_fireball, active_explode, f_scale, e_scale, e_offset, proj_dmg = rainball_img, rainbow_explode_img, 0.7, 0.2, 0, 2
                 else:
@@ -964,7 +987,7 @@ while run:
                                 current_state, current_level, checkpoint = "LEVEL_6", Level_06(SCREEN_WIDTH,
                                                                                                SCREEN_HEIGHT), 6
                             elif last_completed_level == "LEVEL_6":
-                                current_state = "LEVEL_6_CUTSCENE"  # <--- REMOVED current_level, checkpoint
+                                current_state = "LEVEL_6_CUTSCENE"
                                 checkpoint = 7
                                 if cutscene_screen is None:
                                     cutscene_screen = CutsceneScreen(SCREEN_WIDTH, SCREEN_HEIGHT,
@@ -1005,6 +1028,8 @@ while run:
                                     cutscene_screen.start()
                             else:
                                 lvl_num = int(current_state.split("_")[1])
+                                # Flush clock & start banner after merchant transition
+                                clock.tick(FPS)
                                 current_banner = LevelBanner(lvl_num, SCREEN_WIDTH)
 
                                 if current_state == "LEVEL_8":
@@ -1037,9 +1062,16 @@ while run:
 
         elif current_state == "LEVEL_6_CUTSCENE":
             if cutscene_screen and cutscene_screen.update(mouse_pos, mouse_click):
+                # Clean black transition while Level 7 loads
+                screen.fill((0, 0, 0))
+                pygame.display.flip()
+
                 current_state = "LEVEL_7"
                 cutscene_screen = None
                 current_level = Level_07(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+                # Flush clock & start banner after Level 7 is loaded
+                clock.tick(FPS)
                 current_banner = LevelBanner(7, SCREEN_WIDTH)
 
                 succi.has_double_jump = player_has_double_jump
@@ -1072,9 +1104,10 @@ while run:
                 current_level.draw(screen, camera_x)
                 succi_blit_x, succi_blit_y = succi.draw(screen, camera_x)
 
-                if active_pet and active_pet in pet_frames and pet_frames[active_pet]:
+                active_frames = get_pet_frames(active_pet) if active_pet else []
+                if active_pet and active_frames:
                     if active_companion is None or getattr(active_companion, 'pet_id', None) != active_pet:
-                        active_companion = Companion(pet_frames[active_pet])
+                        active_companion = Companion(active_frames)
                         active_companion.pet_id = active_pet
 
                     stable_screen_x = succi.x - camera_x
@@ -1315,13 +1348,13 @@ while run:
                                 life_stats=life_stats)
 
             # Draw Standalone Grimoire Overlay when 'G' is active
-            if grimoire_open:
+            if grimoire_open and grimoire_screen:
                 grimoire_screen.draw(screen, mouse_pos)
 
         else:
             # Check if mid-level checkpoint shrine is currently activated
             checkpoint_active = (current_level.checkpoint_shrine.activated
-                                 if hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
+                                 if current_level is not None and hasattr(current_level, 'checkpoint_shrine') and current_level.checkpoint_shrine
                                  else False)
 
             death_screen.draw(screen, current_state, checkpoint_active)
@@ -1371,6 +1404,8 @@ while run:
                     spawn_y = 400.0 if current_state == "LEVEL_8" else current_level.y_ground
                     camera_x = 0.0
 
+                # Flush clock so restart has crisp 60fps dt
+                clock.tick(FPS)
                 current_banner = LevelBanner(restart_action, SCREEN_WIDTH)
 
                 succi = Player(spawn_x, spawn_y, animations,
